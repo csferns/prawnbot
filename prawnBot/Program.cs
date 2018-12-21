@@ -45,7 +45,13 @@ namespace prawnBot
             SocketGuild guild = user.Guild;
             SocketTextChannel channel = guild.DefaultChannel;
 
-            await channel.SendMessageAsync($"welcome, {user.Mention}");
+            EmbedBuilder builder = new EmbedBuilder();
+
+            builder.WithTitle("Welcome")
+                .WithColor(Color.Blue)
+                .WithDescription($"welcome, {user.Mention}");
+
+            await channel.SendMessageAsync("", false, builder.Build());
         }
 
         private Task Log(LogMessage arg)
@@ -66,25 +72,19 @@ namespace prawnBot
         {
             SocketUserMessage message = arg as SocketUserMessage;
 
-            if (message is null || message.Author.IsBot)
-            {
-                return;
-            }
+            if (message is null || message.Author.IsBot) return;
 
             int argPos = 0;
 
-            if (message.HasStringPrefix("prawn!", ref argPos) || message.HasMentionPrefix(_client.CurrentUser, ref argPos))
+            if (message.HasStringPrefix("p!", ref argPos) || message.HasMentionPrefix(_client.CurrentUser, ref argPos))
             {
                 SocketCommandContext context = new SocketCommandContext(_client, message);
 
                 IResult result = await _commands.ExecuteAsync(context, argPos, _services);
 
                 if (!result.IsSuccess)
-                {
                     Console.WriteLine(result.ErrorReason);
-                }
             }
-
         }
     }
 }

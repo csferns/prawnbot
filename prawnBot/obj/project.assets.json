@@ -6084,11 +6084,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Projects\\Discord Bot\\prawnBot\\prawnBot\\prawnBot.csproj",
+      "projectUniqueName": "D:\\Projects\\GitHub\\prawnbot\\prawnBot\\prawnBot.csproj",
       "projectName": "prawnBot",
-      "projectPath": "D:\\Projects\\Discord Bot\\prawnBot\\prawnBot\\prawnBot.csproj",
+      "projectPath": "D:\\Projects\\GitHub\\prawnbot\\prawnBot\\prawnBot.csproj",
       "packagesPath": "C:\\Users\\camer\\.nuget\\packages\\",
-      "outputPath": "D:\\Projects\\Discord Bot\\prawnBot\\prawnBot\\obj\\",
+      "outputPath": "D:\\Projects\\GitHub\\prawnbot\\prawnBot\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "c:\\program files\\dotnet\\sdk\\NuGetFallbackFolder"
