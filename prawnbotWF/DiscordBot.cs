@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Color = Discord.Color;
@@ -18,27 +19,38 @@ namespace prawnbotWF
         CommandService Commands;
         IServiceProvider Services;
 
-        public string[] richpresencepresets = new string[]
-        {
-            "Listening to",
-            "Playing",
-            "Watching",
-            "Streaming",
-        };
-
         public DiscordBot()
         {
             InitializeComponent();
-
+            
             #region Disabled form components
-            rpbutton.Enabled = false;
-            rpdropdown.Enabled = false;
-            rptextbox.Enabled = false;
             disconnectbtn.Enabled = false;
+
+            rpbutton.Enabled = false;
+
+            rptextbox.Enabled = false;
+            rptextbox2.Enabled = false;
+            rptextbox3.Enabled = false;
+            rptextbox4.Enabled = false;
+
+            multirp.Enabled = false;
+            rpdropdown.Enabled = false;
+            rpdropdown2.Enabled = false;
+            rpdropdown3.Enabled = false;
+            rpdropdown4.Enabled = false;
+
+            rpdropdown.DropDownStyle = ComboBoxStyle.DropDownList;
+            rpdropdown2.DropDownStyle = ComboBoxStyle.DropDownList;
+            rpdropdown3.DropDownStyle = ComboBoxStyle.DropDownList;
+            rpdropdown4.DropDownStyle = ComboBoxStyle.DropDownList;
+
+            streamurl.Enabled = false;
             #endregion
 
-            rpdropdown.Items.AddRange(richpresencepresets);
-            rpdropdown.SelectedIndex = rpdropdown.FindString("Listening to");
+            rpdropdown.DataSource = Enum.GetValues(typeof(ActivityType));
+            rpdropdown2.DataSource = Enum.GetValues(typeof(ActivityType));
+            rpdropdown3.DataSource = Enum.GetValues(typeof(ActivityType));
+            rpdropdown4.DataSource = Enum.GetValues(typeof(ActivityType));
         }
 
         private async void connect_btn_Click(object sender, EventArgs e)
@@ -65,25 +77,30 @@ namespace prawnbotWF
                     await RegisterCommandsAsync();
 
                     await Client.LoginAsync(TokenType.Bot, token_tb.Text);
-                    token_tb.Enabled = false;
                     await Client.StartAsync();
+                    await Client.SetStatusAsync(UserStatus.Idle);
+
+                    token_tb.Enabled = false;
 
                     rpbutton.Enabled = true;
-                    rpdropdown.Enabled = true;
                     rptextbox.Enabled = true;
+                    rpdropdown.Enabled = true;
+                    multirp.Enabled = true;
+                    streamurl.Enabled = true;
+
                     connect_btn.Enabled = false;
                     disconnectbtn.Enabled = true;
                 }
                 catch (Exception Ex)
                 {
-                    consoleoutput.AppendText($"Error occured while connecting to the bot: \n{Ex.Message}\n");
+                    await Client_Log(new LogMessage(LogSeverity.Error, "Connecting the bot", $"Error occured while connecting to the bot: \n{Ex.Message}"));
                 }
 
                 await Task.Delay(3000);
             }
             else
             {
-                consoleoutput.AppendText("No Token provided! \n");
+                await Client_Log(new LogMessage(LogSeverity.Info, "Connecting the bot", "No token given"));
             }
         }
 
@@ -143,37 +160,67 @@ namespace prawnbotWF
         {
             try
             {
-                if (richpresencepresets.Contains(rpdropdown.Text) && !string.IsNullOrWhiteSpace(rpdropdown.Text))
+                while (multirp.Checked)
                 {
-                    switch (rpdropdown.Text)
-                    {
-                        case "Listening to":
-                            await Client.SetGameAsync(rptextbox.Text, null, ActivityType.Listening);
-                            break;
-                        case "Playing":
-                            await Client.SetGameAsync(rptextbox.Text, null, ActivityType.Playing);
-                            break;
-                        case "Watching":
-                            await Client.SetGameAsync(rptextbox.Text, null, ActivityType.Watching);
-                            break;
-                        case "Streaming":
-                            await Client.SetGameAsync(rptextbox.Text, null, ActivityType.Streaming);
-                            break;
-                        default:
-                            break;
-                    }
+                    await Client.SetGameAsync(rptextbox.Text, streamurl.Text, (ActivityType)rpdropdown.SelectedItem);
+                    Thread.Sleep(3000);
+                    await Client.SetGameAsync(rptextbox2.Text, streamurl.Text, (ActivityType)rpdropdown2.SelectedItem);
+                    Thread.Sleep(3000);
+                    await Client.SetGameAsync(rptextbox3.Text, streamurl.Text, (ActivityType)rpdropdown3.SelectedItem);
+                    Thread.Sleep(3000);
+                    await Client.SetGameAsync(rptextbox4.Text, streamurl.Text, (ActivityType)rpdropdown4.SelectedItem);
+                    Thread.Sleep(3000);
                 }
+
+                await Client.SetGameAsync(rptextbox.Text, streamurl.Text, (ActivityType)rpdropdown.SelectedItem);
             }
             catch (Exception Ex)
             {
-                consoleoutput.AppendText($"Error occured while updating the bot's rich presence: \n{Ex.Message}\n");
-                throw;
+                await Client_Log(new LogMessage(LogSeverity.Error, "Rich Presence", $"Error occured while updating the bot's rich presence: \n{Ex.Message}"));
             }
         }
 
         private async void disconnectbtn_Click(object sender, EventArgs e)
         {
             await Client.LogoutAsync();
+
+            rptextbox.Enabled = false;
+            rpdropdown.Enabled = false;
+
+            if (multirp.Checked)
+            {
+                rptextbox2.Enabled = false;
+                rptextbox3.Enabled = false;
+                rptextbox4.Enabled = false;
+
+                rpdropdown2.Enabled = false;
+                rpdropdown3.Enabled = false;
+                rpdropdown4.Enabled = false;
+
+                multirp.Checked = false;
+            }
+
+            multirp.Enabled = false;
+
+            connect_btn.Enabled = true;
+            token_tb.Enabled = true;
+        }
+
+        private void multirp_CheckedChanged(object sender, EventArgs e)
+        {
+            bool checkedStatus = multirp.Checked;
+
+            rptextbox2.Enabled = checkedStatus;
+            rptextbox3.Enabled = checkedStatus;
+            rptextbox4.Enabled = checkedStatus;
+
+            rptextbox2.Clear();
+            rptextbox3.Clear();
+            rptextbox4.Clear();
+
+            rpdropdown2.Enabled = checkedStatus;
+            rpdropdown3.Enabled = checkedStatus;
+            rpdropdown4.Enabled = checkedStatus;
         }
     }
 }
