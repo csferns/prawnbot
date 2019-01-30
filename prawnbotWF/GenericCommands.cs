@@ -43,7 +43,7 @@ namespace prawnbotWF
                 .WithColor(Color.Blue)
                 .WithDescription(
                 $"The default channel is: {Context.Guild.DefaultChannel} \n" +
-                $"The server was created on {Context.Guild.CreatedAt} \n" +
+                $"The server was created on {Context.Guild.CreatedAt.LocalDateTime} \n" +
                 $"The server currently has {Context.Guild.MemberCount} members \n" +
                 $"The current AFK Channel is {Context.Guild.AFKChannel} with a timeout of {Context.Guild.AFKTimeout}")
                 .WithCurrentTimestamp();
