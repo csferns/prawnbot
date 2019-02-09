@@ -124,6 +124,9 @@ namespace prawnbotWF
                 SocketCommandContext context = new SocketCommandContext(Client, message);
 
                 IResult result = await Commands.ExecuteAsync(context, argPos, Services);
+
+                if (!result.IsSuccess)
+                    await Client_Log(new LogMessage(LogSeverity.Error, "Commands", result.ErrorReason));
             }
         }
 
