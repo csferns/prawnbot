@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Color = Discord.Color;
@@ -22,8 +21,16 @@ namespace prawnbotWF
         public DiscordBot()
         {
             InitializeComponent();
-            
-            #region Disabled form components
+            DisableComponents();
+            DropdownComponents();
+
+            delaytime.Value = 1;
+            delaytime.Minimum = -1;
+            delaytime.Maximum = 10;
+        }
+
+        public void DisableComponents()
+        {
             disconnectbtn.Enabled = false;
 
             rpbutton.Enabled = false;
@@ -33,75 +40,39 @@ namespace prawnbotWF
             rptextbox3.Enabled = false;
             rptextbox4.Enabled = false;
 
-            multirp.Enabled = false;
             rpdropdown.Enabled = false;
             rpdropdown2.Enabled = false;
             rpdropdown3.Enabled = false;
             rpdropdown4.Enabled = false;
 
+            multirp.Checked = false;
+
+            multirp.Enabled = false;
+
+            streamurl.Enabled = false;
+            delaytime.Enabled = false;
+
+            statusdropdown.Enabled = false;
+            updatestatusbutton.Enabled = false;
+        }
+
+        public void DropdownComponents()
+        {
+            #region Rich presence dropdowns
             rpdropdown.DropDownStyle = ComboBoxStyle.DropDownList;
             rpdropdown2.DropDownStyle = ComboBoxStyle.DropDownList;
             rpdropdown3.DropDownStyle = ComboBoxStyle.DropDownList;
             rpdropdown4.DropDownStyle = ComboBoxStyle.DropDownList;
 
-            streamurl.Enabled = false;
-            #endregion
-
             rpdropdown.DataSource = Enum.GetValues(typeof(ActivityType));
             rpdropdown2.DataSource = Enum.GetValues(typeof(ActivityType));
             rpdropdown3.DataSource = Enum.GetValues(typeof(ActivityType));
             rpdropdown4.DataSource = Enum.GetValues(typeof(ActivityType));
-        }
+            #endregion
 
-        private async void connect_btn_Click(object sender, EventArgs e)
-        {
-            if (!string.IsNullOrWhiteSpace(token_tb.Text))
-            {
-                Client = new DiscordSocketClient(new DiscordSocketConfig()
-                {
-                    LogLevel = LogSeverity.Verbose
-                });
-                Commands = new CommandService();
-                Services = new ServiceCollection()
-                    .AddSingleton(Client)
-                    .AddSingleton(Commands)
-                    .BuildServiceProvider();
-
-                Client.Log += Client_Log;
-                Client.UserJoined += AnnounceUserJoined;
-                Client.UserBanned += AnnounceUserBan;
-                Client.MessageReceived += HandleCommandAsync;
-
-                try
-                {
-                    await RegisterCommandsAsync();
-
-                    await Client.LoginAsync(TokenType.Bot, token_tb.Text);
-                    await Client.StartAsync();
-                    await Client.SetStatusAsync(UserStatus.Idle);
-
-                    token_tb.Enabled = false;
-
-                    rpbutton.Enabled = true;
-                    rptextbox.Enabled = true;
-                    rpdropdown.Enabled = true;
-                    multirp.Enabled = true;
-                    streamurl.Enabled = true;
-
-                    connect_btn.Enabled = false;
-                    disconnectbtn.Enabled = true;
-                }
-                catch (Exception Ex)
-                {
-                    await Client_Log(new LogMessage(LogSeverity.Error, "Connecting the bot", $"Error occured while connecting to the bot: \n{Ex.Message}"));
-                }
-
-                await Task.Delay(3000);
-            }
-            else
-            {
-                await Client_Log(new LogMessage(LogSeverity.Info, "Connecting the bot", "No token given"));
-            }
+            statusdropdown.DropDownStyle = ComboBoxStyle.DropDownList;
+            statusdropdown.DataSource = Enum.GetValues(typeof(UserStatus));
+            statusdropdown.SelectedIndex = 2;
         }
 
         private async Task AnnounceUserJoined(SocketGuildUser user)
@@ -153,26 +124,102 @@ namespace prawnbotWF
                 SocketCommandContext context = new SocketCommandContext(Client, message);
 
                 IResult result = await Commands.ExecuteAsync(context, argPos, Services);
+
+                if (!result.IsSuccess)
+                    await Client_Log(new LogMessage(LogSeverity.Error, "Commands", result.ErrorReason));
+            }
+        }
+
+        #region Event listeners
+        private async void connect_btn_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(token_tb.Text))
+            {
+                Client = new DiscordSocketClient(new DiscordSocketConfig()
+                {
+                    LogLevel = LogSeverity.Verbose
+                });
+                Commands = new CommandService();
+                Services = new ServiceCollection()
+                    .AddSingleton(Client)
+                    .AddSingleton(Commands)
+                    .BuildServiceProvider();
+
+                Client.Log += Client_Log;
+                Client.UserJoined += AnnounceUserJoined;
+                Client.UserBanned += AnnounceUserBan;
+                Client.MessageReceived += HandleCommandAsync;
+
+                try
+                {
+                    await RegisterCommandsAsync();
+
+                    await Client.LoginAsync(TokenType.Bot, token_tb.Text);
+                    await Client.StartAsync();
+
+                    statusdropdown.Enabled = true;
+                    updatestatusbutton.Enabled = true;
+                    await Client.SetStatusAsync((UserStatus)statusdropdown.SelectedItem);
+
+                    token_tb.Enabled = false;
+
+                    rpbutton.Enabled = true;
+                    rptextbox.Enabled = true;
+                    rpdropdown.Enabled = true;
+                    multirp.Enabled = true;
+                    streamurl.Enabled = true;
+
+                    connect_btn.Enabled = false;
+                    disconnectbtn.Enabled = true;
+                }
+                catch (Exception Ex)
+                {
+                    await Client_Log(new LogMessage(LogSeverity.Error, "Connecting the bot", $"Error occured while connecting to the bot: \n{Ex.Message}"));
+                }
+
+                await Task.Delay(3000);
+            }
+            else
+            {
+                await Client_Log(new LogMessage(LogSeverity.Info, "Connecting the bot", "No token given"));
             }
         }
 
         private async void rpbutton_Click(object sender, EventArgs e)
         {
+            int delay = (int)delaytime.Value * 1000;
+
             try
             {
+                List<ComboBox> rpdropdowns = new List<ComboBox>
+                {
+                    rpdropdown,
+                    rpdropdown2,
+                    rpdropdown3,
+                    rpdropdown4
+                };
+
+                List<TextBox> rptextboxes = new List<TextBox>
+                {
+                    rptextbox,
+                    rptextbox2,
+                    rptextbox3,
+                    rptextbox4
+                };
+
+                var rp = rpdropdowns.Zip(rptextboxes, (dd, tb) => new { Dropdown = dd, Textbox = tb });
+
                 while (multirp.Checked)
                 {
-                    await Client.SetGameAsync(rptextbox.Text, streamurl.Text, (ActivityType)rpdropdown.SelectedItem);
-                    Thread.Sleep(3000);
-                    await Client.SetGameAsync(rptextbox2.Text, streamurl.Text, (ActivityType)rpdropdown2.SelectedItem);
-                    Thread.Sleep(3000);
-                    await Client.SetGameAsync(rptextbox3.Text, streamurl.Text, (ActivityType)rpdropdown3.SelectedItem);
-                    Thread.Sleep(3000);
-                    await Client.SetGameAsync(rptextbox4.Text, streamurl.Text, (ActivityType)rpdropdown4.SelectedItem);
-                    Thread.Sleep(3000);
+                    foreach (var item in rp)
+                    {
+                        await Task.Delay(delay / 2);
+                        await Client.SetGameAsync(item.Textbox.Text ?? null, (ActivityType)item.Dropdown.SelectedItem == ActivityType.Streaming ? streamurl.Text : null, (ActivityType)item.Dropdown.SelectedItem);
+                        await Task.Delay(delay / 2);
+                    }
                 }
 
-                await Client.SetGameAsync(rptextbox.Text, streamurl.Text, (ActivityType)rpdropdown.SelectedItem);
+                await Client.SetGameAsync(rptextbox.Text ?? null, (ActivityType)rpdropdown.SelectedItem == ActivityType.Streaming ? streamurl.Text : null, (ActivityType)rpdropdown.SelectedItem);
             }
             catch (Exception Ex)
             {
@@ -184,23 +231,7 @@ namespace prawnbotWF
         {
             await Client.LogoutAsync();
 
-            rptextbox.Enabled = false;
-            rpdropdown.Enabled = false;
-
-            if (multirp.Checked)
-            {
-                rptextbox2.Enabled = false;
-                rptextbox3.Enabled = false;
-                rptextbox4.Enabled = false;
-
-                rpdropdown2.Enabled = false;
-                rpdropdown3.Enabled = false;
-                rpdropdown4.Enabled = false;
-
-                multirp.Checked = false;
-            }
-
-            multirp.Enabled = false;
+            DisableComponents();
 
             connect_btn.Enabled = true;
             token_tb.Enabled = true;
@@ -221,6 +252,14 @@ namespace prawnbotWF
             rpdropdown2.Enabled = checkedStatus;
             rpdropdown3.Enabled = checkedStatus;
             rpdropdown4.Enabled = checkedStatus;
+
+            delaytime.Enabled = checkedStatus;
         }
+
+        private async void updatestatusbutton_Click(object sender, EventArgs e)
+        {
+            await Client.SetStatusAsync((UserStatus)statusdropdown.SelectedItem);
+        }
+        #endregion
     }
 }

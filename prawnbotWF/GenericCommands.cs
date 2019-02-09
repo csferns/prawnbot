@@ -45,7 +45,9 @@ namespace prawnbotWF
                 $"The default channel is: {Context.Guild.DefaultChannel} \n" +
                 $"The server was created on {Context.Guild.CreatedAt.LocalDateTime} \n" +
                 $"The server currently has {Context.Guild.MemberCount} members \n" +
-                $"The current AFK Channel is {Context.Guild.AFKChannel} with a timeout of {Context.Guild.AFKTimeout}")
+                $"The current AFK Channel is {Context.Guild.AFKChannel} with a timeout of {Context.Guild.AFKTimeout}\n " +
+                $"There are currently {Context.Guild.Channels.Count} channels in the server\n " +
+                $"The server owner is {Context.Guild.Owner}")
                 .WithCurrentTimestamp();
 
             await ReplyAsync("", false, builder.Build());
@@ -94,8 +96,7 @@ namespace prawnbotWF
         {
             if (copypastaName != "")
             {
-                string copypasta = "";
-
+                string copypasta;
                 switch (copypastaName)
                 {
                     default:
@@ -178,7 +179,14 @@ namespace prawnbotWF
         [Command("userjoined")]
         public async Task GetUserJoined(SocketGuildUser user)
         {
-            await ReplyAsync($"User {user.Mention} joined at {user.JoinedAt}");
+            if (user != null)
+            {
+                await ReplyAsync($"User {user.Mention} joined at {user.JoinedAt}");
+            }
+            else
+            {
+                await ReplyAsync("No user passed in!");
+            }
         }
 
         [Command("usercreated")]

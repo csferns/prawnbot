@@ -52,6 +52,12 @@
             this.rptextbox4 = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
             this.streamurl = new System.Windows.Forms.TextBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.delaytime = new System.Windows.Forms.NumericUpDown();
+            this.statusdropdown = new System.Windows.Forms.ComboBox();
+            this.statuslabel = new System.Windows.Forms.Label();
+            this.updatestatusbutton = new System.Windows.Forms.Button();
+            ((System.ComponentModel.ISupportInitialize)(this.delaytime)).BeginInit();
             this.SuspendLayout();
             // 
             // label1
@@ -67,13 +73,13 @@
             // 
             this.token_tb.Location = new System.Drawing.Point(88, 12);
             this.token_tb.Name = "token_tb";
-            this.token_tb.Size = new System.Drawing.Size(471, 20);
+            this.token_tb.Size = new System.Drawing.Size(719, 20);
             this.token_tb.TabIndex = 1;
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(12, 373);
+            this.label2.Location = new System.Drawing.Point(10, 373);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(22, 13);
             this.label2.TabIndex = 2;
@@ -107,7 +113,7 @@
             // 
             this.consoleoutput.Location = new System.Drawing.Point(88, 38);
             this.consoleoutput.Name = "consoleoutput";
-            this.consoleoutput.Size = new System.Drawing.Size(471, 262);
+            this.consoleoutput.Size = new System.Drawing.Size(719, 279);
             this.consoleoutput.TabIndex = 6;
             this.consoleoutput.Text = "";
             // 
@@ -116,9 +122,9 @@
             this.connect_btn.BackColor = System.Drawing.Color.LightGreen;
             this.connect_btn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.connect_btn.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.connect_btn.Location = new System.Drawing.Point(88, 306);
+            this.connect_btn.Location = new System.Drawing.Point(582, 393);
             this.connect_btn.Name = "connect_btn";
-            this.connect_btn.Size = new System.Drawing.Size(240, 34);
+            this.connect_btn.Size = new System.Drawing.Size(225, 34);
             this.connect_btn.TabIndex = 7;
             this.connect_btn.Text = "Connect";
             this.connect_btn.UseVisualStyleBackColor = false;
@@ -126,9 +132,9 @@
             // 
             // rpbutton
             // 
-            this.rpbutton.BackColor = System.Drawing.Color.MediumTurquoise;
+            this.rpbutton.BackColor = System.Drawing.Color.FloralWhite;
             this.rpbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.rpbutton.Location = new System.Drawing.Point(334, 512);
+            this.rpbutton.Location = new System.Drawing.Point(582, 472);
             this.rpbutton.Name = "rpbutton";
             this.rpbutton.Size = new System.Drawing.Size(225, 34);
             this.rpbutton.TabIndex = 8;
@@ -141,7 +147,7 @@
             this.disconnectbtn.BackColor = System.Drawing.Color.OrangeRed;
             this.disconnectbtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.disconnectbtn.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.disconnectbtn.Location = new System.Drawing.Point(334, 306);
+            this.disconnectbtn.Location = new System.Drawing.Point(582, 433);
             this.disconnectbtn.Name = "disconnectbtn";
             this.disconnectbtn.Size = new System.Drawing.Size(225, 34);
             this.disconnectbtn.TabIndex = 9;
@@ -257,11 +263,61 @@
             this.streamurl.Size = new System.Drawing.Size(471, 20);
             this.streamurl.TabIndex = 19;
             // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(10, 512);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(56, 13);
+            this.label5.TabIndex = 20;
+            this.label5.Text = "Delay time";
+            // 
+            // delaytime
+            // 
+            this.delaytime.Location = new System.Drawing.Point(88, 512);
+            this.delaytime.Name = "delaytime";
+            this.delaytime.Size = new System.Drawing.Size(120, 20);
+            this.delaytime.TabIndex = 21;
+            // 
+            // statusdropdown
+            // 
+            this.statusdropdown.FormattingEnabled = true;
+            this.statusdropdown.Location = new System.Drawing.Point(88, 323);
+            this.statusdropdown.Name = "statusdropdown";
+            this.statusdropdown.Size = new System.Drawing.Size(121, 21);
+            this.statusdropdown.TabIndex = 22;
+            // 
+            // statuslabel
+            // 
+            this.statuslabel.AutoSize = true;
+            this.statuslabel.Location = new System.Drawing.Point(10, 326);
+            this.statuslabel.Name = "statuslabel";
+            this.statuslabel.Size = new System.Drawing.Size(37, 13);
+            this.statuslabel.TabIndex = 23;
+            this.statuslabel.Text = "Status";
+            // 
+            // updatestatusbutton
+            // 
+            this.updatestatusbutton.BackColor = System.Drawing.Color.FloralWhite;
+            this.updatestatusbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.updatestatusbutton.Location = new System.Drawing.Point(582, 513);
+            this.updatestatusbutton.Name = "updatestatusbutton";
+            this.updatestatusbutton.Size = new System.Drawing.Size(225, 33);
+            this.updatestatusbutton.TabIndex = 24;
+            this.updatestatusbutton.Text = "Update Status";
+            this.updatestatusbutton.UseVisualStyleBackColor = false;
+            this.updatestatusbutton.Click += new System.EventHandler(this.updatestatusbutton_Click);
+            // 
             // DiscordBot
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(569, 558);
+            this.ClientSize = new System.Drawing.Size(819, 558);
+            this.Controls.Add(this.updatestatusbutton);
+            this.Controls.Add(this.statuslabel);
+            this.Controls.Add(this.statusdropdown);
+            this.Controls.Add(this.delaytime);
+            this.Controls.Add(this.label5);
             this.Controls.Add(this.streamurl);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label7);
@@ -290,6 +346,7 @@
             this.MaximizeBox = false;
             this.Name = "DiscordBot";
             this.Text = "Discord Bot";
+            ((System.ComponentModel.ISupportInitialize)(this.delaytime)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -320,6 +377,11 @@
         private System.Windows.Forms.TextBox rptextbox4;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox streamurl;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.NumericUpDown delaytime;
+        private System.Windows.Forms.ComboBox statusdropdown;
+        private System.Windows.Forms.Label statuslabel;
+        private System.Windows.Forms.Button updatestatusbutton;
     }
 }
 
