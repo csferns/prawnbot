@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Audio;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,7 @@ namespace prawnbotWF
         DiscordSocketClient Client;
         CommandService Commands;
         IServiceProvider Services;
+        AudioService Audio;
 
         public DiscordBot()
         {
@@ -53,7 +55,7 @@ namespace prawnbotWF
             delaytime.Enabled = false;
 
             statusdropdown.Enabled = false;
-            updatestatusbutton.Enabled = false;
+            statusbutton.Enabled = false;
         }
 
         public void DropdownComponents()
@@ -72,7 +74,7 @@ namespace prawnbotWF
 
             statusdropdown.DropDownStyle = ComboBoxStyle.DropDownList;
             statusdropdown.DataSource = Enum.GetValues(typeof(UserStatus));
-            statusdropdown.SelectedIndex = 2;
+            statusdropdown.SelectedIndex = 1;
         }
 
         private async Task AnnounceUserJoined(SocketGuildUser user)
@@ -122,11 +124,17 @@ namespace prawnbotWF
             if (message.HasStringPrefix("p!", ref argPos) || message.HasMentionPrefix(Client.CurrentUser, ref argPos))
             {
                 SocketCommandContext context = new SocketCommandContext(Client, message);
+                if (context.Guild != null)
+                {
+                    IResult result = await Commands.ExecuteAsync(context, argPos, Services);
 
-                IResult result = await Commands.ExecuteAsync(context, argPos, Services);
-
-                if (!result.IsSuccess)
-                    await Client_Log(new LogMessage(LogSeverity.Error, "Commands", result.ErrorReason));
+                    if (!result.IsSuccess)
+                        await Client_Log(new LogMessage(LogSeverity.Error, "Commands", result.ErrorReason));
+                }
+                else
+                {
+                    await context.Channel.SendMessageAsync("No channel available!");
+                }
             }
         }
 
@@ -140,9 +148,11 @@ namespace prawnbotWF
                     LogLevel = LogSeverity.Verbose
                 });
                 Commands = new CommandService();
+                Audio = new AudioService();
                 Services = new ServiceCollection()
                     .AddSingleton(Client)
                     .AddSingleton(Commands)
+                    .AddSingleton(Audio)
                     .BuildServiceProvider();
 
                 Client.Log += Client_Log;
@@ -158,7 +168,7 @@ namespace prawnbotWF
                     await Client.StartAsync();
 
                     statusdropdown.Enabled = true;
-                    updatestatusbutton.Enabled = true;
+                    statusbutton.Enabled = true;
                     await Client.SetStatusAsync((UserStatus)statusdropdown.SelectedItem);
 
                     token_tb.Enabled = false;
@@ -177,7 +187,7 @@ namespace prawnbotWF
                     await Client_Log(new LogMessage(LogSeverity.Error, "Connecting the bot", $"Error occured while connecting to the bot: \n{Ex.Message}"));
                 }
 
-                await Task.Delay(3000);
+                await Task.Delay(-1);
             }
             else
             {
@@ -256,10 +266,15 @@ namespace prawnbotWF
             delaytime.Enabled = checkedStatus;
         }
 
-        private async void updatestatusbutton_Click(object sender, EventArgs e)
+        //private async void Statusdropdown_SelectedIndexChanged(object sender, EventArgs e)
+        //{
+        //    
+        //}
+        #endregion
+
+        private async void Statusbutton_Click(object sender, EventArgs e)
         {
             await Client.SetStatusAsync((UserStatus)statusdropdown.SelectedItem);
         }
-        #endregion
     }
 }

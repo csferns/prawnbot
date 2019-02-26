@@ -26,7 +26,9 @@ namespace prawnbotWF
                 .WithDescription("All commands follow the structure p!(command)")
                 .AddField("Daddy", "Sends a message directed at the user calling them the bot's daddy");
 
-            await ReplyAsync("", false, builder.Build());
+            await Context.User.SendMessageAsync("", false, builder.Build());
+            await ReplyAsync($"{Context.User.Mention}: pm'd with command details!");
+
         }
 
         /// <summary>
@@ -118,81 +120,34 @@ namespace prawnbotWF
                 await ReplyAsync($"{Context.User.Mention} no argument passed in");
         }
 
-        /// <summary>
-        /// Join the channel
-        /// </summary>
-        /// <param name="channel"></param>
-        /// <returns></returns>
-        [Command("asmr", RunMode = RunMode.Async)]
-        public async Task AsmrAsync(IVoiceChannel channel = null)
-        {
-            channel = channel ?? (Context.User as IGuildUser)?.VoiceChannel;
-            if (channel is null) { await Context.Channel.SendMessageAsync("User must be in a voice channel, or a voice channel must be passed as an argument."); return; }
-            else { await ReplyAsync("Joining channel"); }
-
-            IAudioClient audioClient = await channel.ConnectAsync();
-            DiscordSocketClient client = new DiscordSocketClient();
-
-            string filePath = "Habits.mp3";
-            //string filePath = @"C:\Users\Administrator\Documents\PrawnBotMusic\All star but they don't stop coming.mp3";
-
-            await SendAsync(audioClient, filePath);
-        }
-
-        private Process CreateStream(string path)
-        {
-            return Process.Start(new ProcessStartInfo
-            {
-                FileName = "ffmpeg",
-                Arguments = $"-hide_banner -loglevel panic -i \"{path}\" -ac 2 -f s16le -ar 48000 pipe:1",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-            });
-        }
-
-        private async Task SendAsync(IAudioClient client, string path)
-        {
-            // Create FFmpeg using the previous example
-            using (Process ffmpeg = CreateStream(path))
-            using (Stream output = ffmpeg.StandardOutput.BaseStream)
-            using (AudioOutStream discord = client.CreatePCMStream(AudioApplication.Mixed))
-            {
-                try { await output.CopyToAsync(discord); }
-                finally { await discord.FlushAsync(); }
-            }
-        }
-
-        /// <summary>
-        /// Leave the channel
-        /// </summary>
-        /// <param name="channel"></param>
-        /// <returns></returns>
-        [Command("leave")]
-        public async Task LeaveChannelAsync(IVoiceChannel channel = null)
-        {
-            channel = channel ?? (Context.User as IGuildUser)?.VoiceChannel;
-            if (channel is null) { await Context.Channel.SendMessageAsync("Bot is not in a voice channel"); return; }
-
-            await channel.DisconnectAsync();
-        }
-
         [Command("userjoined")]
         public async Task GetUserJoined(SocketGuildUser user)
         {
-            if (user != null)
-            {
-                await ReplyAsync($"User {user.Mention} joined at {user.JoinedAt}");
-            }
-            else
-            {
-                await ReplyAsync("No user passed in!");
-            }
+            if (user != null) await ReplyAsync($"User {user.Mention} joined at {user.JoinedAt}");
+            else await ReplyAsync("No user passed in!");
         }
 
         [Command("usercreated")]
         public async Task GetUserCreated(SocketGuildUser user)
         {
-            await ReplyAsync($"User {user.Mention} joined at {user.CreatedAt}");
+            await ReplyAsync($"User {user.Mention} was created on {user.CreatedAt.ToLocalTime()}");
         }
+
+        [Command("current-region")]
+        public async Task CurrentRegionAsync()
+        {
+            EmbedBuilder builder = new EmbedBuilder();
+            builder.WithTitle($"The server is currently located in: {Context.Guild.VoiceRegionId.ToString()}")
+                .WithColor(Color.Red)
+                .WithDescription($"The current regions are: \n{string.Join("\n", Context.Client.VoiceRegions)}");
+
+            await ReplyAsync("", false, builder.Build());
+        }
+
+        //[Command("set-region")]
+        //public async Task SetRegionAsync(IVoiceRegion region = null)
+        //{
+        //    await Context.Guild.
+        //}
     }
 }

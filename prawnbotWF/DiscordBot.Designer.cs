@@ -56,7 +56,7 @@
             this.delaytime = new System.Windows.Forms.NumericUpDown();
             this.statusdropdown = new System.Windows.Forms.ComboBox();
             this.statuslabel = new System.Windows.Forms.Label();
-            this.updatestatusbutton = new System.Windows.Forms.Button();
+            this.statusbutton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.delaytime)).BeginInit();
             this.SuspendLayout();
             // 
@@ -132,7 +132,7 @@
             // 
             // rpbutton
             // 
-            this.rpbutton.BackColor = System.Drawing.Color.FloralWhite;
+            this.rpbutton.BackColor = System.Drawing.Color.Gray;
             this.rpbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.rpbutton.Location = new System.Drawing.Point(582, 472);
             this.rpbutton.Name = "rpbutton";
@@ -144,7 +144,7 @@
             // 
             // disconnectbtn
             // 
-            this.disconnectbtn.BackColor = System.Drawing.Color.OrangeRed;
+            this.disconnectbtn.BackColor = System.Drawing.Color.IndianRed;
             this.disconnectbtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.disconnectbtn.ForeColor = System.Drawing.SystemColors.ControlText;
             this.disconnectbtn.Location = new System.Drawing.Point(582, 433);
@@ -296,24 +296,24 @@
             this.statuslabel.TabIndex = 23;
             this.statuslabel.Text = "Status";
             // 
-            // updatestatusbutton
+            // statusbutton
             // 
-            this.updatestatusbutton.BackColor = System.Drawing.Color.FloralWhite;
-            this.updatestatusbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.updatestatusbutton.Location = new System.Drawing.Point(582, 513);
-            this.updatestatusbutton.Name = "updatestatusbutton";
-            this.updatestatusbutton.Size = new System.Drawing.Size(225, 33);
-            this.updatestatusbutton.TabIndex = 24;
-            this.updatestatusbutton.Text = "Update Status";
-            this.updatestatusbutton.UseVisualStyleBackColor = false;
-            this.updatestatusbutton.Click += new System.EventHandler(this.updatestatusbutton_Click);
+            this.statusbutton.BackColor = System.Drawing.Color.Gray;
+            this.statusbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.statusbutton.Location = new System.Drawing.Point(582, 512);
+            this.statusbutton.Name = "statusbutton";
+            this.statusbutton.Size = new System.Drawing.Size(225, 34);
+            this.statusbutton.TabIndex = 24;
+            this.statusbutton.Text = "Change status";
+            this.statusbutton.UseVisualStyleBackColor = false;
+            this.statusbutton.Click += new System.EventHandler(this.Statusbutton_Click);
             // 
             // DiscordBot
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(819, 558);
-            this.Controls.Add(this.updatestatusbutton);
+            this.Controls.Add(this.statusbutton);
             this.Controls.Add(this.statuslabel);
             this.Controls.Add(this.statusdropdown);
             this.Controls.Add(this.delaytime);
@@ -381,7 +381,7 @@
         private System.Windows.Forms.NumericUpDown delaytime;
         private System.Windows.Forms.ComboBox statusdropdown;
         private System.Windows.Forms.Label statuslabel;
-        private System.Windows.Forms.Button updatestatusbutton;
+        private System.Windows.Forms.Button statusbutton;
     }
 }
 
