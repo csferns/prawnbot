@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28407.52
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.489
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "prawnbot", "prawnbotWF\prawnbot.csproj", "{DB648721-4BD5-442B-8099-5BAC120166B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "prawnbot_web", "prawnbot_web\prawnbot_web.csproj", "{3DE1B4F6-5A71-40A4-AA75-F4862E354307}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,6 +20,12 @@ Global
 		{DB648721-4BD5-442B-8099-5BAC120166B8}.EC2|Any CPU.Build.0 = EC2|Any CPU
 		{DB648721-4BD5-442B-8099-5BAC120166B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DB648721-4BD5-442B-8099-5BAC120166B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3DE1B4F6-5A71-40A4-AA75-F4862E354307}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DE1B4F6-5A71-40A4-AA75-F4862E354307}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DE1B4F6-5A71-40A4-AA75-F4862E354307}.EC2|Any CPU.ActiveCfg = Release|Any CPU
+		{3DE1B4F6-5A71-40A4-AA75-F4862E354307}.EC2|Any CPU.Build.0 = Release|Any CPU
+		{3DE1B4F6-5A71-40A4-AA75-F4862E354307}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DE1B4F6-5A71-40A4-AA75-F4862E354307}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

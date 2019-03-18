@@ -1,18 +1,16 @@
 ﻿using Discord;
 using Discord.Commands;
+using System;
 using System.Threading.Tasks;
 
 namespace prawnbotWF
 {
     public class Photos : ModuleBase<SocketCommandContext>
     {
-        public string filepath = @"C:\Users\Administrator\Pictures\prawnbot";
+        private string filepath = $"{Environment.CurrentDirectory}\\Photos";
 
         [Command("one last ride")]
-        public async Task OneLastRideAsync()
-        {
-            await Context.Channel.SendFileAsync($@"{filepath}\one_last_ride.png", "One last ride?");
-        }
+        public async Task OneLastRideAsync() => await Context.Channel.SendFileAsync($@"{filepath}\one_last_ride.png", "One last ride?");
 
         [Command("taps head")]
         public async Task TapsHeadAsync()
@@ -24,21 +22,12 @@ namespace prawnbotWF
         }
 
         [Command("cam murray")]
-        public async Task CamMurrayAsync()
-        {
-            await Context.Channel.SendFileAsync($@"{filepath}\cam_murray.png");
-        }
+        public async Task CamMurrayAsync() => await Context.Channel.SendFileAsync($@"{filepath}\cam_murray.png");
 
         [Command("pipe down")]
-        public async Task RetaliateAsync()
-        {
-            await Context.Channel.SendFileAsync($@"{filepath}\pipedown.gif");
-        }
+        public async Task RetaliateAsync() => await Context.Channel.SendFileAsync($@"{filepath}\pipedown.gif");
 
         [Command("gold elims")]
-        public async Task GoldElimsAsync()
-        {
-            await Context.Channel.SendFileAsync($@"{filepath}\top_elims.png");
-        }
+        public async Task GoldElimsAsync() => await Context.Channel.SendFileAsync($@"{filepath}\top_elims.png");
     }
 }
