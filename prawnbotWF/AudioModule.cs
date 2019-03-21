@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Audio;
 using Discord.Commands;
 using System;
 using System.Collections.Generic;
@@ -18,9 +19,18 @@ namespace prawnbotWF
         }
 
         [Command("join", RunMode = RunMode.Async)]
-        public async Task JoinCmd()
+        public async Task JoinCmd(IVoiceChannel channel = null)
         {
-            await _service.JoinAudio(Context.Guild, (Context.User as IVoiceState).VoiceChannel);
+            channel = channel ?? (Context.User as IGuildUser)?.VoiceChannel;
+            if (channel == null) { await Context.Channel.SendMessageAsync("User must be in a voice channel, or a voice channel must be passed as an argument."); return; }
+
+            var audioClient = await channel.ConnectAsync();
+            var stream = audioClient.CreatePCMStream(AudioApplication.Music);
+
+            await _service.CreateStream(stream, $"{Environment.CurrentDirectory}\\Audio\\Habits.mp3");
+
+            await stream.FlushAsync();
+            await audioClient.StopAsync();
         }
 
         [Command("leave", RunMode = RunMode.Async)]
