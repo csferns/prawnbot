@@ -29,12 +29,9 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DiscordBot));
-            this.label1 = new System.Windows.Forms.Label();
             this.token_tb = new System.Windows.Forms.TextBox();
-            this.label2 = new System.Windows.Forms.Label();
             this.rpdropdown = new System.Windows.Forms.ComboBox();
             this.rptextbox = new System.Windows.Forms.TextBox();
-            this.label3 = new System.Windows.Forms.Label();
             this.consoleoutput = new System.Windows.Forms.RichTextBox();
             this.connect_btn = new System.Windows.Forms.Button();
             this.rpbutton = new System.Windows.Forms.Button();
@@ -56,65 +53,49 @@
             this.delaytime = new System.Windows.Forms.NumericUpDown();
             this.statusdropdown = new System.Windows.Forms.ComboBox();
             this.statuslabel = new System.Windows.Forms.Label();
-            this.updatestatusbutton = new System.Windows.Forms.Button();
+            this.statusbutton = new System.Windows.Forms.Button();
+            this.rpgroup = new System.Windows.Forms.GroupBox();
+            this.controlsgroup = new System.Windows.Forms.GroupBox();
+            this.consolegroup = new System.Windows.Forms.GroupBox();
+            this.tokengroup = new System.Windows.Forms.GroupBox();
             ((System.ComponentModel.ISupportInitialize)(this.delaytime)).BeginInit();
+            this.rpgroup.SuspendLayout();
+            this.controlsgroup.SuspendLayout();
+            this.consolegroup.SuspendLayout();
+            this.tokengroup.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(10, 15);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(38, 13);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "Token";
             // 
             // token_tb
             // 
-            this.token_tb.Location = new System.Drawing.Point(88, 12);
+            this.token_tb.Location = new System.Drawing.Point(9, 14);
             this.token_tb.Name = "token_tb";
-            this.token_tb.Size = new System.Drawing.Size(719, 20);
+            this.token_tb.Size = new System.Drawing.Size(799, 20);
             this.token_tb.TabIndex = 1;
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(10, 373);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(22, 13);
-            this.label2.TabIndex = 2;
-            this.label2.Text = "RP";
             // 
             // rpdropdown
             // 
             this.rpdropdown.FormattingEnabled = true;
-            this.rpdropdown.Location = new System.Drawing.Point(88, 415);
+            this.rpdropdown.Location = new System.Drawing.Point(77, 81);
             this.rpdropdown.Name = "rpdropdown";
             this.rpdropdown.Size = new System.Drawing.Size(121, 21);
             this.rpdropdown.TabIndex = 3;
             // 
             // rptextbox
             // 
-            this.rptextbox.Location = new System.Drawing.Point(213, 416);
+            this.rptextbox.Location = new System.Drawing.Point(204, 82);
             this.rptextbox.Name = "rptextbox";
-            this.rptextbox.Size = new System.Drawing.Size(346, 20);
+            this.rptextbox.Size = new System.Drawing.Size(344, 20);
             this.rptextbox.TabIndex = 4;
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 41);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(45, 13);
-            this.label3.TabIndex = 5;
-            this.label3.Text = "Console";
             // 
             // consoleoutput
             // 
-            this.consoleoutput.Location = new System.Drawing.Point(88, 38);
+            this.consoleoutput.Location = new System.Drawing.Point(6, 19);
             this.consoleoutput.Name = "consoleoutput";
-            this.consoleoutput.Size = new System.Drawing.Size(719, 279);
+            this.consoleoutput.ReadOnly = true;
+            this.consoleoutput.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
+            this.consoleoutput.Size = new System.Drawing.Size(802, 479);
             this.consoleoutput.TabIndex = 6;
+            this.consoleoutput.TabStop = false;
             this.consoleoutput.Text = "";
             // 
             // connect_btn
@@ -122,7 +103,7 @@
             this.connect_btn.BackColor = System.Drawing.Color.LightGreen;
             this.connect_btn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.connect_btn.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.connect_btn.Location = new System.Drawing.Point(582, 393);
+            this.connect_btn.Location = new System.Drawing.Point(8, 22);
             this.connect_btn.Name = "connect_btn";
             this.connect_btn.Size = new System.Drawing.Size(225, 34);
             this.connect_btn.TabIndex = 7;
@@ -132,9 +113,9 @@
             // 
             // rpbutton
             // 
-            this.rpbutton.BackColor = System.Drawing.Color.FloralWhite;
+            this.rpbutton.BackColor = System.Drawing.Color.Gray;
             this.rpbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.rpbutton.Location = new System.Drawing.Point(582, 472);
+            this.rpbutton.Location = new System.Drawing.Point(8, 102);
             this.rpbutton.Name = "rpbutton";
             this.rpbutton.Size = new System.Drawing.Size(225, 34);
             this.rpbutton.TabIndex = 8;
@@ -144,10 +125,10 @@
             // 
             // disconnectbtn
             // 
-            this.disconnectbtn.BackColor = System.Drawing.Color.OrangeRed;
+            this.disconnectbtn.BackColor = System.Drawing.Color.IndianRed;
             this.disconnectbtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.disconnectbtn.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.disconnectbtn.Location = new System.Drawing.Point(582, 433);
+            this.disconnectbtn.Location = new System.Drawing.Point(8, 62);
             this.disconnectbtn.Name = "disconnectbtn";
             this.disconnectbtn.Size = new System.Drawing.Size(225, 34);
             this.disconnectbtn.TabIndex = 9;
@@ -158,7 +139,7 @@
             // multirp
             // 
             this.multirp.AutoSize = true;
-            this.multirp.Location = new System.Drawing.Point(88, 373);
+            this.multirp.Location = new System.Drawing.Point(373, 18);
             this.multirp.Name = "multirp";
             this.multirp.Size = new System.Drawing.Size(182, 17);
             this.multirp.TabIndex = 10;
@@ -169,7 +150,7 @@
             // rpdropdown2
             // 
             this.rpdropdown2.FormattingEnabled = true;
-            this.rpdropdown2.Location = new System.Drawing.Point(88, 437);
+            this.rpdropdown2.Location = new System.Drawing.Point(77, 108);
             this.rpdropdown2.Name = "rpdropdown2";
             this.rpdropdown2.Size = new System.Drawing.Size(121, 21);
             this.rpdropdown2.TabIndex = 11;
@@ -177,7 +158,7 @@
             // rpdropdown3
             // 
             this.rpdropdown3.FormattingEnabled = true;
-            this.rpdropdown3.Location = new System.Drawing.Point(88, 460);
+            this.rpdropdown3.Location = new System.Drawing.Point(77, 134);
             this.rpdropdown3.Name = "rpdropdown3";
             this.rpdropdown3.Size = new System.Drawing.Size(121, 21);
             this.rpdropdown3.TabIndex = 12;
@@ -185,7 +166,7 @@
             // rpdropdown4
             // 
             this.rpdropdown4.FormattingEnabled = true;
-            this.rpdropdown4.Location = new System.Drawing.Point(88, 485);
+            this.rpdropdown4.Location = new System.Drawing.Point(77, 161);
             this.rpdropdown4.Name = "rpdropdown4";
             this.rpdropdown4.Size = new System.Drawing.Size(121, 21);
             this.rpdropdown4.TabIndex = 13;
@@ -193,7 +174,7 @@
             // defaultrplabel
             // 
             this.defaultrplabel.AutoSize = true;
-            this.defaultrplabel.Location = new System.Drawing.Point(10, 418);
+            this.defaultrplabel.Location = new System.Drawing.Point(30, 84);
             this.defaultrplabel.Name = "defaultrplabel";
             this.defaultrplabel.Size = new System.Drawing.Size(41, 13);
             this.defaultrplabel.TabIndex = 14;
@@ -202,7 +183,7 @@
             // rp1label
             // 
             this.rp1label.AutoSize = true;
-            this.rp1label.Location = new System.Drawing.Point(10, 440);
+            this.rp1label.Location = new System.Drawing.Point(25, 111);
             this.rp1label.Name = "rp1label";
             this.rp1label.Size = new System.Drawing.Size(46, 13);
             this.rp1label.TabIndex = 15;
@@ -211,7 +192,7 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(10, 464);
+            this.label6.Location = new System.Drawing.Point(25, 137);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(46, 13);
             this.label6.TabIndex = 16;
@@ -220,7 +201,7 @@
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(10, 489);
+            this.label7.Location = new System.Drawing.Point(25, 164);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(46, 13);
             this.label7.TabIndex = 17;
@@ -228,29 +209,29 @@
             // 
             // rptextbox2
             // 
-            this.rptextbox2.Location = new System.Drawing.Point(213, 438);
+            this.rptextbox2.Location = new System.Drawing.Point(204, 109);
             this.rptextbox2.Name = "rptextbox2";
-            this.rptextbox2.Size = new System.Drawing.Size(346, 20);
+            this.rptextbox2.Size = new System.Drawing.Size(344, 20);
             this.rptextbox2.TabIndex = 4;
             // 
             // rptextbox3
             // 
-            this.rptextbox3.Location = new System.Drawing.Point(213, 461);
+            this.rptextbox3.Location = new System.Drawing.Point(204, 135);
             this.rptextbox3.Name = "rptextbox3";
-            this.rptextbox3.Size = new System.Drawing.Size(346, 20);
+            this.rptextbox3.Size = new System.Drawing.Size(344, 20);
             this.rptextbox3.TabIndex = 4;
             // 
             // rptextbox4
             // 
-            this.rptextbox4.Location = new System.Drawing.Point(213, 486);
+            this.rptextbox4.Location = new System.Drawing.Point(204, 162);
             this.rptextbox4.Name = "rptextbox4";
-            this.rptextbox4.Size = new System.Drawing.Size(346, 20);
+            this.rptextbox4.Size = new System.Drawing.Size(344, 20);
             this.rptextbox4.TabIndex = 4;
             // 
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(10, 396);
+            this.label4.Location = new System.Drawing.Point(6, 53);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(65, 13);
             this.label4.TabIndex = 18;
@@ -258,7 +239,7 @@
             // 
             // streamurl
             // 
-            this.streamurl.Location = new System.Drawing.Point(88, 393);
+            this.streamurl.Location = new System.Drawing.Point(77, 50);
             this.streamurl.Name = "streamurl";
             this.streamurl.Size = new System.Drawing.Size(471, 20);
             this.streamurl.TabIndex = 19;
@@ -266,7 +247,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(10, 512);
+            this.label5.Location = new System.Drawing.Point(15, 192);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(56, 13);
             this.label5.TabIndex = 20;
@@ -274,15 +255,15 @@
             // 
             // delaytime
             // 
-            this.delaytime.Location = new System.Drawing.Point(88, 512);
+            this.delaytime.Location = new System.Drawing.Point(77, 190);
             this.delaytime.Name = "delaytime";
-            this.delaytime.Size = new System.Drawing.Size(120, 20);
+            this.delaytime.Size = new System.Drawing.Size(121, 20);
             this.delaytime.TabIndex = 21;
             // 
             // statusdropdown
             // 
             this.statusdropdown.FormattingEnabled = true;
-            this.statusdropdown.Location = new System.Drawing.Point(88, 323);
+            this.statusdropdown.Location = new System.Drawing.Point(77, 19);
             this.statusdropdown.Name = "statusdropdown";
             this.statusdropdown.Size = new System.Drawing.Size(121, 21);
             this.statusdropdown.TabIndex = 22;
@@ -290,76 +271,114 @@
             // statuslabel
             // 
             this.statuslabel.AutoSize = true;
-            this.statuslabel.Location = new System.Drawing.Point(10, 326);
+            this.statuslabel.Location = new System.Drawing.Point(34, 22);
             this.statuslabel.Name = "statuslabel";
             this.statuslabel.Size = new System.Drawing.Size(37, 13);
             this.statuslabel.TabIndex = 23;
             this.statuslabel.Text = "Status";
             // 
-            // updatestatusbutton
+            // statusbutton
             // 
-            this.updatestatusbutton.BackColor = System.Drawing.Color.FloralWhite;
-            this.updatestatusbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.updatestatusbutton.Location = new System.Drawing.Point(582, 513);
-            this.updatestatusbutton.Name = "updatestatusbutton";
-            this.updatestatusbutton.Size = new System.Drawing.Size(225, 33);
-            this.updatestatusbutton.TabIndex = 24;
-            this.updatestatusbutton.Text = "Update Status";
-            this.updatestatusbutton.UseVisualStyleBackColor = false;
-            this.updatestatusbutton.Click += new System.EventHandler(this.updatestatusbutton_Click);
+            this.statusbutton.BackColor = System.Drawing.Color.Gray;
+            this.statusbutton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.statusbutton.Location = new System.Drawing.Point(8, 142);
+            this.statusbutton.Name = "statusbutton";
+            this.statusbutton.Size = new System.Drawing.Size(225, 34);
+            this.statusbutton.TabIndex = 24;
+            this.statusbutton.Text = "Change status";
+            this.statusbutton.UseVisualStyleBackColor = false;
+            this.statusbutton.Click += new System.EventHandler(this.Statusbutton_Click);
+            // 
+            // rpgroup
+            // 
+            this.rpgroup.Controls.Add(this.streamurl);
+            this.rpgroup.Controls.Add(this.label4);
+            this.rpgroup.Controls.Add(this.statuslabel);
+            this.rpgroup.Controls.Add(this.rpdropdown);
+            this.rpgroup.Controls.Add(this.defaultrplabel);
+            this.rpgroup.Controls.Add(this.statusdropdown);
+            this.rpgroup.Controls.Add(this.multirp);
+            this.rpgroup.Controls.Add(this.delaytime);
+            this.rpgroup.Controls.Add(this.rptextbox);
+            this.rpgroup.Controls.Add(this.label5);
+            this.rpgroup.Controls.Add(this.rptextbox2);
+            this.rpgroup.Controls.Add(this.label7);
+            this.rpgroup.Controls.Add(this.rpdropdown2);
+            this.rpgroup.Controls.Add(this.rpdropdown4);
+            this.rpgroup.Controls.Add(this.label6);
+            this.rpgroup.Controls.Add(this.rpdropdown3);
+            this.rpgroup.Controls.Add(this.rp1label);
+            this.rpgroup.Controls.Add(this.rptextbox4);
+            this.rpgroup.Controls.Add(this.rptextbox3);
+            this.rpgroup.Location = new System.Drawing.Point(12, 571);
+            this.rpgroup.Name = "rpgroup";
+            this.rpgroup.Size = new System.Drawing.Size(561, 219);
+            this.rpgroup.TabIndex = 25;
+            this.rpgroup.TabStop = false;
+            this.rpgroup.Text = "Rich Presence";
+            // 
+            // controlsgroup
+            // 
+            this.controlsgroup.Controls.Add(this.connect_btn);
+            this.controlsgroup.Controls.Add(this.disconnectbtn);
+            this.controlsgroup.Controls.Add(this.statusbutton);
+            this.controlsgroup.Controls.Add(this.rpbutton);
+            this.controlsgroup.Location = new System.Drawing.Point(587, 571);
+            this.controlsgroup.Name = "controlsgroup";
+            this.controlsgroup.Size = new System.Drawing.Size(239, 219);
+            this.controlsgroup.TabIndex = 26;
+            this.controlsgroup.TabStop = false;
+            this.controlsgroup.Text = "Controls";
+            // 
+            // consolegroup
+            // 
+            this.consolegroup.Controls.Add(this.consoleoutput);
+            this.consolegroup.Location = new System.Drawing.Point(12, 57);
+            this.consolegroup.Name = "consolegroup";
+            this.consolegroup.Size = new System.Drawing.Size(814, 508);
+            this.consolegroup.TabIndex = 27;
+            this.consolegroup.TabStop = false;
+            this.consolegroup.Text = "Console";
+            // 
+            // tokengroup
+            // 
+            this.tokengroup.Controls.Add(this.token_tb);
+            this.tokengroup.Location = new System.Drawing.Point(12, 11);
+            this.tokengroup.Name = "tokengroup";
+            this.tokengroup.Size = new System.Drawing.Size(814, 40);
+            this.tokengroup.TabIndex = 28;
+            this.tokengroup.TabStop = false;
+            this.tokengroup.Text = "Token";
             // 
             // DiscordBot
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(819, 558);
-            this.Controls.Add(this.updatestatusbutton);
-            this.Controls.Add(this.statuslabel);
-            this.Controls.Add(this.statusdropdown);
-            this.Controls.Add(this.delaytime);
-            this.Controls.Add(this.label5);
-            this.Controls.Add(this.streamurl);
-            this.Controls.Add(this.label4);
-            this.Controls.Add(this.label7);
-            this.Controls.Add(this.label6);
-            this.Controls.Add(this.rp1label);
-            this.Controls.Add(this.defaultrplabel);
-            this.Controls.Add(this.rpdropdown4);
-            this.Controls.Add(this.rpdropdown3);
-            this.Controls.Add(this.rpdropdown2);
-            this.Controls.Add(this.multirp);
-            this.Controls.Add(this.disconnectbtn);
-            this.Controls.Add(this.rpbutton);
-            this.Controls.Add(this.connect_btn);
-            this.Controls.Add(this.consoleoutput);
-            this.Controls.Add(this.label3);
-            this.Controls.Add(this.rptextbox4);
-            this.Controls.Add(this.rptextbox3);
-            this.Controls.Add(this.rptextbox2);
-            this.Controls.Add(this.rptextbox);
-            this.Controls.Add(this.rpdropdown);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.token_tb);
-            this.Controls.Add(this.label1);
+            this.ClientSize = new System.Drawing.Size(833, 802);
+            this.Controls.Add(this.tokengroup);
+            this.Controls.Add(this.consolegroup);
+            this.Controls.Add(this.rpgroup);
+            this.Controls.Add(this.controlsgroup);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "DiscordBot";
             this.Text = "Discord Bot";
             ((System.ComponentModel.ISupportInitialize)(this.delaytime)).EndInit();
+            this.rpgroup.ResumeLayout(false);
+            this.rpgroup.PerformLayout();
+            this.controlsgroup.ResumeLayout(false);
+            this.consolegroup.ResumeLayout(false);
+            this.tokengroup.ResumeLayout(false);
+            this.tokengroup.PerformLayout();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
         #endregion
-
-        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox token_tb;
-        private System.Windows.Forms.Label label2;
         private System.Windows.Forms.ComboBox rpdropdown;
         private System.Windows.Forms.TextBox rptextbox;
-        private System.Windows.Forms.Label label3;
         private System.Windows.Forms.RichTextBox consoleoutput;
         private System.Windows.Forms.Button connect_btn;
         private System.Windows.Forms.Button rpbutton;
@@ -381,7 +400,11 @@
         private System.Windows.Forms.NumericUpDown delaytime;
         private System.Windows.Forms.ComboBox statusdropdown;
         private System.Windows.Forms.Label statuslabel;
-        private System.Windows.Forms.Button updatestatusbutton;
+        private System.Windows.Forms.Button statusbutton;
+        private System.Windows.Forms.GroupBox rpgroup;
+        private System.Windows.Forms.GroupBox controlsgroup;
+        private System.Windows.Forms.GroupBox consolegroup;
+        private System.Windows.Forms.GroupBox tokengroup;
     }
 }
 
