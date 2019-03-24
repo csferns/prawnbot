@@ -171,7 +171,7 @@ namespace prawnbotWF
                 richPresenceToolStripMenuItem.Enabled = true;
                 sendToolStripMenuItem.Enabled = true;
                 disconnectToolStripMenuItem.Enabled = true;
-                connectToolStripMenuItem.Enabled = false;
+                tokenconnectbutton.Enabled = false;
 
                 //await Task.Delay(3000);
                 //ActiveForm.Text = $"Discord Bot - {Client.CurrentUser.Username}";
@@ -233,7 +233,8 @@ namespace prawnbotWF
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void connectToolStripMenuItem_Click(object sender, EventArgs e)
+        /// 
+        private async void tokenconnectbutton_Click(object sender, EventArgs e)
         {
             if (!string.IsNullOrWhiteSpace(token_tb.Text))
             {
@@ -255,7 +256,8 @@ namespace prawnbotWF
             disconnectToolStripMenuItem.Enabled = false;
             sendToolStripMenuItem.Enabled = false;
             richPresenceToolStripMenuItem.Enabled = false;
-            connectToolStripMenuItem.Enabled = true;
+
+            tokenconnectbutton.Enabled = true;
         }
         #endregion
     }

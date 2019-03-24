@@ -33,11 +33,11 @@
             this.consoleoutput = new System.Windows.Forms.RichTextBox();
             this.consolegroup = new System.Windows.Forms.GroupBox();
             this.tokengroup = new System.Windows.Forms.GroupBox();
+            this.tokenconnectbutton = new System.Windows.Forms.Button();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.messageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.sendToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.richPresenceToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.connectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.disconnectToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.consolegroup.SuspendLayout();
             this.tokengroup.SuspendLayout();
@@ -46,9 +46,9 @@
             // 
             // token_tb
             // 
-            this.token_tb.Location = new System.Drawing.Point(9, 14);
+            this.token_tb.Location = new System.Drawing.Point(9, 13);
             this.token_tb.Name = "token_tb";
-            this.token_tb.Size = new System.Drawing.Size(799, 20);
+            this.token_tb.Size = new System.Drawing.Size(718, 20);
             this.token_tb.TabIndex = 1;
             // 
             // consoleoutput
@@ -74,6 +74,7 @@
             // 
             // tokengroup
             // 
+            this.tokengroup.Controls.Add(this.tokenconnectbutton);
             this.tokengroup.Controls.Add(this.token_tb);
             this.tokengroup.Location = new System.Drawing.Point(12, 27);
             this.tokengroup.Name = "tokengroup";
@@ -81,6 +82,16 @@
             this.tokengroup.TabIndex = 28;
             this.tokengroup.TabStop = false;
             this.tokengroup.Text = "Token";
+            // 
+            // tokenconnectbutton
+            // 
+            this.tokenconnectbutton.Location = new System.Drawing.Point(733, 11);
+            this.tokenconnectbutton.Name = "tokenconnectbutton";
+            this.tokenconnectbutton.Size = new System.Drawing.Size(75, 23);
+            this.tokenconnectbutton.TabIndex = 2;
+            this.tokenconnectbutton.Text = "Connect";
+            this.tokenconnectbutton.UseVisualStyleBackColor = true;
+            this.tokenconnectbutton.Click += new System.EventHandler(this.tokenconnectbutton_Click);
             // 
             // menuStrip1
             // 
@@ -97,7 +108,6 @@
             this.messageToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.sendToolStripMenuItem,
             this.richPresenceToolStripMenuItem,
-            this.connectToolStripMenuItem,
             this.disconnectToolStripMenuItem});
             this.messageToolStripMenuItem.Name = "messageToolStripMenuItem";
             this.messageToolStripMenuItem.Size = new System.Drawing.Size(50, 20);
@@ -117,13 +127,6 @@
             this.richPresenceToolStripMenuItem.Text = "Rich Presence";
             this.richPresenceToolStripMenuItem.Click += new System.EventHandler(this.richPresenceToolStripMenuItem_Click);
             // 
-            // connectToolStripMenuItem
-            // 
-            this.connectToolStripMenuItem.Name = "connectToolStripMenuItem";
-            this.connectToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.connectToolStripMenuItem.Text = "Connect";
-            this.connectToolStripMenuItem.Click += new System.EventHandler(this.connectToolStripMenuItem_Click);
-            // 
             // disconnectToolStripMenuItem
             // 
             this.disconnectToolStripMenuItem.Name = "disconnectToolStripMenuItem";
@@ -133,6 +136,7 @@
             // 
             // DiscordBot
             // 
+            this.AcceptButton = this.tokenconnectbutton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(836, 590);
@@ -163,8 +167,8 @@
         private System.Windows.Forms.ToolStripMenuItem messageToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem sendToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem richPresenceToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem connectToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem disconnectToolStripMenuItem;
+        private System.Windows.Forms.Button tokenconnectbutton;
     }
 }
 

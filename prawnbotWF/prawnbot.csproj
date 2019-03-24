@@ -224,7 +224,6 @@
       <DependentUpon>RichPresence.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
-    <None Include="prawnbot_TemporaryKey.pfx" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

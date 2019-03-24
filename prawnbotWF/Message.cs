@@ -15,7 +15,6 @@ namespace prawnbotWF
     {
         DiscordSocketClient Client;
 
-
         public Message(DiscordSocketClient _client)
         {
             Client = _client;
@@ -33,15 +32,21 @@ namespace prawnbotWF
             textChannels.SelectedItem = selectedGuild.DefaultChannel;
         }
 
-        private void sendButton_Click(object sender, EventArgs e)
+        private async void sendButton_Click(object sender, EventArgs e)
         {
             if (!string.IsNullOrWhiteSpace(messageContent.Text))
             {
-                Client.Guilds.FirstOrDefault(x => x == availableGuilds.SelectedItem)
+                await Client.Guilds.FirstOrDefault(x => x == availableGuilds.SelectedItem)
                     .TextChannels.FirstOrDefault(x => x == textChannels.SelectedItem)
                     .SendMessageAsync(messageContent.Text);
 
+                MessageBox.Show($"Message sent to {textChannels.SelectedItem}", "Success");
+
                 messageContent.Text = string.Empty;
+            }
+            else
+            {
+                MessageBox.Show("Message content can't be empty!", "Error");
             }
         }
     }
