@@ -14,7 +14,7 @@ namespace prawnbotWF
 {
     public class CSVColumns
     {
-        public ulong QuoteID { get; set; }
+        public ulong MessageID { get; set; }
         public string Author { get; set; }
         public bool AuthorIsBot { get; set; }
         public string MessageContent { get; set; }
@@ -24,7 +24,7 @@ namespace prawnbotWF
 
     public class QuoteCommands : ModuleBase<SocketCommandContext>
     {
-        private async Task<IEnumerable<IMessage>> GetAllQuotes(ulong id = 453899130486521859)
+        private async Task<IEnumerable<IMessage>> GetAllMessages(ulong id = 453899130486521859)
         {
             RequestOptions options = new RequestOptions
             {
@@ -38,87 +38,120 @@ namespace prawnbotWF
             return messages.Reverse();
         }
 
-        [Command("backup")]
-        public async Task BackupQuotesAsync(ulong id = 453899130486521859)
+        private async Task WriteToCSV(List<CSVColumns> columns, string folderPath, DateTime startTime, ulong? id = null)
         {
-            //if (Context.Message.Author.Id != 216177905712103424 || Context.Message.Author.Id != 466926694431719424) return;
+            string fileName;
+            if (id != null) fileName = $"{Context.Guild.GetChannel(id.GetValueOrDefault(0)).Name}-backup.csv";
+            else fileName = $"{Context.Guild.Name}-backup.csv";
 
-            DateTime startTime = DateTime.Now;
-            await Context.Channel.SendMessageAsync($"Started backup of channel {Context.Guild.GetChannel(id)} at {startTime.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
+            string filePath = $"{Environment.CurrentDirectory}\\{folderPath}";
 
-            IEnumerable<IMessage> QuoteRoom = await GetAllQuotes(id);
+            if (!Directory.Exists(filePath))
+            {
+                Directory.CreateDirectory(filePath);
+            }
 
+            filePath += $"\\{fileName}";
+
+            using (FileStream fileStream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read))
+            using (StreamWriter writer = new StreamWriter(fileStream))
+            using (CsvWriter csv = new CsvWriter(writer))
+            {
+                fileStream.Position = fileStream.Length;
+                csv.WriteRecords(columns);
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"Backed up {columns.Count()} messages to {fileName}.");
+
+            TimeSpan completionTime = DateTime.Now - startTime;
+
+            sb.Append($"The operation took {completionTime.Hours}h:{completionTime.Minutes}m:{completionTime.Seconds}s:{completionTime.Milliseconds}ms");
+
+            await Context.Channel.SendMessageAsync(sb.ToString());            
+        }
+
+        private async Task<List<CSVColumns>> CreateCSVList(ulong id)
+        {
             List<CSVColumns> records = new List<CSVColumns>();
 
-            for (int i = 0; i < QuoteRoom.Count(); i++)
+            IEnumerable<IMessage> messagesToAdd = await GetAllMessages(id);
+
+            for (int i = 0; i < messagesToAdd.Count(); i++)
             {
-                if (QuoteRoom.ElementAt(i).Type == MessageType.ChannelPinnedMessage)
+                if (messagesToAdd.ElementAt(i).Type == MessageType.ChannelPinnedMessage)
                 {
                     continue;
                 }
 
                 CSVColumns recordToAdd = new CSVColumns
                 {
-                    QuoteID = QuoteRoom.ElementAt(i).Id,
-                    Author = QuoteRoom.ElementAt(i).Author.Username,
-                    AuthorIsBot = QuoteRoom.ElementAt(i).Author.IsBot,
-                    MessageContent = QuoteRoom.ElementAt(i).Content,
-                    Timestamp = QuoteRoom.ElementAt(i).Timestamp
+                    MessageID = messagesToAdd.ElementAt(i).Id,
+                    Author = messagesToAdd.ElementAt(i).Author.Username,
+                    AuthorIsBot = messagesToAdd.ElementAt(i).Author.IsBot,
+                    MessageContent = messagesToAdd.ElementAt(i).Content,
+                    Timestamp = messagesToAdd.ElementAt(i).Timestamp
                 };
 
-                if (QuoteRoom.ElementAt(i).Attachments.Count() > 0)
+                if (messagesToAdd.ElementAt(i).Attachments.Count() > 0)
                 {
-                    recordToAdd.Attachment = QuoteRoom.ElementAt(i).Attachments.First().Url;
+                    recordToAdd.Attachment = messagesToAdd.ElementAt(i).Attachments.FirstOrDefault().Url;
                 }
 
                 records.Add(recordToAdd);
             }
 
-            if (!Directory.Exists($"{Environment.CurrentDirectory}\\ChannelBackups"))
-            {
-                Directory.CreateDirectory($"{Environment.CurrentDirectory}\\ChannelBackups");
-            }
+            return records;
+        }
 
-            string fileName = $"{Context.Guild.GetChannel(id).Name}-backup.csv";
-            string filePath = $"{Environment.CurrentDirectory}\\ChannelBackups\\{fileName}";
+        [Command("backup")]
+        public async Task BackupQuotesAsync(ulong id = 453899130486521859)
+        {
+            if (Context.Message.Author.Id != 216177905712103424 || Context.Message.Author.Id != 466926694431719424) return;
 
-            using (StreamWriter writer = new StreamWriter(filePath))
-            using (CsvWriter csv = new CsvWriter(writer))
-            {
-                csv.WriteRecords(records);
-            }
+            DateTime startTime = DateTime.Now;
+            await Context.Channel.SendMessageAsync($"Started backup of channel {Context.Guild.GetChannel(id)} at {startTime.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
 
-            TimeSpan completionTime = DateTime.Now - startTime;
-
-            await Context.Channel.SendMessageAsync($"Backed up {QuoteRoom.Count()} messages to {fileName}. The operation took {completionTime.Hours}h:{completionTime.Minutes}m:{completionTime.Seconds}s:{completionTime.Milliseconds}ms");
+            var records = await CreateCSVList(id);
+            await WriteToCSV(records, "ChannelBackups", startTime, id);
         }
 
         [Command("addquote")]
         public async Task AddQuoteAsync(string author = "", string year = "", [Remainder]string quote = "")
         {
-            //ulong id = 453899130486521859;
-            ulong id = 555145972376928257;
+            ulong id = ulong.MinValue;
+
+            switch (Context.Guild.Name)
+            {
+                case "c.ferns":
+                    id = 555145972376928257;
+                    break;
+                case "#WalrusForFührer":
+                    id = 453899130486521859;
+                    break;
+                default:
+                    break;
+            }
 
             await Context.Guild.GetTextChannel(id).SendMessageAsync($"\"{quote}\" - {author} {year}");
 
             string filePath = $"{Environment.CurrentDirectory}\\ChannelBackups\\{Context.Guild.GetChannel(id).Name}-backup.csv";
 
+            List<CSVColumns> columns = new List<CSVColumns>();
+
             if (File.Exists(filePath))
             {
-                CSVColumns columns = new CSVColumns
+                CSVColumns recordToAdd = new CSVColumns
                 {
-                    QuoteID = Context.Message.Id,
+                    MessageID = Context.Message.Id,
                     Author = author,
                     MessageContent = quote,
                     Timestamp = Context.Message.Timestamp
                 };
 
-                using (FileStream fileStream = new FileStream(filePath, FileMode.Append, FileAccess.Write))
-                using (StreamWriter writer = new StreamWriter(fileStream))
-                using (CsvWriter csv = new CsvWriter(writer))
-                {
-                    csv.WriteRecord(columns);
-                }
+                columns.Add(recordToAdd);
+
+                await WriteToCSV(columns, "ChannelBackups", DateTime.Now, id);
             }
 
             if (Context.Message.Channel.Id == id) await Context.Message.DeleteAsync();
@@ -129,7 +162,7 @@ namespace prawnbotWF
         {
             if (Context.Message.Author.Id != 258627811844030465)
             {
-                IEnumerable<IMessage> QuoteRoom = await GetAllQuotes(id);
+                IEnumerable<IMessage> QuoteRoom = await GetAllMessages(id);
                 
                 Random random = new Random();
 
@@ -148,6 +181,25 @@ namespace prawnbotWF
             {
                 await ReplyAsync("Fuck off Sam");
             }
+        }
+
+        [Command("backupserver")]
+        public async Task BackupServerAsync()
+        {
+            DateTime operationTime = DateTime.Now;
+
+            await Context.Channel.SendMessageAsync($"Started backup of server {Context.Guild.Name} ({Context.Guild.TextChannels.Count()} channels) at {operationTime.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
+
+            foreach (var textChannel in Context.Guild.TextChannels)
+            {
+                DateTime startTime = DateTime.Now;
+
+                var records = await CreateCSVList(textChannel.Id);
+                await WriteToCSV(records, $"ServerBackups\\{Context.Guild.Name}", startTime, textChannel.Id);
+            }
+
+            TimeSpan completionTime = DateTime.Now - operationTime;
+            await Context.Channel.SendMessageAsync($"Finished server backup of {Context.Guild.Name}. The operation took {completionTime.Hours}h:{completionTime.Minutes}m:{completionTime.Seconds}s:{completionTime.Milliseconds}ms");
         }
     }
 }
