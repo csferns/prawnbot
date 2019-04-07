@@ -32,17 +32,18 @@
             this.availableGuilds = new System.Windows.Forms.ComboBox();
             this.messageContent = new System.Windows.Forms.RichTextBox();
             this.textChannels = new System.Windows.Forms.ComboBox();
-            this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.findTextChannels = new System.Windows.Forms.Button();
             this.sendButton = new System.Windows.Forms.Button();
+            this.guildbutton = new System.Windows.Forms.Button();
+            this.dmbutton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // availableGuilds
             // 
             this.availableGuilds.FormattingEnabled = true;
-            this.availableGuilds.Location = new System.Drawing.Point(84, 12);
+            this.availableGuilds.Location = new System.Drawing.Point(182, 12);
             this.availableGuilds.Name = "availableGuilds";
             this.availableGuilds.Size = new System.Drawing.Size(121, 21);
             this.availableGuilds.TabIndex = 1;
@@ -50,7 +51,7 @@
             // 
             // messageContent
             // 
-            this.messageContent.Location = new System.Drawing.Point(84, 65);
+            this.messageContent.Location = new System.Drawing.Point(68, 39);
             this.messageContent.Name = "messageContent";
             this.messageContent.Size = new System.Drawing.Size(704, 201);
             this.messageContent.TabIndex = 2;
@@ -59,24 +60,15 @@
             // textChannels
             // 
             this.textChannels.FormattingEnabled = true;
-            this.textChannels.Location = new System.Drawing.Point(84, 39);
+            this.textChannels.Location = new System.Drawing.Point(411, 12);
             this.textChannels.Name = "textChannels";
             this.textChannels.Size = new System.Drawing.Size(121, 21);
             this.textChannels.TabIndex = 3;
             // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(47, 15);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(31, 13);
-            this.label1.TabIndex = 4;
-            this.label1.Text = "Guild";
-            // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(8, 42);
+            this.label2.Location = new System.Drawing.Point(335, 15);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(70, 13);
             this.label2.TabIndex = 5;
@@ -85,7 +77,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(28, 68);
+            this.label3.Location = new System.Drawing.Point(12, 42);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(50, 13);
             this.label3.TabIndex = 6;
@@ -93,7 +85,7 @@
             // 
             // findTextChannels
             // 
-            this.findTextChannels.Location = new System.Drawing.Point(211, 39);
+            this.findTextChannels.Location = new System.Drawing.Point(538, 12);
             this.findTextChannels.Name = "findTextChannels";
             this.findTextChannels.Size = new System.Drawing.Size(51, 21);
             this.findTextChannels.TabIndex = 7;
@@ -103,7 +95,7 @@
             // 
             // sendButton
             // 
-            this.sendButton.Location = new System.Drawing.Point(713, 272);
+            this.sendButton.Location = new System.Drawing.Point(697, 246);
             this.sendButton.Name = "sendButton";
             this.sendButton.Size = new System.Drawing.Size(75, 23);
             this.sendButton.TabIndex = 8;
@@ -111,16 +103,37 @@
             this.sendButton.UseVisualStyleBackColor = true;
             this.sendButton.Click += new System.EventHandler(this.sendButton_Click);
             // 
+            // guildbutton
+            // 
+            this.guildbutton.Location = new System.Drawing.Point(125, 12);
+            this.guildbutton.Name = "guildbutton";
+            this.guildbutton.Size = new System.Drawing.Size(51, 21);
+            this.guildbutton.TabIndex = 9;
+            this.guildbutton.Text = "Guild";
+            this.guildbutton.UseVisualStyleBackColor = true;
+            this.guildbutton.Click += new System.EventHandler(this.guildbutton_Click);
+            // 
+            // dmbutton
+            // 
+            this.dmbutton.Location = new System.Drawing.Point(68, 12);
+            this.dmbutton.Name = "dmbutton";
+            this.dmbutton.Size = new System.Drawing.Size(51, 21);
+            this.dmbutton.TabIndex = 10;
+            this.dmbutton.Text = "DM";
+            this.dmbutton.UseVisualStyleBackColor = true;
+            this.dmbutton.Click += new System.EventHandler(this.dmbutton_Click);
+            // 
             // Message
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 304);
+            this.ClientSize = new System.Drawing.Size(781, 277);
+            this.Controls.Add(this.dmbutton);
+            this.Controls.Add(this.guildbutton);
             this.Controls.Add(this.sendButton);
             this.Controls.Add(this.findTextChannels);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
             this.Controls.Add(this.textChannels);
             this.Controls.Add(this.messageContent);
             this.Controls.Add(this.availableGuilds);
@@ -136,10 +149,11 @@
         private System.Windows.Forms.ComboBox availableGuilds;
         private System.Windows.Forms.RichTextBox messageContent;
         private System.Windows.Forms.ComboBox textChannels;
-        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button findTextChannels;
         private System.Windows.Forms.Button sendButton;
+        private System.Windows.Forms.Button guildbutton;
+        private System.Windows.Forms.Button dmbutton;
     }
 }

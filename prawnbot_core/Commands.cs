@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
+using System;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -11,13 +12,37 @@ namespace prawnbot_core
 {
     public partial class Commands : ModuleBase<SocketCommandContext>
     {
-        private Helpers helpers;
+        private readonly Helpers helpers;
         private readonly AudioService _service;
 
         public Commands()
         {
             helpers = new Helpers(Context);
             _service = new AudioService();
+        }
+
+        public async static Task MemeOClock(DiscordSocketClient Client)
+        {
+            if (
+                (DateTime.Now.Hour == 9 || DateTime.Now.Hour == 21) 
+                && DateTime.Now.Minute == 11 
+                && DateTime.Now.Second == 0 
+                && DateTime.Now.Millisecond >= 200
+               )
+            {
+                foreach (var guild in Client.Guilds)
+                {
+                    await guild.DefaultChannel.SendMessageAsync("Happy meme o'clock!");
+                }
+
+                return;
+            }
+        } 
+
+        [Command("ping")]
+        public async Task PingAsync()
+        {
+            await  Context.Channel.SendMessageAsync($"{Context.Client.Latency}ms");
         }
 
         [Command("commands")]
@@ -135,22 +160,34 @@ namespace prawnbot_core
         public async Task GetAllRegionsAsync()
         {
             var allRegions = Context.Client.VoiceRegions;
+            var currentRegion = Context.Guild.VoiceRegionId;
+
             StringBuilder sb = new StringBuilder();
 
-            sb.Append("__Current regions:__ \n");
-            foreach (var region in allRegions.Where(x => !x.IsDeprecated))
+            sb.Append("__Active regions:__ \n");
+            foreach (var region in allRegions.Where(x => !x.IsDeprecated && !x.IsVip))
             {
+                if (region.IsOptimal || region.Id == currentRegion) sb.Append("**");
                 sb.Append($"{region.Name}");
                 if (region.IsOptimal) sb.Append(" (Optimal)");
+                if (region.Id == currentRegion) sb.Append(" (Current)");
+
+                if (region.IsOptimal || region.Id == currentRegion) sb.Append("**");
                 sb.Append("\n");
             }
 
             sb.Append("\n");
             sb.Append("__Deprecated regions:__ \n");
 
-            foreach (var region in allRegions.Where(x => x.IsDeprecated))
+            foreach (var region in allRegions.Where(x => x.IsDeprecated && !x.IsVip))
             {
-                sb.Append($"{region.Name}\n");
+                if (region.IsOptimal || region.Id == currentRegion) sb.Append("**");
+
+                sb.Append($"{region.Name}");
+                if (region.Id == currentRegion) sb.Append(" (Current)");
+
+                if (region.IsOptimal || region.Id == currentRegion) sb.Append("**");
+                sb.Append("\n");
             }
 
             await Context.Channel.SendMessageAsync(sb.ToString());
@@ -169,13 +206,24 @@ namespace prawnbot_core
             var regions = await Context.Guild.GetVoiceRegionsAsync();
             var region = Context.Guild.GetVoiceRegionsAsync().ToAsyncEnumerable().FlattenAsync().Result.FirstOrDefault(x => x.Name == regionName);
 
-            if (!regions.Contains(region))
+            bool validRegion = false;
+
+            foreach (var item in regions)
+            {
+                if (item.Id == region.Id)
+                {
+                    validRegion = true;
+                    break;
+                }
+            }
+
+            if (!validRegion)
             {
                 await Context.Channel.SendMessageAsync($"\"{regionName}\" is not a valid region, or the server cannot access this region.");
                 return;
             }
 
-            await Context.Channel.SendMessageAsync($"Setting server {Context.Guild}'s region to {region}");
+            await Context.Channel.SendMessageAsync($"Setting server **{Context.Guild}**'s region to {region}");
 
             var optionalRegion = new Optional<IVoiceRegion>(region);
 
@@ -185,6 +233,12 @@ namespace prawnbot_core
         [Command("impersonate-user")]
         public async Task ImpersonateUser(SocketGuildUser user)
         {
+            if (user == null)
+            {
+                await Context.Channel.SendMessageAsync("No user passed in!");
+                return;
+            }
+
             RequestOptions options = new RequestOptions
             {
                  RetryMode = RetryMode.RetryTimeouts,
@@ -193,6 +247,25 @@ namespace prawnbot_core
             };
 
             var webhooks = await Context.Guild.GetWebhooksAsync();
+
+            var prawnbotWebhook = webhooks.FirstOrDefault(x => x.Name == "PrawnBot");
+
+            if (prawnbotWebhook != default(RestWebhook))
+            {
+                //RestWebhook restClient = new RestWebhook(prawnbotWebhook);
+            }
+        }
+
+        [Command("random-user")]
+        [Summary("Gets a random user from the guild and posts them")]
+        public async Task RandomUserAsync()
+        {
+            Random random = new Random();
+
+            var availableUsers = Context.Guild.Users.Where(x => !x.IsBot).ToList();
+            var randomUser = availableUsers[random.Next(availableUsers.Count())];
+
+            await Context.Channel.SendMessageAsync(randomUser.Nickname ?? randomUser.Username);
         }
     }
 }

@@ -1,25 +1,17 @@
 ﻿using Discord;
-using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace prawnbot
 {
     public partial class RichPresence : Form
     {
-        DiscordSocketClient Client;
+        prawnbot_core.Functions functions;
 
-        public RichPresence(DiscordSocketClient _client)
+        public RichPresence()
         {
-            Client = _client;
-
+            functions = new prawnbot_core.Functions();
             InitializeComponent();
 
             #region Rich presence dropdowns
@@ -51,6 +43,8 @@ namespace prawnbot
             rpdropdown1.Enabled = false;
             rpdropdown2.Enabled = false;
             rpdropdown3.Enabled = false;
+
+            delaytime.Enabled = false;
         }
 
         /// <summary>
@@ -84,7 +78,7 @@ namespace prawnbot
         /// <param name="e"></param>
         private async void updatestatusbutton_Click(object sender, EventArgs e)
         {
-            await Client.SetStatusAsync((UserStatus)statusdropdown.SelectedItem);
+            await functions.SetBotStatusAsync((UserStatus)statusdropdown.SelectedItem);
         }
 
         /// <summary>
@@ -114,23 +108,16 @@ namespace prawnbot
                     rptextbox3
                 };
 
-                var rp = rpdropdowns.Zip(rptextboxes, (dd, tb) => new { Dropdown = dd, Textbox = tb });
-
                 while (multirpcheckbox.Checked)
                 {
-                    foreach (var item in rp)
-                    {
-                        await Task.Delay(delay);
-                        await Client.SetGameAsync(item.Textbox.Text ?? null, (ActivityType)item.Dropdown.SelectedItem == ActivityType.Streaming ? streamurltextbox.Text : null, (ActivityType)item.Dropdown.SelectedItem);
-                    }
+                    await functions.UpdateRichPresence(delay, rptextboxes, rpdropdowns, streamurltextbox.Text);
                 }
 
-                await Client.SetGameAsync(defaultrptextbox.Text ?? null, (ActivityType)defaultrpdropdown.SelectedItem == ActivityType.Streaming ? streamurltextbox.Text : null, (ActivityType)defaultrpdropdown.SelectedItem);
+                await functions.UpdateRichPresence(defaultrptextbox.Text, (ActivityType)defaultrpdropdown.SelectedItem, streamurltextbox.Text);
             }
             catch (Exception Ex)
             {
-                DiscordBot discordBot = new DiscordBot();
-                await discordBot.Client_Log(new LogMessage(LogSeverity.Error, "Rich Presence", $"Error occured while updating the bot's rich presence: \n{Ex.Message}"));
+                await functions.PopulateEventLog(new LogMessage(LogSeverity.Error, "Rich Presence", $"Error occured while updating the bot's rich presence: \n{Ex.Message}"));
             }
 
             MessageBox.Show("Rich presence updated successfully!", "Success");

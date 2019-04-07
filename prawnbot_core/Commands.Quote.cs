@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace prawnbot_core
@@ -39,6 +40,8 @@ namespace prawnbot_core
                 default:
                     break;
             }
+
+            if (quote.Contains("\\n")) quote = quote.Replace("\\n", "\n");
 
             await Context.Guild.GetTextChannel(id).SendMessageAsync($"\"{quote}\" - {author} {year}");
 

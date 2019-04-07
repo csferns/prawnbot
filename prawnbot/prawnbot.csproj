@@ -32,6 +32,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'VM|AnyCPU'">
+    <OutputPath>bin\VM\</OutputPath>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Discord.Net.Commands, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Discord.Net.Commands.2.0.1\lib\net46\Discord.Net.Commands.dll</HintPath>
@@ -206,6 +209,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BotLog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BotLog.Designer.cs">
+      <DependentUpon>BotLog.cs</DependentUpon>
+    </Compile>
     <Compile Include="DiscordBot.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -226,6 +235,9 @@
     <Compile Include="RichPresence.Designer.cs">
       <DependentUpon>RichPresence.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="BotLog.resx">
+      <DependentUpon>BotLog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="DiscordBot.resx">
       <DependentUpon>DiscordBot.cs</DependentUpon>
     </EmbeddedResource>
