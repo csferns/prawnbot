@@ -35,6 +35,7 @@ namespace prawnbot
             }
 
             sendButton.Enabled = true;
+
         }
 
         private async void sendButton_Click(object sender, EventArgs e)
@@ -93,6 +94,12 @@ namespace prawnbot
             dmbutton.Enabled = false;
             if (!guildbutton.Enabled) guildbutton.Enabled = true;
             if (findTextChannels.Enabled) findTextChannels.Enabled = false;
+            messageContent.Enabled = true;
+        }
+
+        private void TextChannels_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            messageContent.Enabled = true;
         }
     }
 }

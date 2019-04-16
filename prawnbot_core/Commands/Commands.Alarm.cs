@@ -1,6 +1,7 @@
 ﻿using CsvHelper;
 using Discord.Commands;
 using Discord.WebSocket;
+using prawnbot_core.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;

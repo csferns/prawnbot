@@ -35,6 +35,9 @@
     <OutputPath>bin\VM\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Concentus, Version=1.1.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Concentus.1.1.7\lib\portable-net45+win+wpa81+wp80\Concentus.dll</HintPath>
+    </Reference>
     <Reference Include="CsvHelper, Version=12.0.0.0, Culture=neutral, PublicKeyToken=8c4959082be5c823, processorArchitecture=MSIL">
       <HintPath>..\packages\CsvHelper.12.1.2\lib\net45\CsvHelper.dll</HintPath>
     </Reference>
@@ -46,6 +49,9 @@
     </Reference>
     <Reference Include="Discord.Net.Rest, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Discord.Net.Rest.2.0.1\lib\net46\Discord.Net.Rest.dll</HintPath>
+    </Reference>
+    <Reference Include="Discord.Net.Rpc, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Discord.Net.Rpc.1.0.2\lib\net45\Discord.Net.Rpc.dll</HintPath>
     </Reference>
     <Reference Include="Discord.Net.Webhook, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Discord.Net.Webhook.2.0.1\lib\netstandard1.3\Discord.Net.Webhook.dll</HintPath>
@@ -66,6 +72,9 @@
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="RestSharp, Version=106.6.9.0, Culture=neutral, PublicKeyToken=598062e77f915f75, processorArchitecture=MSIL">
+      <HintPath>..\packages\RestSharp.106.6.9\lib\net452\RestSharp.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.AppContext, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -199,6 +208,7 @@
     <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.4.0\lib\net47\System.ValueTuple.dll</HintPath>
     </Reference>
+    <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -212,19 +222,25 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Commands.Alarm.cs" />
-    <Compile Include="Commands.Audio.cs" />
-    <Compile Include="Commands.cs" />
-    <Compile Include="Functions.cs" />
-    <Compile Include="Functions.Logging.cs" />
-    <Compile Include="Functions.Message.cs" />
-    <Compile Include="Functions.RichPresence.cs" />
+    <Compile Include="Commands\Commands.Alarm.cs" />
+    <Compile Include="Commands\Commands.Audio.cs" />
+    <Compile Include="Commands\Commands.cs" />
+    <Compile Include="Commands\Commands.Weather.cs" />
+    <Compile Include="Functions\Functions.cs" />
+    <Compile Include="Functions\Functions.Logging.cs" />
+    <Compile Include="Functions\Functions.Message.cs" />
+    <Compile Include="Functions\Functions.RichPresence.cs" />
     <Compile Include="Helpers.cs" />
-    <Compile Include="Commands.Photos.cs" />
+    <Compile Include="Commands\Commands.Photos.cs" />
+    <Compile Include="Models\Models.Alarm.cs" />
+    <Compile Include="Models\Models.CSV.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Commands.Quote.cs" />
+    <Compile Include="Commands\Commands.Quote.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
+    <Compile Include="Functions\Functions.API.cs" />
+    <Compile Include="Models\Models.GifyAPI.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Audio;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,22 +7,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace prawnbot_core
 {
     public partial class Functions
     {
+        private static DiscordSocketClient _client;
+        private static ConnectionState connectionState;
+        private CommandService _commands;
+        private IServiceProvider _services;
+        private AudioService _audio;
+
         public Functions()
         {
-
         }
-
-        DiscordSocketClient _client;
-        CommandService _commands;
-        IServiceProvider _services;
-        AudioService _audio;
 
         public DiscordSocketClient InstanciateClient()
         {
@@ -59,7 +59,7 @@ namespace prawnbot_core
             return _audio;
         }
 
-        public async Task<bool> ConnectAsync(string token)
+        public async Task ConnectAsync(string token)
         {
             InstanciateClient();
             InstanciateCommands();
@@ -69,7 +69,6 @@ namespace prawnbot_core
             _client.MessageReceived += HandleCommandAsync;
             _client.UserJoined += AnnounceUserJoined;
             _client.UserBanned += AnnounceUserBan;
-            _client.Connected += Client_Connected;
             _client.UserUnbanned += Client_UserUnbanned;
             _client.Log += PopulateEventLog;
 
@@ -80,12 +79,71 @@ namespace prawnbot_core
 
             await SetBotStatusAsync(UserStatus.Online);
 
-            return true;
+            _client.Connected += Client_Connected;
+            _client.Disconnected += Client_Disconnected;
+        }
+
+        private Task Client_Disconnected(Exception arg)
+        {
+            connectionState = ConnectionState.Disconnected;
+
+            return Task.CompletedTask;
+        }
+
+        private Task Client_Connected()
+        {
+            connectionState = ConnectionState.Connected;
+
+            return Task.Run(async () =>
+            {
+                while (connectionState == ConnectionState.Connected)
+                {
+                    if (
+                        (DateTime.Now.Hour == 9 || DateTime.Now.Hour == 21)
+                        && DateTime.Now.Minute == 11
+                        && DateTime.Now.Second == 0
+                        && DateTime.Now.Millisecond <= 200
+                       )
+                    {
+                        await _client.Guilds.FirstOrDefault(x => x.Name == "#WalrusForFührer").DefaultChannel.SendMessageAsync("Happy meme o'clock!");
+                        await Task.Delay(500);
+                    }
+
+                    if (
+                        DateTime.Now.Date.ToString("dd/MM/yyyy") == "16/04/2019" 
+                        && DateTime.Now.Hour == 19
+                        && DateTime.Now.Minute == 36
+                        && DateTime.Now.Second == 0
+                        && DateTime.Now.Millisecond <= 200
+                       )
+                    {
+                        EmbedBuilder builder = new EmbedBuilder();
+
+                        builder.WithTitle("Calendar Entry")
+                        .WithColor(Color.Purple)
+                        .WithDescription(
+                            $"When: {DateTime.Now.Date.ToString("dd/MM/yyyy")}" +
+                            "What: Sam's scheduled sex" +
+                            "Organiser: Sam" +
+                            "Duration: 24 mins" +
+                            "Repeating event: N/A");
+
+                        await _client.Guilds.FirstOrDefault(x => x.Name == "#WalrusForFührer").DefaultChannel.SendMessageAsync("", false, builder.Build());
+                        await Task.Delay(1000);
+                    }
+                }
+            });
         }
 
         public async Task DisconnectAsync()
         {
-            if (_client != null) await _client.LogoutAsync();
+            if (_client != null)
+            {
+                await _client.LogoutAsync();
+                await _client.StopAsync();
+
+                connectionState = ConnectionState.Disconnected;
+            }
         }
 
         /// <summary>
@@ -173,14 +231,6 @@ namespace prawnbot_core
             await guild.DefaultChannel.SendMessageAsync("", false, builder.Build());
         }
 
-        private async Task Client_Connected()
-        {
-            while (_client.ConnectionState == ConnectionState.Connected)
-            {
-                await prawnbot_core.Commands.MemeOClock(_client);
-            }
-        }
-
         public async Task SetBotStatusAsync(UserStatus status)
         {
             await _client.SetStatusAsync(status);
@@ -199,7 +249,10 @@ namespace prawnbot_core
             {
                 foreach (var user in guild.Users.Where(x => !x.IsBot))
                 {
-                    users.Add(user);
+                    if (!users.Any(x => x.Username == user.Username))
+                    {
+                        users.Add(user);
+                    }
                 }
             }
 

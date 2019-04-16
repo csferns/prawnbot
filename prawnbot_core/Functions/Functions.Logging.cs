@@ -9,10 +9,10 @@ namespace prawnbot_core
     {
         public async Task PopulateMessageLog(LogMessage arg)
         {
-            string folderPath = $"{Environment.CurrentDirectory}\\MessageLogs";
+            string folderPath = $"{Environment.CurrentDirectory}\\Logs";
             if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
-            string filePath = $"{folderPath}\\{DateTime.Now.Date.ToFileTimeUtc()}.txt";
+            string filePath = $"{folderPath}\\MessageLogs.txt";
             if (!File.Exists(filePath)) File.Create(filePath);
 
             try
@@ -31,10 +31,10 @@ namespace prawnbot_core
 
         public async Task PopulateEventLog(LogMessage arg)
         {
-            string folderPath = $"{Environment.CurrentDirectory}\\EventLogs";
+            string folderPath = $"{Environment.CurrentDirectory}\\Logs";
             if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
-            string filePath = $"{folderPath}\\{DateTime.Now.Date.ToFileTimeUtc()}.txt";
+            string filePath = $"{folderPath}\\EventLogs.txt";
             if (!File.Exists(filePath)) File.Create(filePath);
 
             try

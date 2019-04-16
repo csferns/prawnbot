@@ -21,23 +21,7 @@ namespace prawnbot_core
             _service = new AudioService();
         }
 
-        public async static Task MemeOClock(DiscordSocketClient Client)
-        {
-            if (
-                (DateTime.Now.Hour == 9 || DateTime.Now.Hour == 21) 
-                && DateTime.Now.Minute == 11 
-                && DateTime.Now.Second == 0 
-                && DateTime.Now.Millisecond >= 200
-               )
-            {
-                foreach (var guild in Client.Guilds)
-                {
-                    await guild.DefaultChannel.SendMessageAsync("Happy meme o'clock!");
-                }
 
-                return;
-            }
-        } 
 
         [Command("ping")]
         public async Task PingAsync()

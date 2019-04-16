@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using prawnbot_core.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

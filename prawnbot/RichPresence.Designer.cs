@@ -30,22 +30,22 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(RichPresence));
             this.richpresencegroup = new System.Windows.Forms.GroupBox();
-            this.multirpcheckbox = new System.Windows.Forms.CheckBox();
-            this.statusdropdown = new System.Windows.Forms.ComboBox();
-            this.statuslabel = new System.Windows.Forms.Label();
-            this.streamurllabel = new System.Windows.Forms.Label();
-            this.streamurltextbox = new System.Windows.Forms.TextBox();
-            this.delaytime = new System.Windows.Forms.NumericUpDown();
-            this.delaylabel = new System.Windows.Forms.Label();
-            this.defaultrplabel = new System.Windows.Forms.Label();
-            this.defaultrpdropdown = new System.Windows.Forms.ComboBox();
-            this.defaultrptextbox = new System.Windows.Forms.TextBox();
-            this.rpdropdown1 = new System.Windows.Forms.ComboBox();
-            this.rpdropdown2 = new System.Windows.Forms.ComboBox();
-            this.rpdropdown3 = new System.Windows.Forms.ComboBox();
-            this.rptextbox1 = new System.Windows.Forms.TextBox();
-            this.rptextbox2 = new System.Windows.Forms.TextBox();
             this.rptextbox3 = new System.Windows.Forms.TextBox();
+            this.rptextbox2 = new System.Windows.Forms.TextBox();
+            this.rptextbox1 = new System.Windows.Forms.TextBox();
+            this.rpdropdown3 = new System.Windows.Forms.ComboBox();
+            this.rpdropdown2 = new System.Windows.Forms.ComboBox();
+            this.rpdropdown1 = new System.Windows.Forms.ComboBox();
+            this.defaultrptextbox = new System.Windows.Forms.TextBox();
+            this.defaultrpdropdown = new System.Windows.Forms.ComboBox();
+            this.defaultrplabel = new System.Windows.Forms.Label();
+            this.delaylabel = new System.Windows.Forms.Label();
+            this.delaytime = new System.Windows.Forms.NumericUpDown();
+            this.streamurltextbox = new System.Windows.Forms.TextBox();
+            this.streamurllabel = new System.Windows.Forms.Label();
+            this.statuslabel = new System.Windows.Forms.Label();
+            this.statusdropdown = new System.Windows.Forms.ComboBox();
+            this.multirpcheckbox = new System.Windows.Forms.CheckBox();
             this.updatestatusbutton = new System.Windows.Forms.Button();
             this.controlsgroup = new System.Windows.Forms.GroupBox();
             this.updaterpbutton = new System.Windows.Forms.Button();
@@ -79,65 +79,65 @@
             this.richpresencegroup.TabStop = false;
             this.richpresencegroup.Text = "Rich Presence";
             // 
-            // multirpcheckbox
+            // rptextbox3
             // 
-            this.multirpcheckbox.AutoSize = true;
-            this.multirpcheckbox.Location = new System.Drawing.Point(355, 19);
-            this.multirpcheckbox.Name = "multirpcheckbox";
-            this.multirpcheckbox.Size = new System.Drawing.Size(182, 17);
-            this.multirpcheckbox.TabIndex = 0;
-            this.multirpcheckbox.Text = "Multiple Rich presence statuses?";
-            this.multirpcheckbox.UseVisualStyleBackColor = true;
-            this.multirpcheckbox.CheckedChanged += new System.EventHandler(this.multirpcheckbox_CheckedChanged);
+            this.rptextbox3.Location = new System.Drawing.Point(202, 163);
+            this.rptextbox3.Name = "rptextbox3";
+            this.rptextbox3.Size = new System.Drawing.Size(335, 20);
+            this.rptextbox3.TabIndex = 15;
             // 
-            // statusdropdown
+            // rptextbox2
             // 
-            this.statusdropdown.FormattingEnabled = true;
-            this.statusdropdown.Location = new System.Drawing.Point(75, 19);
-            this.statusdropdown.Name = "statusdropdown";
-            this.statusdropdown.Size = new System.Drawing.Size(121, 21);
-            this.statusdropdown.TabIndex = 1;
+            this.rptextbox2.Location = new System.Drawing.Point(202, 136);
+            this.rptextbox2.Name = "rptextbox2";
+            this.rptextbox2.Size = new System.Drawing.Size(335, 20);
+            this.rptextbox2.TabIndex = 14;
             // 
-            // statuslabel
+            // rptextbox1
             // 
-            this.statuslabel.AutoSize = true;
-            this.statuslabel.Location = new System.Drawing.Point(34, 23);
-            this.statuslabel.Name = "statuslabel";
-            this.statuslabel.Size = new System.Drawing.Size(37, 13);
-            this.statuslabel.TabIndex = 2;
-            this.statuslabel.Text = "Status";
+            this.rptextbox1.Location = new System.Drawing.Point(202, 108);
+            this.rptextbox1.Name = "rptextbox1";
+            this.rptextbox1.Size = new System.Drawing.Size(335, 20);
+            this.rptextbox1.TabIndex = 13;
             // 
-            // streamurllabel
+            // rpdropdown3
             // 
-            this.streamurllabel.AutoSize = true;
-            this.streamurllabel.Location = new System.Drawing.Point(6, 46);
-            this.streamurllabel.Name = "streamurllabel";
-            this.streamurllabel.Size = new System.Drawing.Size(65, 13);
-            this.streamurllabel.TabIndex = 3;
-            this.streamurllabel.Text = "Stream URL";
+            this.rpdropdown3.FormattingEnabled = true;
+            this.rpdropdown3.Location = new System.Drawing.Point(75, 163);
+            this.rpdropdown3.Name = "rpdropdown3";
+            this.rpdropdown3.Size = new System.Drawing.Size(121, 21);
+            this.rpdropdown3.TabIndex = 12;
             // 
-            // streamurltextbox
+            // rpdropdown2
             // 
-            this.streamurltextbox.Location = new System.Drawing.Point(75, 43);
-            this.streamurltextbox.Name = "streamurltextbox";
-            this.streamurltextbox.Size = new System.Drawing.Size(462, 20);
-            this.streamurltextbox.TabIndex = 4;
+            this.rpdropdown2.FormattingEnabled = true;
+            this.rpdropdown2.Location = new System.Drawing.Point(75, 135);
+            this.rpdropdown2.Name = "rpdropdown2";
+            this.rpdropdown2.Size = new System.Drawing.Size(121, 21);
+            this.rpdropdown2.TabIndex = 11;
             // 
-            // delaytime
+            // rpdropdown1
             // 
-            this.delaytime.Location = new System.Drawing.Point(76, 202);
-            this.delaytime.Name = "delaytime";
-            this.delaytime.Size = new System.Drawing.Size(120, 20);
-            this.delaytime.TabIndex = 5;
+            this.rpdropdown1.FormattingEnabled = true;
+            this.rpdropdown1.Location = new System.Drawing.Point(75, 107);
+            this.rpdropdown1.Name = "rpdropdown1";
+            this.rpdropdown1.Size = new System.Drawing.Size(121, 21);
+            this.rpdropdown1.TabIndex = 10;
             // 
-            // delaylabel
+            // defaultrptextbox
             // 
-            this.delaylabel.AutoSize = true;
-            this.delaylabel.Location = new System.Drawing.Point(34, 204);
-            this.delaylabel.Name = "delaylabel";
-            this.delaylabel.Size = new System.Drawing.Size(37, 13);
-            this.delaylabel.TabIndex = 6;
-            this.delaylabel.Text = "Delay ";
+            this.defaultrptextbox.Location = new System.Drawing.Point(202, 81);
+            this.defaultrptextbox.Name = "defaultrptextbox";
+            this.defaultrptextbox.Size = new System.Drawing.Size(335, 20);
+            this.defaultrptextbox.TabIndex = 9;
+            // 
+            // defaultrpdropdown
+            // 
+            this.defaultrpdropdown.FormattingEnabled = true;
+            this.defaultrpdropdown.Location = new System.Drawing.Point(75, 80);
+            this.defaultrpdropdown.Name = "defaultrpdropdown";
+            this.defaultrpdropdown.Size = new System.Drawing.Size(121, 21);
+            this.defaultrpdropdown.TabIndex = 8;
             // 
             // defaultrplabel
             // 
@@ -148,65 +148,66 @@
             this.defaultrplabel.TabIndex = 7;
             this.defaultrplabel.Text = "Default";
             // 
-            // defaultrpdropdown
+            // delaylabel
             // 
-            this.defaultrpdropdown.FormattingEnabled = true;
-            this.defaultrpdropdown.Location = new System.Drawing.Point(75, 80);
-            this.defaultrpdropdown.Name = "defaultrpdropdown";
-            this.defaultrpdropdown.Size = new System.Drawing.Size(121, 21);
-            this.defaultrpdropdown.TabIndex = 8;
+            this.delaylabel.AutoSize = true;
+            this.delaylabel.Location = new System.Drawing.Point(34, 204);
+            this.delaylabel.Name = "delaylabel";
+            this.delaylabel.Size = new System.Drawing.Size(37, 13);
+            this.delaylabel.TabIndex = 6;
+            this.delaylabel.Text = "Delay ";
             // 
-            // defaultrptextbox
+            // delaytime
             // 
-            this.defaultrptextbox.Location = new System.Drawing.Point(202, 81);
-            this.defaultrptextbox.Name = "defaultrptextbox";
-            this.defaultrptextbox.Size = new System.Drawing.Size(335, 20);
-            this.defaultrptextbox.TabIndex = 9;
+            this.delaytime.Location = new System.Drawing.Point(76, 202);
+            this.delaytime.Name = "delaytime";
+            this.delaytime.Size = new System.Drawing.Size(120, 20);
+            this.delaytime.TabIndex = 5;
             // 
-            // rpdropdown1
+            // streamurltextbox
             // 
-            this.rpdropdown1.FormattingEnabled = true;
-            this.rpdropdown1.Location = new System.Drawing.Point(75, 107);
-            this.rpdropdown1.Name = "rpdropdown1";
-            this.rpdropdown1.Size = new System.Drawing.Size(121, 21);
-            this.rpdropdown1.TabIndex = 10;
+            this.streamurltextbox.Location = new System.Drawing.Point(75, 43);
+            this.streamurltextbox.Name = "streamurltextbox";
+            this.streamurltextbox.Size = new System.Drawing.Size(462, 20);
+            this.streamurltextbox.TabIndex = 4;
+            this.streamurltextbox.Text = "https://www.twitch.tv/bobross";
             // 
-            // rpdropdown2
+            // streamurllabel
             // 
-            this.rpdropdown2.FormattingEnabled = true;
-            this.rpdropdown2.Location = new System.Drawing.Point(75, 135);
-            this.rpdropdown2.Name = "rpdropdown2";
-            this.rpdropdown2.Size = new System.Drawing.Size(121, 21);
-            this.rpdropdown2.TabIndex = 11;
+            this.streamurllabel.AutoSize = true;
+            this.streamurllabel.Location = new System.Drawing.Point(6, 46);
+            this.streamurllabel.Name = "streamurllabel";
+            this.streamurllabel.Size = new System.Drawing.Size(65, 13);
+            this.streamurllabel.TabIndex = 3;
+            this.streamurllabel.Text = "Stream URL";
             // 
-            // rpdropdown3
+            // statuslabel
             // 
-            this.rpdropdown3.FormattingEnabled = true;
-            this.rpdropdown3.Location = new System.Drawing.Point(75, 163);
-            this.rpdropdown3.Name = "rpdropdown3";
-            this.rpdropdown3.Size = new System.Drawing.Size(121, 21);
-            this.rpdropdown3.TabIndex = 12;
+            this.statuslabel.AutoSize = true;
+            this.statuslabel.Location = new System.Drawing.Point(34, 23);
+            this.statuslabel.Name = "statuslabel";
+            this.statuslabel.Size = new System.Drawing.Size(37, 13);
+            this.statuslabel.TabIndex = 2;
+            this.statuslabel.Text = "Status";
             // 
-            // rptextbox1
+            // statusdropdown
             // 
-            this.rptextbox1.Location = new System.Drawing.Point(202, 108);
-            this.rptextbox1.Name = "rptextbox1";
-            this.rptextbox1.Size = new System.Drawing.Size(335, 20);
-            this.rptextbox1.TabIndex = 13;
+            this.statusdropdown.FormattingEnabled = true;
+            this.statusdropdown.Location = new System.Drawing.Point(75, 19);
+            this.statusdropdown.Name = "statusdropdown";
+            this.statusdropdown.Size = new System.Drawing.Size(121, 21);
+            this.statusdropdown.TabIndex = 1;
             // 
-            // rptextbox2
+            // multirpcheckbox
             // 
-            this.rptextbox2.Location = new System.Drawing.Point(202, 136);
-            this.rptextbox2.Name = "rptextbox2";
-            this.rptextbox2.Size = new System.Drawing.Size(335, 20);
-            this.rptextbox2.TabIndex = 14;
-            // 
-            // rptextbox3
-            // 
-            this.rptextbox3.Location = new System.Drawing.Point(202, 163);
-            this.rptextbox3.Name = "rptextbox3";
-            this.rptextbox3.Size = new System.Drawing.Size(335, 20);
-            this.rptextbox3.TabIndex = 15;
+            this.multirpcheckbox.AutoSize = true;
+            this.multirpcheckbox.Location = new System.Drawing.Point(355, 19);
+            this.multirpcheckbox.Name = "multirpcheckbox";
+            this.multirpcheckbox.Size = new System.Drawing.Size(182, 17);
+            this.multirpcheckbox.TabIndex = 0;
+            this.multirpcheckbox.Text = "Multiple Rich presence statuses?";
+            this.multirpcheckbox.UseVisualStyleBackColor = true;
+            this.multirpcheckbox.CheckedChanged += new System.EventHandler(this.multirpcheckbox_CheckedChanged);
             // 
             // updatestatusbutton
             // 

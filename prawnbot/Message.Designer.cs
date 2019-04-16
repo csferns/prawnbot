@@ -64,6 +64,7 @@
             this.textChannels.Name = "textChannels";
             this.textChannels.Size = new System.Drawing.Size(121, 21);
             this.textChannels.TabIndex = 3;
+            this.textChannels.SelectedIndexChanged += new System.EventHandler(this.TextChannels_SelectedIndexChanged);
             // 
             // label2
             // 

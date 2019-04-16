@@ -1,5 +1,6 @@
 ﻿using Discord;
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -31,7 +32,7 @@ namespace prawnbot
         {
             try
             {
-                bool connected = await functions.ConnectAsync(token_tb.Text);
+                await functions.ConnectAsync(token_tb.Text);
 
                 token_tb.Enabled = false;
                 token_tb.UseSystemPasswordChar = true;
@@ -42,7 +43,6 @@ namespace prawnbot
                 tokenconnectbutton.Enabled = false;
 
                 await Task.Delay(-1);
-
             }
             catch (Exception Ex)
             {
@@ -96,6 +96,11 @@ namespace prawnbot
             richPresenceToolStripMenuItem.Enabled = false;
 
             tokenconnectbutton.Enabled = true;
+        }
+
+        private void LogsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Process.Start($"{Environment.CurrentDirectory}\\Logs");
         }
         #endregion
 
