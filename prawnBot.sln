@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
-VisualStudioVersion = 16.0.28701.123
+VisualStudioVersion = 16.0.28902.138
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "prawnbot_web", "prawnbot_web\prawnbot_web.csproj", "{3DE1B4F6-5A71-40A4-AA75-F4862E354307}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.Console", "Prawnbot.Console\Prawnbot.Console.csproj", "{F8A2C704-964B-45A4-BD6F-4326890E1253}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "prawnbot_core", "prawnbot_core\prawnbot_core.csproj", "{ECCC737E-4A25-42F6-BE25-EC3CB2E59F17}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prawnbot.Core", "Prawnbot.Core\Prawnbot.Core.csproj", "{CB4380CA-A588-4AB4-A772-DA0EAB6863B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "prawnbot", "prawnbot\prawnbot.csproj", "{DBEF86C9-26A0-40D0-B6C9-D26415CFF885}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prawnbot.Common", "Prawnbot.Common\Prawnbot.Common.csproj", "{DA682398-BB19-47A5-A323-BF9C47C859A2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prawnbot.Data", "Prawnbot.Data\Prawnbot.Data.csproj", "{1BEF8B1C-2A32-44FF-8488-88BA337BC933}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,23 +17,27 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3DE1B4F6-5A71-40A4-AA75-F4862E354307}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3DE1B4F6-5A71-40A4-AA75-F4862E354307}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3DE1B4F6-5A71-40A4-AA75-F4862E354307}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3DE1B4F6-5A71-40A4-AA75-F4862E354307}.Release|Any CPU.Build.0 = Release|Any CPU
-		{ECCC737E-4A25-42F6-BE25-EC3CB2E59F17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ECCC737E-4A25-42F6-BE25-EC3CB2E59F17}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ECCC737E-4A25-42F6-BE25-EC3CB2E59F17}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ECCC737E-4A25-42F6-BE25-EC3CB2E59F17}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DBEF86C9-26A0-40D0-B6C9-D26415CFF885}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DBEF86C9-26A0-40D0-B6C9-D26415CFF885}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DBEF86C9-26A0-40D0-B6C9-D26415CFF885}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DBEF86C9-26A0-40D0-B6C9-D26415CFF885}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8A2C704-964B-45A4-BD6F-4326890E1253}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8A2C704-964B-45A4-BD6F-4326890E1253}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8A2C704-964B-45A4-BD6F-4326890E1253}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8A2C704-964B-45A4-BD6F-4326890E1253}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CB4380CA-A588-4AB4-A772-DA0EAB6863B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB4380CA-A588-4AB4-A772-DA0EAB6863B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB4380CA-A588-4AB4-A772-DA0EAB6863B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CB4380CA-A588-4AB4-A772-DA0EAB6863B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA682398-BB19-47A5-A323-BF9C47C859A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA682398-BB19-47A5-A323-BF9C47C859A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA682398-BB19-47A5-A323-BF9C47C859A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA682398-BB19-47A5-A323-BF9C47C859A2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BEF8B1C-2A32-44FF-8488-88BA337BC933}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BEF8B1C-2A32-44FF-8488-88BA337BC933}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BEF8B1C-2A32-44FF-8488-88BA337BC933}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BEF8B1C-2A32-44FF-8488-88BA337BC933}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {8B9539F1-FA65-499B-9A0D-8DFAEB0B8C0E}
+		SolutionGuid = {E3C0CA13-D153-431D-B7A2-1F7C4704B881}
 	EndGlobalSection
 EndGlobal
