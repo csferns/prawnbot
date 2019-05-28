@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using Prawnbot.Core.Base;
 using Prawnbot.Core.Framework;
@@ -21,6 +22,7 @@ namespace Prawnbot.Core.Bot
         ListResponse<SocketTextChannel> GetGuildTextChannels(SocketGuild guild);
         Response<SocketTextChannel> GetGuildTextChannel(SocketGuild guild, SocketTextChannel channel);
         Response<Process> CreateFfmpegProcess(string path);
+        Response<Task> LeaveAudio(IGuild guild);
     }
 
     public class BotService : BaseService, IBotService
@@ -30,6 +32,11 @@ namespace Prawnbot.Core.Bot
         public BotService()
         {
             _businessLayer = new BotBl();
+        }
+
+        public BotService(SocketCommandContext _context)
+        {
+            _businessLayer = new BotBl(_context);
         }
 
         public async Task<Response<bool>> ConnectAsync(string token)
@@ -85,6 +92,11 @@ namespace Prawnbot.Core.Bot
         public Response<SocketTextChannel> GetGuildTextChannel(SocketGuild guild, SocketTextChannel channel)
         {
             throw new System.NotImplementedException();
+        }
+
+        public Response<Task> LeaveAudio(IGuild guild)
+        {
+            return LoadResponse(_businessLayer.LeaveAudio(guild));
         }
     }
 }

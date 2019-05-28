@@ -1,64 +1,50 @@
 ﻿using Discord;
-using Prawnbot.Core.File;
+using Prawnbot.Core.Base;
+using Prawnbot.Core.LocalFileAccess;
+using Prawnbot.Data.Models.API;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.Log
-{
-    public static class Logging
+{    
+    public interface ILogging
     {
-        public static async Task PopulateEventLog(LogMessage message)
+        Task PopulateEventLog(LogMessage message);
+        Task PopulateMessageLog(LogMessage message);
+        Task PopulateTranslationLog(List<TranslateData> translation);
+    }
+
+    public class Logging : BaseBl, ILogging
+    {
+        public Logging()
         {
-            string folderPath = $"{Environment.CurrentDirectory}\\Logs";
-            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
-            string filePath = $"{folderPath}\\EventLogs.txt";
-            if (!System.IO.File.Exists(filePath)) System.IO.File.Create(filePath);
-
-            try
-            {
-                using (FileStream fileStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.Read))
-                using (StreamWriter writer = new StreamWriter(fileStream))
-                {
-                    await writer.WriteLineAsync(message.ToString(timestampKind: DateTimeKind.Local));
-                }
-
-                Console.WriteLine(message.ToString(timestampKind: DateTimeKind.Local));
-            }
-            catch (Exception)
-            {
-                throw;
-            }
         }
 
-        public static async Task PopulateMessageLog(LogMessage message)
+        public async Task PopulateEventLog(LogMessage message)
         {
-            string folderPath = $"{Environment.CurrentDirectory}\\Logs";
-            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
-
-            string filePath = $"{folderPath}\\MessageLogs.txt";
-            if (!System.IO.File.Exists(filePath)) System.IO.File.Create(filePath);
-
-            try
-            {
-                using (FileStream fileStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.Read))
-                using (StreamWriter writer = new StreamWriter(fileStream))
-                {
-                    await writer.WriteLineAsync(message.ToString(timestampKind: DateTimeKind.Local));
-                }
-
-                Console.WriteLine(message.ToString(timestampKind: DateTimeKind.Local));
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            await _fileService.WriteToFile(message.ToString(timestampKind: DateTimeKind.Local), "EventLogs.txt");
+            Console.WriteLine(message.ToString(timestampKind: DateTimeKind.Local));
         }
 
-        public static async Task PopulateTranslationLog(LogMessage message)
+        public async Task PopulateMessageLog(LogMessage message)
         {
+            await _fileService.WriteToFile(message.ToString(timestampKind: DateTimeKind.Local), "MessageLogs.txt");
+            Console.WriteLine(message.ToString(timestampKind: DateTimeKind.Local));
+        }
 
+        public async Task PopulateTranslationLog(List<TranslateData> translation)
+        {
+            foreach (var item in translation)
+            {
+                foreach (var innerTranslation in item.translations)
+                {
+                    await _fileService.WriteToFile($"{innerTranslation.to} : {innerTranslation.text}", "TranslationLog.txt");
+                }
+                
+            }
         }
     }
 }

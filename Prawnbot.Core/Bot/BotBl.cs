@@ -1,14 +1,18 @@
 ﻿using Discord;
+using Discord.Audio;
 using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Prawnbot.Core.Base;
 using Prawnbot.Core.Log;
 using Prawnbot.Core.Module;
 using Prawnbot.Core.Utility;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -35,10 +39,13 @@ namespace Prawnbot.Core.Bot
         Task AnnounceUserJoined(SocketGuildUser user);
         Task AnnounceUserBan(SocketUser user, SocketGuild guild);
         Task Client_UserUnbanned(SocketUser user, SocketGuild guild);
+        Task LeaveAudio(IGuild guild);
     }
 
     public class BotBl : BaseBl, IBotBl
     {
+        private readonly ConcurrentDictionary<ulong, IAudioClient> ConnectedChannels = new ConcurrentDictionary<ulong, IAudioClient>();
+
         private static DiscordSocketClient _client;
         /// <summary>
         /// The static connection state of the client
@@ -52,7 +59,6 @@ namespace Prawnbot.Core.Bot
         /// The collection of the commands the bot can be sent
         /// </summary>
         private Discord.Commands.CommandService _commands;
-        protected Core.Command.ICommandService _commandService;
         /// <summary>
         /// Collection of services the bot can use
         /// </summary>
@@ -62,14 +68,52 @@ namespace Prawnbot.Core.Bot
         /// </summary>
         private SocketCommandContext Context;
 
+        private CancellationTokenSource cancellationTokenSource;
+
         public BotBl()
         {
-             _commandService = new Command.CommandService();
+             
         }
 
+        /// <summary>
+        /// Creates an instance of the BotBl with the Command Context
+        /// </summary>
+        /// <param name="_context"></param>
         public BotBl(SocketCommandContext _context)
         {
             Context = _context;
+        }
+
+        /// <summary>
+        /// Sets up each layer of the application
+        /// </summary>
+        public void LayerSetup()
+        {
+            logging = new Logging();
+
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Path.Combine(AppContext.BaseDirectory))
+                .AddJsonFile("appsettings.json", optional: false);
+
+            ConfigUtility = new ConfigUtility(builder.Build());
+
+            _apiBl = new API.APIBl();
+            _apiService = new API.APIService();
+
+            _botBl = new Bot.BotBl();
+            _botService = new Bot.BotService();
+
+            _commandBl = new Command.CommandBl();
+            _commandService = new Command.CommandService();
+
+            _fileBl = new LocalFileAccess.FileBl();
+            _fileService = new LocalFileAccess.FileService();
+
+            _dbAccessBl = new DatabaseAccess.DatabaseAccessBl();
+            _dbAccessService = new DatabaseAccess.DatabaseAccessService();
+
+            _speechRecognitionBl = new SpeechRecognition.SpeechRecognitionBl();
+            _speechRecognitionService = new SpeechRecognition.SpeechRecognitionService();
         }
 
         /// <summary>
@@ -79,6 +123,8 @@ namespace Prawnbot.Core.Bot
         /// <returns></returns>
         public async Task<bool> ConnectAsync(string token)
         {
+            LayerSetup();
+
             _token = token;
 
             _client = new DiscordSocketClient(new DiscordSocketConfig
@@ -98,8 +144,9 @@ namespace Prawnbot.Core.Bot
             _client.UserJoined += AnnounceUserJoined;
             _client.UserBanned += AnnounceUserBan;
             _client.UserUnbanned += Client_UserUnbanned;
-            _client.Log += Logging.PopulateEventLog;
+            _client.Log += logging.PopulateEventLog;
             _client.Disconnected += Client_Disconnected;
+            _client.Connected += Client_Connected;
 
             try
             {
@@ -107,20 +154,14 @@ namespace Prawnbot.Core.Bot
 
                 await _client.LoginAsync(TokenType.Bot, _token);
                 await _client.StartAsync();
-                await SetBotStatusAsync(UserStatus.Online);
-
-                await Task.Delay(300);
-
-                _client.Connected += Client_Connected;
-
-                return true;
+                await SetBotStatusAsync(UserStatus.Online); 
             }
             catch (Exception e)
             {
-                await Logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "ConnectAsync()", "Error connecting the bot", e));
-
-                return false;
+                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "ConnectAsync()", "Error connecting the bot", e));
             }
+
+            return true;
         }
 
         /// <summary>
@@ -144,7 +185,7 @@ namespace Prawnbot.Core.Bot
             }
             catch (Exception e)
             {
-                await Logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "Disconnect", "Error disconnecting the bot", e));
+                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "Disconnect", "Error disconnecting the bot", e));
                 return false;
             }
 
@@ -161,7 +202,7 @@ namespace Prawnbot.Core.Bot
             }
             catch (Exception e)
             {
-                await Logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "Reconnect", "Error reconnecting the bot", e));
+                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "Reconnect", "Error reconnecting the bot", e));
                 return false;
             }
         }
@@ -187,9 +228,9 @@ namespace Prawnbot.Core.Bot
                 {
                     IResult result = await _commands.ExecuteAsync(context, argPos, _services);
 
-                    if (message.Channel.GetType() == typeof(SocketDMChannel)) await Logging.PopulateMessageLog(new LogMessage(LogSeverity.Info, "Message", $"{message.Author.Username}: {message.Content}"));
+                    if (message.Channel.GetType() == typeof(SocketDMChannel)) await logging.PopulateMessageLog(new LogMessage(LogSeverity.Info, "Message", $"{message.Author.Username}: {message.Content}"));
 
-                    if (!result.IsSuccess) await Logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "Commands", result.ErrorReason));
+                    if (!result.IsSuccess) await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "Commands", result.ErrorReason));
 
                     if (
                         result.ErrorReason != null
@@ -202,14 +243,18 @@ namespace Prawnbot.Core.Bot
                 }
                 else
                 {
-                    await _commandService.ContainsText(context, message);
-                    await _commandService.ContainsUser(context, message);
+                    if (ConfigUtility.AllowEventListeners)
+                    {
+                        await _commandService.ContainsText(context, message);
+                        await _commandService.ContainsUser(context, message);
+                    }
                 }
+
                 return true;
             }
             catch (Exception e)
             {
-                await Logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "HandleCommand", "Error handling the command", e));
+                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "HandleCommand", "Error handling the command", e));
                 return false;
             }
 
@@ -229,17 +274,26 @@ namespace Prawnbot.Core.Bot
             }
             catch (Exception e)
             {
-                await Logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "BotStatus", "Error setting bot status", e));
+                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "BotStatus", "Error setting bot status", e));
                 return false;
             }
 
         }
 
+        /// <summary>
+        /// Get all the current users in the servers the bot is connected to
+        /// </summary>
+        /// <returns></returns>
         public List<SocketGuildUser> GetAllUsers()
         {
             return Context.Guild.Users.ToList();
         }
 
+        /// <summary>
+        /// Gets all messages from a guild text channel
+        /// </summary>
+        /// <param name="id">Text channel ID</param>
+        /// <returns></returns>
         public async Task<List<IMessage>> GetAllMessages(ulong id)
         {
             RequestOptions options = new RequestOptions
@@ -263,11 +317,6 @@ namespace Prawnbot.Core.Bot
         }
 
         /// <summary>
-        /// Get all the current users in the servers the bot is connected to
-        /// </summary>
-        /// <returns></returns>
-
-        /// <summary>
         /// Gets the default channel of the given guild
         /// </summary>
         /// <param name="guild">Server</param>
@@ -277,6 +326,11 @@ namespace Prawnbot.Core.Bot
             return _client.Guilds.FirstOrDefault(x => x == guild).DefaultChannel;
         }
 
+        /// <summary>
+        /// Gets a text channel with the supplied ID
+        /// </summary>
+        /// <param name="id">Channel ID</param>
+        /// <returns></returns>
         public SocketTextChannel GetChannelById(ulong id)
         {
             return Context.Guild.GetTextChannel(id);
@@ -303,6 +357,11 @@ namespace Prawnbot.Core.Bot
             return _client.Guilds.FirstOrDefault(x => x == guild).TextChannels.FirstOrDefault(x => x == channel);
         }
 
+        /// <summary>
+        /// Create an FFMPEG process for the audio commands
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public Process CreateFfmpegProcess(string path)
         {
             return Process.Start(new ProcessStartInfo
@@ -312,37 +371,53 @@ namespace Prawnbot.Core.Bot
                 UseShellExecute = false,
                 RedirectStandardOutput = true
             });
-        } 
+        }
+
+        public async Task LeaveAudio(IGuild guild)
+        {
+            IAudioClient client;
+            if (ConnectedChannels.TryRemove(guild.Id, out client))
+            {
+                await client.StopAsync();
+            }
+        }
 
         #region Event Listeners
         /// <summary>
         /// Event that is fired when the client connects
         /// </summary>
         /// <returns>Task</returns>
-        public Task Client_Connected()
+        public async Task Client_Connected()
         {
             connectionState = ConnectionState.Connected;
 
-            return Task.Run(async () =>
+            cancellationTokenSource = new CancellationTokenSource();
+
+            _ = Task.Run(async () =>
             {
                 while (connectionState == ConnectionState.Connected)
                 {
+                    await Task.Delay(60000);
+
                     if (
                         (DateTime.Now.Hour == 9 || DateTime.Now.Hour == 21)
                         && DateTime.Now.Minute == 11
-                        && DateTime.Now.Second == 0
-                        && DateTime.Now.Millisecond <= 100
-                       )
+                        )
                     {
                         foreach (var guild in _client.Guilds)
                         {
                             await guild.DefaultChannel.SendMessageAsync("Happy meme o'clock!");
                         }
 
-                        await ReconnectAsync();
+                        break;
                     }
                 }
-            });
+
+                await ReconnectAsync();
+
+                cancellationTokenSource.Cancel();
+
+            }, cancellationTokenSource.Token);
         }
 
         /// <summary>
@@ -350,11 +425,10 @@ namespace Prawnbot.Core.Bot
         /// </summary>
         /// <param name="arg"></param>
         /// <returns>Task.CompletedTask</returns>
-        public Task Client_Disconnected(Exception arg)
+        public async Task Client_Disconnected(Exception arg)
         {
+            await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "", "Client disconnected", arg));
             connectionState = ConnectionState.Disconnected;
-
-            return Task.CompletedTask;
         }
 
         /// <summary>

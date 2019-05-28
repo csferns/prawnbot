@@ -5,6 +5,11 @@ namespace Prawnbot.Core.Base
 {
     public class BaseService
     {
+        public BaseService()
+        {
+            
+        }
+
         protected Response<TEntity> LoadResponse<TEntity>(TEntity item)
         {
             Response<TEntity> response = new Response<TEntity>

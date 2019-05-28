@@ -32,7 +32,7 @@ namespace Prawnbot.Core.Module
         public async Task LeaveCmd(IVoiceChannel channel = null)
         {
             channel = channel ?? (Context.User as IGuildUser)?.VoiceChannel;
-            //await functions.LeaveAudio(Context.Guild);
+            await _botService.LeaveAudio(Context.Guild).Entity;
         }
     }
 }

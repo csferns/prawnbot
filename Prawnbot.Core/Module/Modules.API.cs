@@ -12,11 +12,13 @@ namespace Prawnbot.Core.Module
         [Summary("Translates the given text")]
         public async Task TranslateAsync(string toLanguage, [Remainder]string textToTranslate)
         {
+            ILogging logging = new Logging();
+
             var translatedText = await _apiService.TranslateAsync(toLanguage, null, textToTranslate);
             var translation = translatedText.Entities.FirstOrDefault().translations.FirstOrDefault();
 
             await Context.Channel.SendMessageAsync($"{translation.text}");
-            await Logging.PopulateEventLog(new LogMessage(LogSeverity.Info, "Translation", translation.text));
+            await logging.PopulateEventLog(new LogMessage(LogSeverity.Info, "Translation", translation.text));
         }
     }
 }

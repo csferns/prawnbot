@@ -2,7 +2,10 @@
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Prawnbot.Common.Enums;
+using Prawnbot.Core.Base;
 using Prawnbot.Core.Models;
+using Prawnbot.Data.Models;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -15,17 +18,17 @@ namespace Prawnbot.Core.Module
 {
     public partial class Modules : ModuleBase<SocketCommandContext>
     {
-        protected File.IFileService _fileService;
+        protected LocalFileAccess.IFileService _fileService;
         protected Command.ICommandService _commandService;
         protected API.IAPIService _apiService;
         protected Bot.IBotService _botService;
 
         public Modules()
         {
-            _fileService = new File.FileService();
+            _fileService = new LocalFileAccess.FileService();
             _commandService = new Command.CommandService();
             _apiService = new API.APIService();
-            _botService = new Bot.BotService();
+            _botService = new Bot.BotService(Context);
         }
 
         [Command("random-user")]
@@ -106,14 +109,13 @@ namespace Prawnbot.Core.Module
             EmbedBuilder builder = new EmbedBuilder();
 
             builder.WithTitle($"Status: {Context.Guild.Name}")
-                .WithAuthor(Context.Client.CurrentUser)
                 .WithColor(Color.Blue)
                 .WithDescription(
-                $"The default channel is: {Context.Guild.DefaultChannel} \n" +
-                $"The server was created on {Context.Guild.CreatedAt.LocalDateTime} \n" +
-                $"The server currently has {Context.Guild.MemberCount} members \n" +
-                $"The current AFK Channel is {Context.Guild.AFKChannel} with a timeout of {Context.Guild.AFKTimeout}\n " +
-                $"There are currently {Context.Guild.Channels.Count} channels in the server\n " +
+                $"The default channel is: \"{Context.Guild.DefaultChannel}\" \n" +
+                $"The server was created on {Context.Guild.CreatedAt.LocalDateTime.ToString("dd/MM/yyyy")} \n" +
+                $"The server currently has {Context.Guild.Users.Where(x => !x.IsBot).Count()} users and {Context.Guild.Users.Where(x => x.IsBot).Count()} bots ({Context.Guild.MemberCount} total) \n" +
+                $"The current AFK Channel is \"{Context.Guild.AFKChannel.Name}\"\n " +
+                $"There are currently {Context.Guild.TextChannels.Count} text channels and {Context.Guild.VoiceChannels.Count} voice channels in the server\n " +
                 $"The server owner is {Context.Guild.Owner}")
                 .WithCurrentTimestamp();
 
@@ -161,7 +163,7 @@ namespace Prawnbot.Core.Module
 
         [Command("current-region")]
         [Summary("Gets the server's current region")]
-        public async Task CurrentRegionAsync() => await Context.Channel.SendMessageAsync($"The server is currently located in: **{Context.Client.VoiceRegions.FirstOrDefault(x => x.Id == Context.Guild.VoiceRegionId)}**");
+        public async Task CurrentRegionAsync() => await Context.Channel.SendMessageAsync($"The server is currently located in: {Format.Bold(Context.Client.VoiceRegions.FirstOrDefault(x => x.Id == Context.Guild.VoiceRegionId).Name)}");
 
         [Command("all-regions")]
         [Summary("Gets all the server regions")]
@@ -175,27 +177,20 @@ namespace Prawnbot.Core.Module
             sb.Append("__Active regions:__ \n");
             foreach (var region in allRegions.Where(x => !x.IsDeprecated && !x.IsVip))
             {
-                if (region.IsOptimal || region.Id == currentRegion) sb.Append("**");
-                sb.Append($"{region.Name}");
+                sb.Append($"{(region.IsOptimal || region.Id == currentRegion ? Format.Bold(region.Name) : region.Name)}");
                 if (region.IsOptimal) sb.Append(" (Optimal)");
                 if (region.Id == currentRegion) sb.Append(" (Current)");
-
-                if (region.IsOptimal || region.Id == currentRegion) sb.Append("**");
-                sb.Append("\n");
+                sb.AppendLine();
             }
 
-            sb.Append("\n");
+            sb.AppendLine();
             sb.Append("__Deprecated regions:__ \n");
 
             foreach (var region in allRegions.Where(x => x.IsDeprecated && !x.IsVip))
             {
-                if (region.IsOptimal || region.Id == currentRegion) sb.Append("**");
-
-                sb.Append($"{region.Name}");
+                sb.Append($"{(region.IsOptimal || region.Id == currentRegion ? Format.Bold(region.Name) : region.Name)}");
                 if (region.Id == currentRegion) sb.Append(" (Current)");
-
-                if (region.IsOptimal || region.Id == currentRegion) sb.Append("**");
-                sb.Append("\n");
+                sb.AppendLine();
             }
 
             await Context.Channel.SendMessageAsync(sb.ToString());
@@ -231,7 +226,7 @@ namespace Prawnbot.Core.Module
                 return;
             }
 
-            await Context.Channel.SendMessageAsync($"Setting server **{Context.Guild}**'s region to {region}");
+            await Context.Channel.SendMessageAsync($"Setting server {Format.Bold(Context.Guild.Name)}'s region to {region}");
 
             var optionalRegion = new Optional<IVoiceRegion>(region);
 
@@ -333,12 +328,12 @@ namespace Prawnbot.Core.Module
                     DateTime startTime = DateTime.Now;
                     if (id.GetValueOrDefault() == default(ulong)) id = Context.Guild.DefaultChannel.Id;
 
-                    await Context.Channel.SendMessageAsync($"Started backup of channel **#{Context.Guild.GetChannel(id.GetValueOrDefault())}** at {startTime.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
+                    await Context.Channel.SendMessageAsync($"Started backup of channel #{Format.Bold(Context.Guild.GetChannel(id.GetValueOrDefault()).Name)} at {startTime.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
 
                     var records = await _fileService.CreateCSVList(id.GetValueOrDefault());
-                    var result = await _fileService.WriteToCSV(records.Entities, "ChannelBackups", startTime, id, Context.Guild.Name);
+                    var result = _fileService.WriteToCSV(records.Entities, id, Context.Guild.Name).Entity;
 
-                    await Context.Channel.SendMessageAsync(result.Entity);
+                    await Context.Channel.SendMessageAsync(result);
                 }
             });
         }
@@ -381,7 +376,7 @@ namespace Prawnbot.Core.Module
 
                 columns.Add(recordToAdd);
 
-                await _fileService.WriteToCSV(columns, "ChannelBackups", DateTime.Now, id, Context.Guild.Name);
+                _fileService.WriteToCSV(columns, id, Context.Guild.Name);
             }
 
             if (Context.Message.Channel.Id == id) await Context.Message.DeleteAsync();
@@ -429,12 +424,73 @@ namespace Prawnbot.Core.Module
                     DateTime startTime = DateTime.Now;
 
                     var records = await _fileService.CreateCSVList(textChannel.Id);
-                    await _fileService.WriteToCSV(records.Entities, $"ServerBackups\\{Context.Guild.Name}", startTime, textChannel.Id, Context.Guild.Name);
+                    var result = _fileService.WriteToCSV(records.Entities, textChannel.Id, Context.Guild.Name).Entity;
+                    await Context.Channel.SendMessageAsync(result);
                 }
 
                 TimeSpan completionTime = DateTime.Now - operationTime;
                 await Context.Channel.SendMessageAsync($"Finished server backup of {Context.Guild.Name}. The operation took {completionTime.Hours}h:{completionTime.Minutes}m:{completionTime.Seconds}s:{completionTime.Milliseconds}ms");
             });
+        }
+
+        [Command("yotta count")]
+        public async Task YottaCountAsync()
+        {
+            string[] yotta = _fileService.ReadFromFile("Yotta.txt").Entity;
+
+            var enumValues = Enum.GetValues(typeof(PrependEnum));
+            List<YottaModel> valueCount = new List<YottaModel>(yotta.Count());
+
+            foreach (var item in enumValues)
+            {
+                var prependCount = yotta.Where(x => x.ToString() == item.ToString()).Count();
+
+                valueCount.Add(new YottaModel { PrependValue = (PrependEnum)item, Count = prependCount });
+            }
+
+            StringBuilder sb = new StringBuilder();
+            foreach (var item in valueCount)
+            {
+                sb.Append($"{item.PrependValue}: {item.Count}\n");
+            }
+
+            await Context.Channel.SendMessageAsync(sb.ToString());
+        }
+
+        [Command("yotta ordered")]
+        public async Task YottaOrderedAsync()
+        {
+            string[] yotta = _fileService.ReadFromFile("Yotta.txt").Entity;
+
+            var orderedYotta = yotta.OrderBy(x => x);
+
+            await Context.Channel.SendMessageAsync(string.Join(", ", orderedYotta));
+        }
+
+        [Command("all-config")]
+        public async Task GetAllConfigAsync()
+        {
+            Dictionary<string, string> configurationValues = _fileService.GetAllConfigurationValues().Entity;
+
+            StringBuilder sb = new StringBuilder();
+
+            foreach (var configItem in configurationValues.OrderBy(x => x.Key))
+            {
+                if (configItem.Value != null)
+                {
+                    sb.AppendLine($"{configItem.Key.Remove(0, 13)}: {configItem.Value}");
+                }
+            }
+
+            await Context.Channel.SendMessageAsync(sb.ToString());
+        }
+
+        [Command("config")]
+        public async Task ChangeConfigurationAsync(string configurationName, string newConfigurationValue)
+        {
+            _fileService.SetConfigurationValue(configurationName, newConfigurationValue);
+
+            await Context.Channel.SendMessageAsync($"Changed the configuration of {configurationName} to {newConfigurationValue}");
         }
     }
 }
