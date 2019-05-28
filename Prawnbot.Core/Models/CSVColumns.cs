@@ -11,7 +11,7 @@ namespace Prawnbot.Core.Models
         public bool AuthorIsBot { get; set; }
         public string MessageContent { get; set; }
         public DateTimeOffset Timestamp { get; set; }
-        public string Attachment { get; set; }
+        public string Attachments { get; set; }
         public KeyValuePair<IEmote, ReactionMetadata> Reactions { get; set; }
     }
 }

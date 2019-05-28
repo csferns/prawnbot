@@ -1,5 +1,8 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.WebSocket;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,14 +19,6 @@ namespace Prawnbot.Core.Utility
         public static bool ContainsSingleLower(this string message, string textToFind)
         {
             string[] splitMessage = message.ToLowerInvariant().Split(' ');
-
-            foreach (var word in splitMessage)
-            {
-                if (word.Contains('?'))
-                {
-                    word.Replace('?', ' ');
-                }
-            }
 
             textToFind = textToFind.ToLowerInvariant();
 
@@ -80,7 +75,26 @@ namespace Prawnbot.Core.Utility
                     sb.Append(c);
                 }
             }
+
             return sb.ToString();
+        }
+
+        public static string RandomStringFromList(this List<string> list)
+        {
+            Random random = new Random();
+            List<string> newList = new List<string>();
+
+            foreach (string value in list)
+            {
+                newList.AddRange(Enumerable.Repeat(value, 5));
+            }
+
+            return newList[random.Next(newList.Count())];
+        } 
+
+        public static Image GetImageFromStream(this Stream stream)
+        {
+            return new Image(stream);
         }
     }
 }
