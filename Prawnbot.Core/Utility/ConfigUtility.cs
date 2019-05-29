@@ -86,5 +86,10 @@ namespace Prawnbot.Core.Utility
         {
             get { return GetConnectionString("TranslateAPIKey"); }
         }
+
+        public string SpeechServicesKey
+        {
+            get { return GetConnectionString("SpeechServicesKey"); }
+        }
     }
 }
