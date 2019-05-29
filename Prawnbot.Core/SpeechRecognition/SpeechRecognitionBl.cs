@@ -22,7 +22,7 @@ namespace Prawnbot.Core.SpeechRecognition
             AudioOutputStream newStream = AudioOutputStream.CreatePullStream(AudioStreamFormat.GetDefaultOutputFormat());
             //discordAudioStream.CopyTo(newStream);
 
-            speechSynthesizer = new SpeechSynthesizer(SpeechConfig.FromEndpoint(new Uri("https://uksouth.api.cognitive.microsoft.com/sts/v1.0/issuetoken"), "48d1c048b2b04e5584e2390d08f5e83f"));
+            speechSynthesizer = new SpeechSynthesizer(SpeechConfig.FromEndpoint(new Uri("https://uksouth.api.cognitive.microsoft.com/sts/v1.0/issuetoken"), ConfigUtility.SpeechServicesKey));
         }
     }
 }
