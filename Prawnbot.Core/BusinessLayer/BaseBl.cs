@@ -18,7 +18,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Path.Combine(AppContext.BaseDirectory))
-                .AddJsonFile("appsettings.json", optional: false);
+                .AddJsonFile("Configuration\\appsettings.json", optional: false);
 
             ConfigUtility = new ConfigUtility(builder.Build());
         } 

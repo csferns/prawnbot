@@ -26,7 +26,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Prawnbot.Common\Prawnbot.Common.csproj" />
-    <ProjectReference Include="..\Prawnbot.Configuration\Prawnbot.Configuration.csproj" />
     <ProjectReference Include="..\Prawnbot.Data\Prawnbot.Data.csproj" />
   </ItemGroup>
 
