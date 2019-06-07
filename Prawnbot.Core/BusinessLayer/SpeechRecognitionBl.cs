@@ -1,11 +1,8 @@
-﻿using Discord;
-using Microsoft.CognitiveServices.Speech;
+﻿using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
-using Prawnbot.Core.Base;
-using RestSharp.Extensions;
 using System;
 
-namespace Prawnbot.Core.SpeechRecognition
+namespace Prawnbot.Core.BusinessLayer
 {
     public interface ISpeechRecognitionBl
     {

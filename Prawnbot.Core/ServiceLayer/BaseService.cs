@@ -1,15 +1,10 @@
 ﻿using Prawnbot.Core.Framework;
 using System.Collections.Generic;
 
-namespace Prawnbot.Core.Base
+namespace Prawnbot.Core.ServiceLayer
 {
     public class BaseService
     {
-        public BaseService()
-        {
-            
-        }
-
         protected Response<TEntity> LoadResponse<TEntity>(TEntity item)
         {
             Response<TEntity> response = new Response<TEntity>

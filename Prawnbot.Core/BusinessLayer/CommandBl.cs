@@ -2,7 +2,6 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Prawnbot.Common.Enums;
-using Prawnbot.Core.Base;
 using Prawnbot.Core.Utility;
 using System;
 using System.Collections.Generic;
@@ -11,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Prawnbot.Core.Command
+namespace Prawnbot.Core.BusinessLayer
 {
     public interface ICommandBl
     {
@@ -24,11 +23,6 @@ namespace Prawnbot.Core.Command
 
     public class CommandBl : BaseBl, ICommandBl
     {
-        public CommandBl()
-        {
-           
-        }
-
         public async Task<bool> ContainsUser(SocketCommandContext context, SocketUserMessage message)
         {
             Random random = new Random();
@@ -64,10 +58,13 @@ namespace Prawnbot.Core.Command
             if (strippedMessage.ContainsSingleLower("daddy")) await context.Channel.SendMessageAsync($"{context.User.Mention} you can be my daddy if you want :wink:");
             if (strippedMessage.ContainsSingleLower("africa")) await context.Channel.SendMessageAsync("toto by africa");
             if (strippedMessage.ContainsSingleLower("big")) await context.Channel.SendMessageAsync("chunky");
+            if (strippedMessage.ContainsSingleLower("round")) await context.Channel.SendMessageAsync("plumpy");
             if (strippedMessage.ContainsSingleLower("marvin")) await context.Channel.SendMessageAsync("Marvout");
             if (strippedMessage.ContainsSingleLower("marvout")) await context.Channel.SendMessageAsync("Marvin");
             if (strippedMessage.ContainsSingleLower("engineer")) await context.Channel.SendMessageAsync("The engineer is engihere");
             if (strippedMessage.ContainsSingleLower("ban")) await context.Channel.SendMessageAsync("Did I hear somebody say Macro pad?");
+            if (strippedMessage.ContainsSingleLower("dad")) await context.Channel.SendMessageAsync("404 dad not found");
+            if (strippedMessage.Contains("2realirl4meirl")) await context.Channel.SendMessageAsync("REEEEEEEEEEEEEEEEEEE");
 
             if (strippedMessage.ContainsManyLower("what can i say")) await context.Channel.SendMessageAsync("except, you're welcome!");
             if (strippedMessage.ContainsManyLower("oi oi")) await context.Channel.SendMessageAsync("big boi");
@@ -116,28 +113,48 @@ namespace Prawnbot.Core.Command
             {
                 await context.Message.AddReactionAsync(new Emoji("👍"));
                 var imageUrl = await _fileService.GetUriFromBlobStore("top_elims.png", "botimages");
-                await context.Channel.SendFileAsync(imageUrl.Entity.AbsoluteUri);
+
+                var req = System.Net.WebRequest.Create(imageUrl.Entity);
+                using (Stream stream = req.GetResponse().GetResponseStream())
+                {
+                    await context.Channel.SendFileAsync(stream, "top_elims.png");
+                }
             }
 
             if (strippedMessage.ContainsManyLower("taps head"))
             {
                 await context.Message.AddReactionAsync(new Emoji("👍"));
-                var imageUrl = await _fileService.GetStreamFromBlobStore("james_tapping_head.png", "botimages");
-                await context.Channel.SendFileAsync(imageUrl.Entity, "james_tapping_head.png");
+                var imageUrl = await _fileService.GetUriFromBlobStore("james_tapping_head.png", "botimages");
+
+                var req = System.Net.WebRequest.Create(imageUrl.Entity);
+                using (Stream stream = req.GetResponse().GetResponseStream())
+                {
+                    await context.Channel.SendFileAsync(stream, "james_tapping_head.png", Format.Italics("taps head"));
+                }
             }
 
             if (strippedMessage.ContainsManyLower("one last ride"))
             {
                 await context.Message.AddReactionAsync(new Emoji("👍"));
                 var imageUrl = await _fileService.GetUriFromBlobStore("one_last_ride.png", "botimages");
-                await context.Channel.SendFileAsync(imageUrl.Entity.AbsoluteUri, "One last ride?");
+
+                var req = System.Net.WebRequest.Create(imageUrl.Entity);
+                using (Stream stream = req.GetResponse().GetResponseStream())
+                {
+                    await context.Channel.SendFileAsync(stream, "one_last_ride.png", Format.Italics("One last ride?"));
+                }
             }
 
             if (strippedMessage.ContainsManyLower("cam murray"))
             {
                 await context.Message.AddReactionAsync(new Emoji("👍"));
                 var imageUrl = await _fileService.GetUriFromBlobStore("cam_murray.png", "botimages");
-                await context.Channel.SendFileAsync(imageUrl.Entity.AbsoluteUri, Format.Italics("taps head"));
+
+                var req = System.Net.WebRequest.Create(imageUrl.Entity);
+                using (Stream stream = req.GetResponse().GetResponseStream())
+                {
+                    await context.Channel.SendFileAsync(stream, "cam_murray.png");
+                }
             }
 
             if (strippedMessage.ToLowerInvariant().StartsWith("im"))
@@ -190,21 +207,49 @@ namespace Prawnbot.Core.Command
 
         public async Task<string[]> YottaPrepend(SocketGuild guild)
         {
-            string[] fileLines;
+            Random random = new Random();
 
-            using (FileStream fileStream = _fileBl.CreateLocalFileIfNotExists("Yotta.txt", FileMode.Append, FileAccess.Write, FileShare.Write))
-            using (StreamWriter file = new StreamWriter(fileStream))
+            string[] fileContents = await _fileBl.ReadFromFileAsync($"{guild.Name}\\Yotta.txt");
+
+            Dictionary<string, int> valueDictionary = new Dictionary<string, int>();
+
+            foreach (var line in fileContents)
             {
-                List<string> prependEnumList = new List<string>(Enum.GetNames(typeof(PrependEnum)));
-
-                string filePath = ConfigUtility.TextFileDirectory + "\\Yotta.txt";
-
-                fileLines = File.ReadAllLines(filePath);
-
-                await file.WriteLineAsync(prependEnumList.RandomStringFromList());
+                if (valueDictionary.ContainsKey(line))
+                {
+                    valueDictionary[line]++;
+                }
+                else
+                {
+                    valueDictionary.Add(line, 1);
+                }
             }
 
-            return fileLines.Reverse().ToArray();
+            Array enumValues = Enum.GetValues(typeof(PrependEnum));
+
+            bool validValue = false;
+
+            while (!validValue)
+            {
+                List<string> invalidValues = new List<string>();
+
+                string randomEnumValue = enumValues.GetValue(random.Next(enumValues.Length)).ToString();
+
+                if (valueDictionary[randomEnumValue] < 69)
+                {
+                    await _fileBl.WriteToFile(randomEnumValue, $"{guild.Name}\\Yotta.txt");
+                    fileContents.Append(randomEnumValue);
+                    break;
+                }
+                else
+                {
+                    invalidValues.Add(randomEnumValue);
+
+                    if (invalidValues.Count == enumValues.Length) break;                
+                }
+            }
+
+            return fileContents.Reverse().ToArray();
         }
     }
 }

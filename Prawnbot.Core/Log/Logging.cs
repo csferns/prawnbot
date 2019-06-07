@@ -1,14 +1,12 @@
 ﻿using Discord;
-using Prawnbot.Core.Base;
-using Prawnbot.Core.LocalFileAccess;
+using Prawnbot.Core.BusinessLayer;
 using Prawnbot.Data.Models.API;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.Log
-{    
+{
     public interface ILogging
     {
         Task PopulateEventLog(LogMessage message);
@@ -26,13 +24,13 @@ namespace Prawnbot.Core.Log
         public async Task PopulateEventLog(LogMessage message)
         {
             await _fileService.WriteToFile(message.ToString(timestampKind: DateTimeKind.Local), "EventLogs.txt");
-            Console.WriteLine(message.ToString(timestampKind: DateTimeKind.Local));
+            await Console.Out.WriteLineAsync(message.ToString(timestampKind: DateTimeKind.Local));
         }
 
         public async Task PopulateMessageLog(LogMessage message)
         {
             await _fileService.WriteToFile(message.ToString(timestampKind: DateTimeKind.Local), "MessageLogs.txt");
-            Console.WriteLine(message.ToString(timestampKind: DateTimeKind.Local));
+            await Console.Out.WriteLineAsync(message.ToString(timestampKind: DateTimeKind.Local));
         }
 
         public async Task PopulateTranslationLog(List<TranslateData> translation)
@@ -43,7 +41,6 @@ namespace Prawnbot.Core.Log
                 {
                     await _fileService.WriteToFile($"{innerTranslation.to} : {innerTranslation.text}", "TranslationLog.txt");
                 }
-                
             }
         }
     }
