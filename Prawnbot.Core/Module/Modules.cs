@@ -3,8 +3,8 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Prawnbot.Common.Enums;
-using Prawnbot.Core.Base;
 using Prawnbot.Core.Models;
+using Prawnbot.Core.ServiceLayer;
 using Prawnbot.Data.Models;
 using System;
 using System.Collections.Generic;
@@ -18,17 +18,17 @@ namespace Prawnbot.Core.Module
 {
     public partial class Modules : ModuleBase<SocketCommandContext>
     {
-        protected LocalFileAccess.IFileService _fileService;
-        protected Command.ICommandService _commandService;
-        protected API.IAPIService _apiService;
-        protected Bot.IBotService _botService;
+        protected IFileService _fileService;
+        protected ICommandService _commandService;
+        protected IAPIService _apiService;
+        protected IBotService _botService;
 
         public Modules()
         {
-            _fileService = new LocalFileAccess.FileService();
-            _commandService = new Command.CommandService();
-            _apiService = new API.APIService();
-            _botService = new Bot.BotService(Context);
+            _fileService = new FileService();
+            _commandService = new ServiceLayer.CommandService();
+            _apiService = new APIService();
+            _botService = new BotService(Context);
         }
 
         [Command("random-user")]
@@ -436,7 +436,8 @@ namespace Prawnbot.Core.Module
         [Command("yotta count")]
         public async Task YottaCountAsync()
         {
-            string[] yotta = _fileService.ReadFromFile("Yotta.txt").Entity;
+            var response = await _fileService.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
+            string[] yotta = response.Entity;
 
             var enumValues = Enum.GetValues(typeof(PrependEnum));
             List<YottaModel> valueCount = new List<YottaModel>(yotta.Count());
@@ -460,7 +461,8 @@ namespace Prawnbot.Core.Module
         [Command("yotta ordered")]
         public async Task YottaOrderedAsync()
         {
-            string[] yotta = _fileService.ReadFromFile("Yotta.txt").Entity;
+            var response = await _fileService.ReadFromFileAsync("Yotta.txt");
+            string[] yotta = response.Entity;
 
             var orderedYotta = yotta.OrderBy(x => x);
 
@@ -478,7 +480,7 @@ namespace Prawnbot.Core.Module
             {
                 if (configItem.Value != null)
                 {
-                    sb.AppendLine($"{configItem.Key.Remove(0, 13)}: {configItem.Value}");
+                    sb.AppendLine($"{configItem.Key}: {configItem.Value}");
                 }
             }
 
@@ -491,6 +493,20 @@ namespace Prawnbot.Core.Module
             _fileService.SetConfigurationValue(configurationName, newConfigurationValue);
 
             await Context.Channel.SendMessageAsync($"Changed the configuration of {configurationName} to {newConfigurationValue}");
+        }
+
+        [Command("event-listeners")]
+        public async Task ToggleEventListeners(bool newValue)
+        {
+            _fileService.SetEventListeners(newValue);
+
+            await Context.Channel.SendMessageAsync($"Changed the event listener configuration to {newValue}");
+        }
+
+        [Command("emoji-usage")]
+        public async Task EmojiUsageAsync(string emoji)
+        {
+            throw new NotImplementedException();
         }
     }
 }

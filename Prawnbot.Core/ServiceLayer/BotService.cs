@@ -1,13 +1,12 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
-using Prawnbot.Core.Base;
+using Prawnbot.Core.BusinessLayer;
 using Prawnbot.Core.Framework;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace Prawnbot.Core.Bot
+namespace Prawnbot.Core.ServiceLayer
 {
     public interface IBotService
     {

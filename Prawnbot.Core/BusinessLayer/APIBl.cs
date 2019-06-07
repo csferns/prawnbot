@@ -1,20 +1,24 @@
-﻿using Newtonsoft.Json;
-using Prawnbot.Core.Base;
-using Prawnbot.Core.Bot;
-using Prawnbot.Core.LocalFileAccess;
-using Prawnbot.Core.Log;
+﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.Calendar.v3;
+using Google.Apis.Calendar.v3.Data;
+using Google.Apis.Services;
+using Google.Apis.Util.Store;
+using Newtonsoft.Json;
 using Prawnbot.Core.Utility;
+using Prawnbot.Data.Models;
 using Prawnbot.Data.Models.API;
 using RestSharp;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace Prawnbot.Core.API
+namespace Prawnbot.Core.BusinessLayer
 {
     public interface IAPIBl
     {
@@ -22,12 +26,13 @@ namespace Prawnbot.Core.API
         Task<List<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate);
         Task<List<LanguageTranslationRoot>> GetLanguagesAsync();
         Task<bool> GetProfanityFilterAsync(string message);
+        Task<List<Event>> GetCalendarEntries(string calendarId);
     }
 
     public class APIBl : BaseBl, IAPIBl
     {
         private static HttpClient httpClient;
-
+         
         public async Task<List<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
         {
             try
@@ -129,6 +134,53 @@ namespace Prawnbot.Core.API
             {
                 await logging.PopulateEventLog(new Discord.LogMessage(Discord.LogSeverity.Error, "Profanity", "Error in fetching profanity filter", e));
                 return false;
+            }
+        }
+
+        public async Task<List<Event>> GetCalendarEntries(string calendarId)
+        {
+            string[] scopes = { CalendarService.Scope.CalendarEventsReadonly };
+
+            UserCredential credential;
+
+            using (var stream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
+            {
+                // The file token.json stores the user's access and refresh tokens, and is created
+                // automatically when the authorization flow completes for the first time.
+                string credPath = "token.json";
+                credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                    GoogleClientSecrets.Load(stream).Secrets,
+                    scopes,
+                    "user",
+                    CancellationToken.None,
+                    new FileDataStore(credPath, true)).Result;
+                Console.WriteLine("Credential file saved to: " + credPath);
+            }
+
+            CalendarService service = new CalendarService(new BaseClientService.Initializer()
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = ConfigUtility.GoogleApplicationName,
+            });
+
+            // Define parameters of request.
+            EventsResource.ListRequest request = service.Events.List(calendarId);
+            request.TimeMin = DateTime.Now;
+            request.ShowDeleted = false;
+            request.SingleEvents = true;
+            request.MaxResults = 10;
+            request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
+
+            // List events.
+            Events events = await request.ExecuteAsync();
+
+            if (events.Items != null && events.Items.Count > 0)
+            {
+                return events.Items.ToList();
+            }
+            else
+            {
+                return new List<Event>();
             }
         }
     }

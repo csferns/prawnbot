@@ -1,6 +1,4 @@
-﻿using Prawnbot.Core.Base;
-
-namespace Prawnbot.Core.DatabaseAccess
+﻿namespace Prawnbot.Core.ServiceLayer
 {
     public interface IDatabaseAccessService
     {

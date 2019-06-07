@@ -1,12 +1,12 @@
-﻿using JetBrains.Annotations;
-using Microsoft.EntityFrameworkCore;
+﻿using Prawnbot.Common.Configuration;
 using Prawnbot.Data.Entities;
+using System.Data.Entity;
 
 namespace Prawnbot.Data
 {
     public class BotDatabaseContext : DbContext
     {
-        public BotDatabaseContext(DbContextOptions options) : base(options)
+        public BotDatabaseContext() : base(ConfigUtility.DatabaseConnectionString)
         {
         }
 

@@ -1,10 +1,12 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Prawnbot.Core.ServiceLayer;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.Utility
@@ -55,7 +57,7 @@ namespace Prawnbot.Core.Utility
 
         public static async Task<string> GetLanguageFullName(this string origin)
         {
-            API.APIService apiService = new API.APIService();
+            IAPIService apiService = new APIService();
             var languages = await apiService.GetLanguagesAsync();
             var language = languages.Entities.FirstOrDefault().Languages.SelectMany(x => x.LanguageDetails).Where(y => y.dir == origin).FirstOrDefault().name;
 
@@ -92,9 +94,11 @@ namespace Prawnbot.Core.Utility
             return newList[random.Next(newList.Count())];
         } 
 
-        public static Image GetImageFromStream(this Stream stream)
+        public static bool FindEmoji(this SocketMessage message)
         {
-            return new Image(stream);
+            Regex.Match(message.Content, "", RegexOptions.IgnoreCase);
+
+            return false;
         }
     }
 }

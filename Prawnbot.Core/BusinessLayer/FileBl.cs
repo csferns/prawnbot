@@ -2,9 +2,6 @@
 using Discord;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
-using Prawnbot.Core.Base;
-using Prawnbot.Core.Bot;
-using Prawnbot.Core.Framework;
 using Prawnbot.Core.Models;
 using Prawnbot.Data.Models.API;
 using System;
@@ -15,7 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Prawnbot.Core.LocalFileAccess
+namespace Prawnbot.Core.BusinessLayer
 {
     public interface IFileBl
     {
@@ -25,7 +22,7 @@ namespace Prawnbot.Core.LocalFileAccess
         Task<Stream> DownloadFileFromBlobStore(string fileName, string containerName);
         Task<bool> UploadFileToBlobStore(string fileName, string containerName);
         FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
-        string[] ReadFromFile(string fileName);
+        Task<string[]> ReadFromFileAsync(string fileName);
         string WriteToCSV(List<CSVColumns> columns, ulong? id, string guildName);
         Task<bool> WriteToFile(string valueToWrite, string fileName);
         Task<List<CSVColumns>> CreateCSVList(ulong id);
@@ -33,15 +30,11 @@ namespace Prawnbot.Core.LocalFileAccess
         TranslateData GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
         Dictionary<string, string> GetAllConfigurationValues();
         void SetConfigurationValue(string configurationName, string newConfigurationValue);
+        void SetEventListeners(bool newValue);
     }
 
     public class FileBl : BaseBl, IFileBl
     {
-        public FileBl()
-        {
-            
-        }
-
         public async Task<CloudBlobContainer> GetBlobContainer(string containerName)
         {
             CloudStorageAccount storageAccount = CloudStorageAccount.Parse(ConfigUtility.BlobStoreConnectionString);
@@ -57,7 +50,7 @@ namespace Prawnbot.Core.LocalFileAccess
             var container = await GetBlobContainer(containerName);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
 
-            return blockBlob.StorageUri.PrimaryUri;
+            return blockBlob.Uri;
         }
 
         public async Task<Stream> GetStreamFromBlobStore(string fileName, string containerName)
@@ -105,14 +98,23 @@ namespace Prawnbot.Core.LocalFileAccess
             return new FileStream(filePath, fileMode, fileAccess, fileShare);
         }
 
-        public string[] ReadFromFile(string fileName)
+        public async Task<string[]> ReadFromFileAsync(string fileName)
         {
-            FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            fileStream.Flush();
+            using (CreateLocalFileIfNotExists(fileName, FileMode.Open, FileAccess.Read, FileShare.Read)) {  }
 
             string filePath = ConfigUtility.TextFileDirectory + $"\\{fileName}";
 
-            return File.ReadAllLines(filePath);
+            List<string> fileLines = new List<string>();
+
+            using (StreamReader reader = new StreamReader(filePath))
+            {
+                while (!reader.EndOfStream)
+                {
+                    fileLines.Add(await reader.ReadLineAsync());
+                }
+            }
+
+            return fileLines.ToArray();
         }
 
         public string WriteToCSV(List<CSVColumns> columns, ulong? id, string guildName)
@@ -211,7 +213,12 @@ namespace Prawnbot.Core.LocalFileAccess
 
         public void SetConfigurationValue(string configurationName, string newConfigurationValue)
         {
-            ConfigUtility.SetConfig(configurationName, newConfigurationValue);
+            Common.Configuration.ConfigUtility.SetConfig(configurationName, newConfigurationValue);
+        }
+
+        public void SetEventListeners(bool newValue)
+        {
+            ConfigUtility.AllowEventListeners = newValue;
         }
     }
 }

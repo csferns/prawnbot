@@ -4,13 +4,15 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Prawnbot.Core.Base;
 using Prawnbot.Core.Log;
 using Prawnbot.Core.Module;
+using Prawnbot.Core.ServiceLayer;
 using Prawnbot.Core.Utility;
+using Quartz;
+using Quartz.Impl;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -18,7 +20,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Prawnbot.Core.Bot
+namespace Prawnbot.Core.BusinessLayer
 {
     public interface IBotBl
     {
@@ -34,7 +36,6 @@ namespace Prawnbot.Core.Bot
         IReadOnlyCollection<SocketTextChannel> GetGuildTextChannels(SocketGuild guild);
         SocketTextChannel GetGuildTextChannel(SocketGuild guild, SocketTextChannel channel);
         Process CreateFfmpegProcess(string path);
-        Task Client_Connected();
         Task Client_Disconnected(Exception arg);
         Task AnnounceUserJoined(SocketGuildUser user);
         Task AnnounceUserBan(SocketUser user, SocketGuild guild);
@@ -44,35 +45,8 @@ namespace Prawnbot.Core.Bot
 
     public class BotBl : BaseBl, IBotBl
     {
-        private readonly ConcurrentDictionary<ulong, IAudioClient> ConnectedChannels = new ConcurrentDictionary<ulong, IAudioClient>();
-
-        private static DiscordSocketClient _client;
-        /// <summary>
-        /// The static connection state of the client
-        /// </summary>
-        private static ConnectionState connectionState;
-        /// <summary>
-        /// The static token the bot uses to connect
-        /// </summary>
-        private static string _token;
-        /// <summary>
-        /// The collection of the commands the bot can be sent
-        /// </summary>
-        private Discord.Commands.CommandService _commands;
-        /// <summary>
-        /// Collection of services the bot can use
-        /// </summary>
-        private IServiceProvider _services;
-        /// <summary>
-        /// The context of the message
-        /// </summary>
-        private SocketCommandContext Context;
-
-        private CancellationTokenSource cancellationTokenSource;
-
         public BotBl()
         {
-             
         }
 
         /// <summary>
@@ -84,36 +58,27 @@ namespace Prawnbot.Core.Bot
             Context = _context;
         }
 
-        /// <summary>
-        /// Sets up each layer of the application
-        /// </summary>
         public void LayerSetup()
         {
+            _apiBl = new APIBl();
+            _apiService = new APIService();
+
+            _botBl = new BotBl();
+            _botService = new BotService();
+
+            _commandBl = new CommandBl();
+            _commandService = new ServiceLayer.CommandService();
+
+            _fileBl = new FileBl();
+            _fileService = new FileService();
+
+            _databaseAccessBl = new DatabaseAccessBl();
+            _dbAccessService = new DatabaseAccessService();
+
+            _speechRecognitionBl = new SpeechRecognitionBl();
+            _speechRecognitionService = new SpeechRecognitionService();
+
             logging = new Logging();
-
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(Path.Combine(AppContext.BaseDirectory))
-                .AddJsonFile("appsettings.json", optional: false);
-
-            ConfigUtility = new ConfigUtility(builder.Build());
-
-            _apiBl = new API.APIBl();
-            _apiService = new API.APIService();
-
-            _botBl = new Bot.BotBl();
-            _botService = new Bot.BotService();
-
-            _commandBl = new Command.CommandBl();
-            _commandService = new Command.CommandService();
-
-            _fileBl = new LocalFileAccess.FileBl();
-            _fileService = new LocalFileAccess.FileService();
-
-            _dbAccessBl = new DatabaseAccess.DatabaseAccessBl();
-            _dbAccessService = new DatabaseAccess.DatabaseAccessService();
-
-            _speechRecognitionBl = new SpeechRecognition.SpeechRecognitionBl();
-            _speechRecognitionService = new SpeechRecognition.SpeechRecognitionService();
         }
 
         /// <summary>
@@ -146,7 +111,6 @@ namespace Prawnbot.Core.Bot
             _client.UserUnbanned += Client_UserUnbanned;
             _client.Log += logging.PopulateEventLog;
             _client.Disconnected += Client_Disconnected;
-            _client.Connected += Client_Connected;
 
             try
             {
@@ -154,7 +118,9 @@ namespace Prawnbot.Core.Bot
 
                 await _client.LoginAsync(TokenType.Bot, _token);
                 await _client.StartAsync();
-                await SetBotStatusAsync(UserStatus.Online); 
+                await SetBotStatusAsync(UserStatus.Online);
+
+                await QuartzSetup();
             }
             catch (Exception e)
             {
@@ -177,7 +143,6 @@ namespace Prawnbot.Core.Bot
                     await _client.LogoutAsync();
                     await _client.StopAsync();
 
-                    connectionState = ConnectionState.Disconnected;
                     if (switchBot) _token = null;
                 }
 
@@ -221,6 +186,8 @@ namespace Prawnbot.Core.Bot
                 if (message is null || message.Author.IsBot) return false;
 
                 SocketCommandContext context = new SocketCommandContext(_client, message);
+
+                //if (message.ContainsEmoji() && message.Channel.GetType() != typeof(SocketDMChannel)) await context.Channel.SendMessageAsync(message.FindEmoji());
 
                 int argPos = 0;
 
@@ -382,44 +349,35 @@ namespace Prawnbot.Core.Bot
             }
         }
 
-        #region Event Listeners
-        /// <summary>
-        /// Event that is fired when the client connects
-        /// </summary>
-        /// <returns>Task</returns>
-        public async Task Client_Connected()
+        private static async Task QuartzSetup()
         {
-            connectionState = ConnectionState.Connected;
-
-            cancellationTokenSource = new CancellationTokenSource();
-
-            _ = Task.Run(async () =>
+            NameValueCollection props = new NameValueCollection
             {
-                while (connectionState == ConnectionState.Connected)
-                {
-                    await Task.Delay(60000);
+                { "quartz.serializer.type", "binary" }
+            };
+            StdSchedulerFactory factory = new StdSchedulerFactory(props);
+            IScheduler scheduler = await factory.GetScheduler();
 
-                    if (
-                        (DateTime.Now.Hour == 9 || DateTime.Now.Hour == 21)
-                        && DateTime.Now.Minute == 11
-                        )
-                    {
-                        foreach (var guild in _client.Guilds)
-                        {
-                            await guild.DefaultChannel.SendMessageAsync("Happy meme o'clock!");
-                        }
+            // and start it off
+            await scheduler.Start();
 
-                        break;
-                    }
-                }
+            IJobDetail job = JobBuilder.Create<MOC>()
+                .WithIdentity("MOC")
+                .Build();
 
-                await ReconnectAsync();
+            ITrigger trigger = TriggerBuilder.Create()
+                .WithIdentity("MOCTrigger")
+                .StartAt(DateBuilder.DateOf(9, 11, 0))
+                .WithSimpleSchedule(x => x
+                                        .WithIntervalInHours(12)
+                                        .RepeatForever())
+                .ForJob("MOC")
+                .Build();
 
-                cancellationTokenSource.Cancel();
-
-            }, cancellationTokenSource.Token);
+            await scheduler.ScheduleJob(job, trigger);
         }
 
+        #region Event Listeners
         /// <summary>
         /// Event that is fired when the client disconnects
         /// </summary>
@@ -428,7 +386,6 @@ namespace Prawnbot.Core.Bot
         public async Task Client_Disconnected(Exception arg)
         {
             await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "", "Client disconnected", arg));
-            connectionState = ConnectionState.Disconnected;
         }
 
         /// <summary>
