@@ -10,6 +10,9 @@
         Kilo = 0,
         Mega = 1,
         Zetta = 6,
-        Exa = 5
+        Exa = 5,
+        LobsterLadd = 9,
+        Mecca = 10,
+        Yoinka = 11
     }
 }

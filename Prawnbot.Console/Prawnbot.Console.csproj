@@ -1,14 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk;Microsoft.NET.Sdk.Publish">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <Configurations>Debug;Release;x64</Configurations>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Prawnbot.Common\Prawnbot.Common.csproj" />
     <ProjectReference Include="..\Prawnbot.Core\Prawnbot.Core.csproj" />
   </ItemGroup>
-
+  <ItemGroup>
+    <None Update="Settings.job">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
