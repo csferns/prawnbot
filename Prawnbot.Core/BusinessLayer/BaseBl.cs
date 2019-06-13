@@ -50,5 +50,9 @@ namespace Prawnbot.Core.BusinessLayer
         protected Discord.Commands.CommandService _commands;
         protected IServiceProvider _services;
         protected SocketCommandContext Context;
+
+        // Quartz
+
+        protected static bool IsQuartzInitialized { get; set; }
     }
 }
