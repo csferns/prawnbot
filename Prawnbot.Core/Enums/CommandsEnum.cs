@@ -8,6 +8,7 @@ namespace Prawnbot.Core.Enums
     {
         disconnect,
         sendmessage,
-        richpresence
+        richpresence,
+        help
     }
 }

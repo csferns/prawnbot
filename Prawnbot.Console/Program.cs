@@ -1,5 +1,8 @@
-﻿using Prawnbot.Core.ServiceLayer;
+﻿using Microsoft.Extensions.Configuration;
+using Prawnbot.Common.Configuration;
+using Prawnbot.Core.ServiceLayer;
 using System;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,13 +13,14 @@ namespace Prawnbot.Console
     {
         private IBotService _botService;
         private IConsoleService _consoleService;
+        private CancellationTokenSource workerCancellationTokenSource;
         public Program()
         {
             _botService = new BotService();
-            _consoleService = new ConsoleService();
+            
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             try
             {
@@ -29,14 +33,34 @@ namespace Prawnbot.Console
                 Program program = new Program();
                 AppDomain.CurrentDomain.ProcessExit += program.CurrentDomain_ProcessExit;
 
-                System.Console.WriteLine("Enter your Access Token: ");
-                string token = System.Console.ReadLine();
+                var builder = new ConfigurationBuilder()
+                    .SetBasePath(Path.Combine(AppContext.BaseDirectory))
+                    .AddJsonFile("Configuration\\appsettings.json", optional: false);
+
+                var config = builder.Build();
+
+                string token = null;
+
+                if (string.IsNullOrEmpty(ConfigUtility.BotToken) || string.IsNullOrWhiteSpace(ConfigUtility.BotToken))
+                {
+                    System.Console.WriteLine("Enter your Access Token: ");
+                    token = System.Console.ReadLine();
+                }
+                else
+                {
+                    token = ConfigUtility.BotToken;
+                }
+
                 System.Console.Clear();
+
+                program.workerCancellationTokenSource = new CancellationTokenSource();
 
                 Task.Run(async () =>
                 {
                     await program.MainProgram(token);
-                });
+                }, program.workerCancellationTokenSource.Token);
+
+                program._consoleService = new ConsoleService(program.workerCancellationTokenSource);
 
                 program.CommandListener().GetAwaiter().GetResult();
             }
@@ -58,7 +82,9 @@ namespace Prawnbot.Console
 
         private async Task CommandListener()
         {
-            while (true)
+            bool result = true;
+
+            while (result)
             {
                 string command = System.Console.ReadLine();
 
@@ -66,12 +92,12 @@ namespace Prawnbot.Console
                 {
                     if (_consoleService.ValidCommand(command).Entity)
                     {
-                        await _consoleService.HandleConsoleCommand(command);
-                        continue;
+                        var response = await _consoleService.HandleConsoleCommand(command);
+                        result = response.Entity;
                     }
                     else
                     {
-                        System.Console.WriteLine($"'{command}' is not recognised as a valid command!");
+                        System.Console.WriteLine($"'{command.Split(' ')[0]}' is not recognised as a valid command!");
                         continue;
                     }
                 }
@@ -81,6 +107,8 @@ namespace Prawnbot.Console
                     continue;
                 }
             }
+
+            Main(new string[] { });
         }
     }
 }

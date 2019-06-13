@@ -24,27 +24,172 @@ namespace Prawnbot.Core.BusinessLayer
 {
     public interface IBotBl
     {
+        /// <summary>
+        /// Connects the bot using a given token
+        /// </summary>
+        /// <param name="token">The token to connect with</param>
+        /// <returns></returns>
         Task<bool> ConnectAsync(string token);
+        /// <summary>
+        /// Method to disconnect the bot
+        /// </summary>
+        /// <returns></returns>
         Task<bool> DisconnectAsync(bool switchBot = false);
+        /// <summary>
+        /// Disconnects and Reconnects the bot
+        /// </summary>
+        /// <returns></returns>
         Task<bool> ReconnectAsync();
+        /// <summary>
+        /// Event handler to handle the messages that come in
+        /// </summary>
+        /// <param name="arg">Message to pass into the commands</param>
+        /// <returns></returns>
+        Task<bool> HandleCommandAsync(SocketMessage arg);
+        /// <summary>
+        /// Method to set the status of the bot
+        /// </summary>
+        /// <param name="status">UserStatus to change to</param>
+        /// <returns>Task</returns>
         Task<bool> SetBotStatusAsync(UserStatus status);
+        /// <summary>
+        /// Updates the bot's rich presence
+        /// </summary>
+        /// <param name="name">Name of the game</param>
+        /// <param name="activityType">Activity type of the game</param>
+        /// <param name="streamUrl">(Optional) stream url</param>
+        /// <returns></returns>
+        Task UpdateRichPresence(string name, ActivityType activityType, string streamUrl);
+        /// <summary>
+        /// Get a user by username
+        /// </summary>
+        /// <param name="username"></param>
+        /// <returns></returns>
+        SocketGuildUser GetUser(string username);
+        /// <summary>
+        /// Get all the current users in the servers the bot is connected to
+        /// </summary>
+        /// <returns></returns>
         List<SocketGuildUser> GetAllUsers();
+        /// <summary>
+        /// Gets all messages from a guild text channel
+        /// </summary>
+        /// <param name="id">Text channel ID</param>
+        /// <returns></returns>
         Task<List<IMessage>> GetAllMessages(ulong id);
+        /// <summary>
+        /// Get a guild by name
+        /// </summary>
+        /// <param name="guildName">Name of the guild</param>
+        /// <returns></returns>
+        SocketGuild GetGuild(string guildName);
+        /// <summary>
+        /// Get all the current guilds the bot is connected to
+        /// </summary>
+        /// <returns>List of IGuilds</returns>
         List<SocketGuild> GetAllGuilds();
-        SocketTextChannel GetDefaultChannel(SocketGuild guild);
-        SocketTextChannel GetChannelById(ulong id);
+        /// <summary>
+        /// Gets the default channel of the given guild
+        /// </summary>
+        /// <param name="guild">Server</param>
+        /// <returns>SocketTextChannel</returns>
+        SocketTextChannel FindDefaultChannel(SocketGuild guild);
+        /// <summary>
+        /// Gets a text channel with the supplied ID
+        /// </summary>
+        /// <param name="id">Channel ID</param>
+        /// <returns></returns>
+        SocketTextChannel FindTextChannel(ulong id);
+        /// <summary>
+        /// Gets a text channel with the supplied guild and id
+        /// </summary>
+        /// <param name="guild"></param>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        SocketTextChannel FindTextChannel(SocketGuild guild, ulong id);
+        /// <summary>
+        /// Gets a text channel with a supplied guild and name
+        /// </summary>
+        /// <param name="guild"></param>
+        /// <param name="channelName"></param>
+        /// <returns></returns>
+        SocketTextChannel FindTextChannel(SocketGuild guild, string channelName);
+        /// <summary>
+        /// Gets all the channels of the given guild
+        /// </summary>
+        /// <param name="guild">Server</param>
+        /// <returns>IReadOnlyCollection of SocketTextChannels</returns>
         IReadOnlyCollection<SocketTextChannel> GetGuildTextChannels(SocketGuild guild);
+        /// <summary>
+        /// Gets a channel of the given guild
+        /// </summary>
+        /// <param name="guild">Server</param>
+        /// <param name="channel">Channel</param>
+        /// <returns>SocketTextChannel</returns>
         SocketTextChannel GetGuildTextChannel(SocketGuild guild, SocketTextChannel channel);
+        /// <summary>
+        /// Create an FFMPEG process for the audio commands
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         Process CreateFfmpegProcess(string path);
-        Task Client_Disconnected(Exception arg);
-        Task AnnounceUserJoined(SocketGuildUser user);
-        Task AnnounceUserBan(SocketUser user, SocketGuild guild);
-        Task Client_UserUnbanned(SocketUser user, SocketGuild guild);
+        /// <summary>
+        /// Leaves the current audio channel
+        /// </summary>
+        /// <param name="guild">Guild</param>
+        /// <returns></returns>
         Task LeaveAudio(IGuild guild);
+        /// <summary>
+        /// Sends a message to a channel
+        /// </summary>
+        /// <param name="guild">Guild to send it to</param>
+        /// <param name="channel">Channel to send it to</param>
+        /// <param name="messageText">Text of the message</param>
+        /// <returns></returns>
+        Task SendChannelMessageAsync(SocketGuild guild, SocketTextChannel channel, string messageText);
+        /// <summary>
+        /// Send a message through a DM
+        /// </summary>
+        /// <param name="user">User to DM</param>
+        /// <param name="messageText">Text of the message</param>
+        /// <returns></returns>
+        Task SendDMAsync(SocketGuildUser user, string messageText);
+        /// <summary>
+        /// Set up the Quartz scheduler for the scheduled jobs
+        /// </summary>
+        /// <returns></returns>
+        Task QuartzSetup();
+        /// <summary>
+        /// Event that is fired when the client disconnects
+        /// </summary>
+        /// <param name="arg"></param>
+        /// <returns>Task.CompletedTask</returns>
+        Task Client_Disconnected(Exception arg);
+        /// <summary>
+        /// Announce to the server a user joined
+        /// </summary>
+        /// <param name="user">User that joined</param>
+        /// <returns></returns>
+        Task AnnounceUserJoined(SocketGuildUser user);
+        /// <summary>
+        /// Announce to the server the user was banned
+        /// </summary>
+        /// <param name="user">Given user</param>
+        /// <param name="guild">Server</param>
+        /// <returns>Task</returns>
+        Task AnnounceUserBan(SocketUser user, SocketGuild guild);
+        /// <summary>
+        /// Announce to the server the user was banned
+        /// </summary>
+        /// <param name="user">Given user</param>
+        /// <param name="guild">Server</param>
+        /// <returns>Task</returns>
+        Task Client_UserUnbanned(SocketUser user, SocketGuild guild);
     }
 
     public class BotBl : BaseBl, IBotBl
     {
+        #region Constructors
         public BotBl()
         {
         }
@@ -57,6 +202,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             Context = _context;
         }
+        #endregion
 
         public void LayerSetup()
         {
@@ -81,11 +227,6 @@ namespace Prawnbot.Core.BusinessLayer
             logging = new Logging();
         }
 
-        /// <summary>
-        /// Connects the bot using a given token
-        /// </summary>
-        /// <param name="token">The token to connect with</param>
-        /// <returns></returns>
         public async Task<bool> ConnectAsync(string token)
         {
             LayerSetup();
@@ -120,7 +261,10 @@ namespace Prawnbot.Core.BusinessLayer
                 await _client.StartAsync();
                 await SetBotStatusAsync(UserStatus.Online);
 
-                await QuartzSetup();
+                if (!IsQuartzInitialized)
+                {
+                    await QuartzSetup();
+                }
             }
             catch (Exception e)
             {
@@ -130,10 +274,6 @@ namespace Prawnbot.Core.BusinessLayer
             return true;
         }
 
-        /// <summary>
-        /// Method to disconnect the bot
-        /// </summary>
-        /// <returns></returns>
         public async Task<bool> DisconnectAsync(bool switchBot = false)
         {
             try
@@ -172,11 +312,6 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        /// <summary>
-        /// Event handler to handle the messages that come in
-        /// </summary>
-        /// <param name="arg">Message to pass into the commands</param>
-        /// <returns></returns>
         public async Task<bool> HandleCommandAsync(SocketMessage arg)
         {
             try
@@ -227,11 +362,6 @@ namespace Prawnbot.Core.BusinessLayer
 
         }
 
-        /// <summary>
-        /// Method to set the status of the bot
-        /// </summary>
-        /// <param name="status">UserStatus to change to</param>
-        /// <returns>Task</returns>
         public async Task<bool> SetBotStatusAsync(UserStatus status)
         {
             try
@@ -247,20 +377,47 @@ namespace Prawnbot.Core.BusinessLayer
 
         }
 
-        /// <summary>
-        /// Get all the current users in the servers the bot is connected to
-        /// </summary>
-        /// <returns></returns>
-        public List<SocketGuildUser> GetAllUsers()
+        public async Task UpdateRichPresence(string name, ActivityType activityType, string streamUrl)
         {
-            return Context.Guild.Users.ToList();
+            try
+            {
+                await _client.SetGameAsync(name ?? null, activityType == ActivityType.Streaming ? streamUrl : null, activityType);
+            }
+            catch (Exception e)
+            {
+                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "RichPresence", "Error occured while updating rich presence", e));
+            }
         }
 
-        /// <summary>
-        /// Gets all messages from a guild text channel
-        /// </summary>
-        /// <param name="id">Text channel ID</param>
-        /// <returns></returns>
+        public SocketGuildUser GetUser(string username)
+        {
+            try
+            {
+                var users = GetAllUsers();
+
+                return users.Where(x => x.Username == username).FirstOrDefault();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        public List<SocketGuildUser> GetAllUsers()
+        {
+            List<SocketGuildUser> users = new List<SocketGuildUser>();
+
+            foreach (var guild in _client.Guilds)
+            {
+                foreach (var user in guild.Users)
+                {
+                    users.Add(user);
+                }
+            }
+
+            return users;
+        }
+
         public async Task<List<IMessage>> GetAllMessages(ulong id)
         {
             RequestOptions options = new RequestOptions
@@ -274,61 +431,65 @@ namespace Prawnbot.Core.BusinessLayer
             return messages.Reverse().ToList();
         }
 
-        /// <summary>
-        /// Get all the current guilds the bot is connected to
-        /// </summary>
-        /// <returns>List of IGuilds</returns>
+        public SocketGuild GetGuild(string guildName)
+        {
+            try
+            {
+                return _client.Guilds.Where(x => x.Name == guildName).FirstOrDefault();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+
+        }
+
         public List<SocketGuild> GetAllGuilds()
         {
             return _client.Guilds.ToList();
         }
 
-        /// <summary>
-        /// Gets the default channel of the given guild
-        /// </summary>
-        /// <param name="guild">Server</param>
-        /// <returns>SocketTextChannel</returns>
-        public SocketTextChannel GetDefaultChannel(SocketGuild guild)
+        public SocketTextChannel FindDefaultChannel(SocketGuild guild)
         {
             return _client.Guilds.FirstOrDefault(x => x == guild).DefaultChannel;
         }
 
-        /// <summary>
-        /// Gets a text channel with the supplied ID
-        /// </summary>
-        /// <param name="id">Channel ID</param>
-        /// <returns></returns>
-        public SocketTextChannel GetChannelById(ulong id)
+        public SocketTextChannel FindTextChannel(ulong id)
         {
-            return Context.Guild.GetTextChannel(id);
+            foreach (var guild in _client.Guilds)
+            {
+                foreach (var channel in guild.TextChannels)
+                {
+                    if (channel.Id == id)
+                    {
+                        return channel;
+                    }
+                }
+            }
+
+            return null;
         }
 
-        /// <summary>
-        /// Gets all the channels of the given guild
-        /// </summary>
-        /// <param name="guild">Server</param>
-        /// <returns>IReadOnlyCollection of SocketTextChannels</returns>
+        public SocketTextChannel FindTextChannel(SocketGuild guild, ulong id)
+        {
+            return guild.GetTextChannel(id);
+        }
+
+        public SocketTextChannel FindTextChannel(SocketGuild guild, string channelName)
+        {
+            return guild.TextChannels.Where(x => x.Name == channelName).FirstOrDefault();
+        }
+
         public IReadOnlyCollection<SocketTextChannel> GetGuildTextChannels(SocketGuild guild)
         {
             return _client.Guilds.FirstOrDefault(x => x == guild).TextChannels;
         }
 
-        /// <summary>
-        /// Gets a channel of the given guild
-        /// </summary>
-        /// <param name="guild">Server</param>
-        /// <param name="channel">Channel</param>
-        /// <returns>SocketTextChannel</returns>
         public SocketTextChannel GetGuildTextChannel(SocketGuild guild, SocketTextChannel channel)
         {
             return _client.Guilds.FirstOrDefault(x => x == guild).TextChannels.FirstOrDefault(x => x == channel);
         }
 
-        /// <summary>
-        /// Create an FFMPEG process for the audio commands
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
         public Process CreateFfmpegProcess(string path)
         {
             return Process.Start(new ProcessStartInfo
@@ -349,7 +510,17 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        private static async Task QuartzSetup()
+        public async Task SendChannelMessageAsync(SocketGuild guild, SocketTextChannel channel, string messageText)
+        {
+            await GetGuildTextChannel(guild, channel).SendMessageAsync(messageText);
+        }
+
+        public async Task SendDMAsync(SocketGuildUser user, string messageText)
+        {
+            await UserExtensions.SendMessageAsync(user, messageText);
+        }
+
+        public async Task QuartzSetup()
         {
             NameValueCollection props = new NameValueCollection
             {
@@ -375,24 +546,15 @@ namespace Prawnbot.Core.BusinessLayer
                 .Build();
 
             await scheduler.ScheduleJob(job, trigger);
+            IsQuartzInitialized = true;
         }
 
         #region Event Listeners
-        /// <summary>
-        /// Event that is fired when the client disconnects
-        /// </summary>
-        /// <param name="arg"></param>
-        /// <returns>Task.CompletedTask</returns>
         public async Task Client_Disconnected(Exception arg)
         {
             await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "", "Client disconnected", arg));
         }
 
-        /// <summary>
-        /// Announce to the server a user joined
-        /// </summary>
-        /// <param name="user">User that joined</param>
-        /// <returns></returns>
         public async Task AnnounceUserJoined(SocketGuildUser user)
         {
             SocketGuild guild = user.Guild;
@@ -407,12 +569,6 @@ namespace Prawnbot.Core.BusinessLayer
             await channel.SendMessageAsync("", false, builder.Build());
         }
 
-        /// <summary>
-        /// Announce to the server the user was banned
-        /// </summary>
-        /// <param name="user">Given user</param>
-        /// <param name="guild">Server</param>
-        /// <returns>Task</returns>
         public async Task AnnounceUserBan(SocketUser user, SocketGuild guild)
         {
             EmbedBuilder builder = new EmbedBuilder();
@@ -425,12 +581,6 @@ namespace Prawnbot.Core.BusinessLayer
             await guild.DefaultChannel.SendMessageAsync("", false, builder.Build());
         }
 
-        /// <summary>
-        /// Announce to the server the user was banned
-        /// </summary>
-        /// <param name="user">Given user</param>
-        /// <param name="guild">Server</param>
-        /// <returns>Task</returns>
         public async Task Client_UserUnbanned(SocketUser user, SocketGuild guild)
         {
             EmbedBuilder builder = new EmbedBuilder();

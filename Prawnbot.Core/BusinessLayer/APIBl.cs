@@ -5,9 +5,7 @@ using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using Newtonsoft.Json;
 using Prawnbot.Core.Utility;
-using Prawnbot.Data.Models;
 using Prawnbot.Data.Models.API;
-using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,10 +20,13 @@ namespace Prawnbot.Core.BusinessLayer
 {
     public interface IAPIBl
     {
+        Task<T> GetRequestAsync<T>(string url);
+        Task<T> PostRequestAsync<T>(string url, object postData, Dictionary<string, string> headers);
         Task<List<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25);
         Task<List<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate);
         Task<List<LanguageTranslationRoot>> GetLanguagesAsync();
         Task<bool> GetProfanityFilterAsync(string message);
+        Task<List<Rule34Model>> Rule34Async(string[] tags);
         Task<List<Event>> GetCalendarEntries(string calendarId);
     }
 
@@ -33,108 +34,97 @@ namespace Prawnbot.Core.BusinessLayer
     {
         private static HttpClient httpClient;
          
-        public async Task<List<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
+        public async Task<T> GetRequestAsync<T>(string url)
         {
             try
             {
-                string url = "https://api.giphy.com/v1/gifs/search?api_key=" + ConfigUtility.GiphyAPIKey + "&q=" + HttpUtility.UrlEncode(searchTerm) + "&limit=" + limit + "&lang=en";
-
                 httpClient = httpClient ?? new HttpClient();
 
                 var httpResponse = await httpClient.GetAsync(url);
-                var output = JsonConvert.DeserializeObject<GiphyRootobject>(await httpResponse.Content.ReadAsStringAsync());
-                return output.data.OrderBy(x => x.trending_datetime).ToList();
+                var result = await httpResponse.Content.ReadAsStringAsync();
+
+                var responseObject = JsonConvert.DeserializeObject<T>(result);
+                return responseObject;
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new Discord.LogMessage(Discord.LogSeverity.Error, "GetGifs()", "Error getting gif", e));
-                return null;
+                await logging.PopulateEventLog(new Discord.LogMessage(Discord.LogSeverity.Error, "", $"Error in GET request for type {typeof(T).FullName}", e));
+                return default(T);
             }
+        }
+
+        public async Task<T> PostRequestAsync<T>(string url, object postData, Dictionary<string, string> headers)
+        {
+            try
+            {
+                httpClient = httpClient ?? new HttpClient();
+
+                var requestBody = JsonConvert.SerializeObject(postData);
+                var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+
+                foreach (var header in headers)
+                {
+                    httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
+                }
+
+                var httpResponse = await httpClient.PostAsync(url, content);
+
+                var responseObject = JsonConvert.DeserializeObject<T>(await httpResponse.Content.ReadAsStringAsync());
+                return responseObject;
+            }
+            catch (Exception e)
+            {
+                await logging.PopulateEventLog(new Discord.LogMessage(Discord.LogSeverity.Error, "", $"Error in POST request for type {typeof(T).FullName}", e));
+                return default(T);
+            }
+        }
+
+        public async Task<List<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
+        {
+            var response = await GetRequestAsync<GiphyRootobject>("https://api.giphy.com/v1/gifs/search?api_key=" + ConfigUtility.GiphyAPIKey + "&q=" + HttpUtility.UrlEncode(searchTerm) + "&limit=" + limit + "&lang=en");
+            return response.data.OrderBy(x => x.trending_datetime).ToList();
         }
 
         public async Task<List<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate)
         {
-            try
+            if (_fileBl.CheckIfTranslationExists())
             {
-                if (_fileBl.CheckIfTranslationExists())
+                List<TranslateData> savedData = new List<TranslateData>()
                 {
-                    List<TranslateData> savedData = new List<TranslateData>
-                    {
-                        _fileBl.GetTranslationFromFile(toLanguage, fromLanguage, textToTranslate)
-                    };
+                    _fileBl.GetTranslationFromFile(toLanguage, fromLanguage, textToTranslate)
+                };
 
-                    return savedData;
-                }
-                else
-                {
-                    httpClient = httpClient ?? new HttpClient();
-
-                    object[] body = new object[] { new { Text = textToTranslate.RemoveSpecialCharacters() } };
-                    var requestBody = JsonConvert.SerializeObject(body);
-                    var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
-
-                    string url = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=" + toLanguage;
-
-                    if (fromLanguage != null) url += $"&from={fromLanguage}";
-
-                    httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", ConfigUtility.TranslateAPIKey);
-                    var httpResponse = await httpClient.PostAsync(url, content);
-
-                    var converted = JsonConvert.DeserializeObject<List<TranslateData>>(await httpResponse.Content.ReadAsStringAsync());
-                    await logging.PopulateTranslationLog(converted);
-
-                    return converted;
-                } 
+                return savedData;
             }
-            catch (Exception e)
+            else
             {
-                await logging.PopulateEventLog(new Discord.LogMessage(Discord.LogSeverity.Error, "TranslateAsync()", "Error in translation", e));
-                return null;
-            }
+                object[] postData = new object[] { new { Text = textToTranslate.RemoveSpecialCharacters() } };
+                string url = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=" + toLanguage;
+                if (fromLanguage != null) url += $"&from={fromLanguage}";
+
+                Dictionary<string, string> headers = new Dictionary<string, string>()
+                {
+                    { "Ocp-Apim-Subscription-Key", ConfigUtility.TranslateAPIKey }
+                };
+
+                var converted = await PostRequestAsync<List<TranslateData>>(url, postData, headers);
+                return converted;
+            } 
         }
 
         public async Task<List<LanguageTranslationRoot>> GetLanguagesAsync()
         {
-            try
-            {
-                IRestClient client = new RestClient("https://api.cognitive.microsofttranslator.com/languages?api-version=3.0");
-                IRestRequest request = new RestRequest()
-                {
-                    Method = Method.GET,
-                    RequestFormat = DataFormat.Json
-                };
-
-                IRestResponse response = await client.ExecuteTaskAsync(request);
-                var converted = JsonConvert.DeserializeObject<List<LanguageTranslationRoot>>(response.Content);
-
-                return converted;
-            }
-            catch (Exception e)
-            {
-                await logging.PopulateEventLog(new Discord.LogMessage(Discord.LogSeverity.Error, "GetLanguagesAsync()", "Error in getting all languages", e));
-                return null;
-            }
+            return await GetRequestAsync<List<LanguageTranslationRoot>>("https://api.cognitive.microsofttranslator.com/languages?api-version=3.0");
         }
 
         public async Task<bool> GetProfanityFilterAsync(string message)
         {
-            try
-            {
-                httpClient = httpClient ?? new HttpClient();
+            return await GetRequestAsync<bool>("https://www.purgomalum.com/service/containsprofanity?text=" + message);
+        }
 
-                string url = "https://www.purgomalum.com/service/containsprofanity?text=" + message;
-
-                var httpResponse = await httpClient.GetAsync(url);
-
-                bool result = bool.TryParse(await httpResponse.Content.ReadAsStringAsync(), out bool responseBool);
-
-                return responseBool;
-            }
-            catch (Exception e)
-            {
-                await logging.PopulateEventLog(new Discord.LogMessage(Discord.LogSeverity.Error, "Profanity", "Error in fetching profanity filter", e));
-                return false;
-            }
+        public async Task<List<Rule34Model>> Rule34Async(string[] tags)
+        {
+            return await GetRequestAsync<List<Rule34Model>>("https://r34-json-api.herokuapp.com/posts?tags=" + string.Join('+', tags));
         }
 
         public async Task<List<Event>> GetCalendarEntries(string calendarId)

@@ -76,9 +76,24 @@ namespace Prawnbot.Common.Configuration
             get { return bool.Parse(GetConfig("ProfanityFilter")); }
             set { SetConfig("ProfanityFilter", value.ToString()); }
         }
+
+        public bool DadMode
+        {
+            get { return bool.Parse(GetConfig("DadMode")); }
+        }
+
+        public bool YottaMode
+        {
+            get { return bool.Parse(GetConfig("YottaMode")); }
+        }
         #endregion
 
         #region Connection Strings
+        public static string BotToken
+        {
+            get { return GetConnectionString("BotToken"); }
+        }
+
         public string BlobStoreConnectionString
         {
             get { return GetConnectionString("BlobStoreConnectionString"); }

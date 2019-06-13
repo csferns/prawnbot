@@ -124,7 +124,7 @@ namespace Prawnbot.Core.BusinessLayer
             stopwatch.Start();
 
             string fileName;
-            if (id.GetValueOrDefault() != default(ulong)) fileName = $"{_botBl.GetChannelById(id.GetValueOrDefault(ulong.MinValue)).Name}-backup.csv";
+            if (id.GetValueOrDefault() != default(ulong)) fileName = $"{_botBl.FindTextChannel(id.GetValueOrDefault(ulong.MinValue)).Name}-backup.csv";
             else fileName = $"{guildName}-backup.csv";
 
             using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Truncate, FileAccess.Write, FileShare.Write))
