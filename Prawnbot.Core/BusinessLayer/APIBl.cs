@@ -40,10 +40,9 @@ namespace Prawnbot.Core.BusinessLayer
             {
                 httpClient = httpClient ?? new HttpClient();
 
-                var httpResponse = await httpClient.GetAsync(url);
-                var result = await httpResponse.Content.ReadAsStringAsync();
+                HttpResponseMessage httpResponse = await httpClient.GetAsync(url);
 
-                var responseObject = JsonConvert.DeserializeObject<T>(result);
+                T responseObject = JsonConvert.DeserializeObject<T>(await httpResponse.Content.ReadAsStringAsync());
                 return responseObject;
             }
             catch (Exception e)
@@ -59,17 +58,17 @@ namespace Prawnbot.Core.BusinessLayer
             {
                 httpClient = httpClient ?? new HttpClient();
 
-                var requestBody = JsonConvert.SerializeObject(postData);
-                var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+                string requestBody = JsonConvert.SerializeObject(postData);
+                StringContent content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
-                foreach (var header in headers)
+                foreach (KeyValuePair<string, string> header in headers)
                 {
                     httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
                 }
 
-                var httpResponse = await httpClient.PostAsync(url, content);
+                HttpResponseMessage httpResponse = await httpClient.PostAsync(url, content);
 
-                var responseObject = JsonConvert.DeserializeObject<T>(await httpResponse.Content.ReadAsStringAsync());
+                T responseObject = JsonConvert.DeserializeObject<T>(await httpResponse.Content.ReadAsStringAsync());
                 return responseObject;
             }
             catch (Exception e)
@@ -81,7 +80,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<List<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
         {
-            var response = await GetRequestAsync<GiphyRootobject>("https://api.giphy.com/v1/gifs/search?api_key=" + ConfigUtility.GiphyAPIKey + "&q=" + HttpUtility.UrlEncode(searchTerm) + "&limit=" + limit + "&lang=en");
+            GiphyRootobject response = await GetRequestAsync<GiphyRootobject>("https://api.giphy.com/v1/gifs/search?api_key=" + ConfigUtility.GiphyAPIKey + "&q=" + HttpUtility.UrlEncode(searchTerm) + "&limit=" + limit + "&lang=en");
             return response.data.OrderBy(x => x.trending_datetime).ToList();
         }
 
@@ -89,16 +88,12 @@ namespace Prawnbot.Core.BusinessLayer
         {
             if (_fileBl.CheckIfTranslationExists())
             {
-                List<TranslateData> savedData = new List<TranslateData>()
-                {
-                    _fileBl.GetTranslationFromFile(toLanguage, fromLanguage, textToTranslate)
-                };
-
-                return savedData;
+                return _fileBl.GetTranslationFromFile(toLanguage, fromLanguage, textToTranslate);
             }
             else
             {
                 object[] postData = new object[] { new { Text = textToTranslate.RemoveSpecialCharacters() } };
+
                 string url = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=" + toLanguage;
                 if (fromLanguage != null) url += $"&from={fromLanguage}";
 
@@ -107,8 +102,7 @@ namespace Prawnbot.Core.BusinessLayer
                     { "Ocp-Apim-Subscription-Key", ConfigUtility.TranslateAPIKey }
                 };
 
-                var converted = await PostRequestAsync<List<TranslateData>>(url, postData, headers);
-                return converted;
+                return await PostRequestAsync<List<TranslateData>>(url, postData, headers);
             } 
         }
 
@@ -133,7 +127,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             UserCredential credential;
 
-            using (var stream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
+            using (FileStream stream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
             {
                 // The file token.json stores the user's access and refresh tokens, and is created
                 // automatically when the authorization flow completes for the first time.

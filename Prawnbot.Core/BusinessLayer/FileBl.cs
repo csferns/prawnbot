@@ -27,7 +27,7 @@ namespace Prawnbot.Core.BusinessLayer
         Task<bool> WriteToFile(string valueToWrite, string fileName);
         Task<List<CSVColumns>> CreateCSVList(ulong id);
         bool CheckIfTranslationExists();
-        TranslateData GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
+        List<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
         Dictionary<string, string> GetAllConfigurationValues();
         void SetConfigurationValue(string configurationName, string newConfigurationValue);
         void SetEventListeners(bool newValue);
@@ -47,7 +47,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<Uri> GetUriFromBlobStore(string fileName, string containerName)
         {
-            var container = await GetBlobContainer(containerName);
+            CloudBlobContainer container = await GetBlobContainer(containerName);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
 
             return blockBlob.Uri;
@@ -55,9 +55,9 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<Stream> GetStreamFromBlobStore(string fileName, string containerName)
         {
-            using (var stream = new MemoryStream())
+            using (MemoryStream stream = new MemoryStream())
             {
-                var container = await GetBlobContainer(containerName);
+                CloudBlobContainer container = await GetBlobContainer(containerName);
                 CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
 
                 await blockBlob.DownloadToStreamAsync(stream);
@@ -68,7 +68,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<Stream> DownloadFileFromBlobStore(string fileName, string containerName)
         {
-            var container = await GetBlobContainer(containerName);
+            CloudBlobContainer container = await GetBlobContainer(containerName);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
 
             MemoryStream stream = new MemoryStream();
@@ -79,7 +79,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<bool> UploadFileToBlobStore(string fileName, string containerName)
         {
-            var container = await GetBlobContainer(containerName);
+            CloudBlobContainer container = await GetBlobContainer(containerName);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
             await blockBlob.UploadFromFileAsync(fileName);
 
@@ -146,7 +146,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<bool> WriteToFile(string valueToWrite, string fileName)
         {
-            using (var fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
+            using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
             using (StreamWriter writer = new StreamWriter(fileStream))
             {
                 await writer.WriteLineAsync(valueToWrite);
@@ -181,12 +181,12 @@ namespace Prawnbot.Core.BusinessLayer
                 {
                     List<string> attachmentUrls = new List<string>();
 
-                    foreach (var attachment in messagesToAdd.ElementAt(i).Attachments)
+                    foreach (IAttachment attachment in messagesToAdd.ElementAt(i).Attachments)
                     {
                         attachmentUrls.Add(attachment.Url);
                     }
 
-                    var attachmentString = string.Join(", " , attachmentUrls);
+                    string attachmentString = string.Join(", " , attachmentUrls);
                     recordToAdd.Attachments = attachmentString;
                 }
 
@@ -201,9 +201,9 @@ namespace Prawnbot.Core.BusinessLayer
             return false;
         }
 
-        public TranslateData GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate)
+        public List<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate)
         {
-            return null;
+            return new List<TranslateData>();
         }
 
         public Dictionary<string, string> GetAllConfigurationValues()

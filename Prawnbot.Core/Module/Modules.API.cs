@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.Commands;
+using Prawnbot.Core.Framework;
 using Prawnbot.Core.Log;
+using Prawnbot.Data.Models.API;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -14,8 +16,8 @@ namespace Prawnbot.Core.Module
         {
             ILogging logging = new Logging();
 
-            var translatedText = await _apiService.TranslateAsync(toLanguage, null, textToTranslate);
-            var translation = translatedText.Entities.FirstOrDefault().translations.FirstOrDefault();
+            ListResponse<TranslateData> translatedText = await _apiService.TranslateAsync(toLanguage, null, textToTranslate);
+            Translation translation = translatedText.Entities.FirstOrDefault().translations.FirstOrDefault();
 
             await Context.Channel.SendMessageAsync($"{translation.text}");
             await logging.PopulateEventLog(new LogMessage(LogSeverity.Info, "Translation", translation.text));

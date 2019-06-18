@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,9 +27,9 @@ namespace Prawnbot.Core.Module
                 CancelToken = CancellationToken.None
             };
 
-            var webhooks = await Context.Guild.GetWebhooksAsync();
+            IReadOnlyCollection<RestWebhook> webhooks = await Context.Guild.GetWebhooksAsync();
 
-            var prawnbotWebhook = webhooks.FirstOrDefault(x => x.Name == "PrawnBot");
+            RestWebhook prawnbotWebhook = webhooks.FirstOrDefault(x => x.Name == "PrawnBot");
 
             if (prawnbotWebhook != default(RestWebhook))
             {

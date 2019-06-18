@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.WebSocket;
 using Prawnbot.Core.Enums;
 using System;
 using System.Collections.Generic;
@@ -31,7 +32,7 @@ namespace Prawnbot.Core.BusinessLayer
                 command = command.Remove(0, 1);
                 string[] commandComponents = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-                var enumParse = (CommandsEnum)Enum.Parse(typeof(CommandsEnum), commandComponents[0].ToLower());
+                CommandsEnum enumParse = (CommandsEnum)Enum.Parse(typeof(CommandsEnum), commandComponents[0].ToLower());
 
                 return true;
             }
@@ -46,7 +47,7 @@ namespace Prawnbot.Core.BusinessLayer
             command = command.Remove(0, 1);
             List<string> commandComponents = command.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
 
-            var commands = (CommandsEnum)Enum.Parse(typeof(CommandsEnum), commandComponents[0].ToLower());
+            CommandsEnum commands = (CommandsEnum)Enum.Parse(typeof(CommandsEnum), commandComponents[0].ToLower());
 
             switch (commands)
             {
@@ -62,7 +63,7 @@ namespace Prawnbot.Core.BusinessLayer
                     commandComponents.Remove("help");
                     if (commandComponents.Count() > 0)
                     {
-                        var givenCommand = commandsDictionary.Where(x => x.Key.Contains(commandComponents[0]));
+                        IEnumerable<KeyValuePair<string, string>> givenCommand = commandsDictionary.Where(x => x.Key.Contains(commandComponents[0]));
 
                         if (givenCommand.Count() == 0)
                         {
@@ -71,7 +72,7 @@ namespace Prawnbot.Core.BusinessLayer
 
                         await Console.Out.WriteLineAsync();
 
-                        foreach (var givenCommandItem in givenCommand)
+                        foreach (KeyValuePair<string, string> givenCommandItem in givenCommand)
                         {
                             await Console.Out.WriteLineAsync($"/{givenCommandItem.Key} {givenCommandItem.Value}");
                         }
@@ -81,7 +82,7 @@ namespace Prawnbot.Core.BusinessLayer
                     {
                         await Console.Out.WriteLineAsync();
 
-                        foreach (var commandItem in commandsDictionary)
+                        foreach (KeyValuePair<string, string> commandItem in commandsDictionary)
                         {
                             await Console.Out.WriteLineAsync($"/{commandItem.Key} {commandItem.Value}");
                         }
@@ -103,7 +104,7 @@ namespace Prawnbot.Core.BusinessLayer
                         {
                             case "guild":
                                 {
-                                    var guild = _botBl.GetGuild(commandComponents[1]);
+                                    SocketGuild guild = _botBl.GetGuild(commandComponents[1]);
 
                                     if (guild == null)
                                     {
@@ -111,7 +112,7 @@ namespace Prawnbot.Core.BusinessLayer
                                         return true;
                                     }
 
-                                    var textChannel = _botBl.FindTextChannel(guild, commandComponents[2]);
+                                    SocketTextChannel textChannel = _botBl.FindTextChannel(guild, commandComponents[2]);
 
                                     if (textChannel == null)
                                     {
@@ -120,14 +121,14 @@ namespace Prawnbot.Core.BusinessLayer
                                     }
 
                                     await Console.Out.WriteLineAsync("Please enter the message you want to send...");
-                                    var message = Console.ReadLine();
+                                    string message = Console.ReadLine();
 
                                     await textChannel.SendMessageAsync(message);
                                     return true;
                                 }
                             case "dm":
                                 {
-                                    var user = _botBl.GetUser(commandComponents[1]);
+                                    SocketGuildUser user = _botBl.GetUser(commandComponents[1]);
 
                                     if (user == null)
                                     {
@@ -136,7 +137,7 @@ namespace Prawnbot.Core.BusinessLayer
                                     }
 
                                     await Console.Out.WriteLineAsync("Please enter the message you want to send...");
-                                    var message = Console.ReadLine();
+                                    string message = Console.ReadLine();
 
                                     await _botBl.SendDMAsync(user, message);
                                     return true;

@@ -8,6 +8,7 @@ using Prawnbot.Core.Log;
 using Prawnbot.Core.Module;
 using Prawnbot.Core.ServiceLayer;
 using Prawnbot.Core.Utility;
+using Prawnbot.Data.Entities;
 using Quartz;
 using Quartz.Impl;
 using System;
@@ -16,6 +17,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -393,8 +395,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             try
             {
-                var users = GetAllUsers();
-
+                List<SocketGuildUser> users = GetAllUsers();
                 return users.Where(x => x.Username == username).FirstOrDefault();
             }
             catch (Exception)
@@ -407,9 +408,9 @@ namespace Prawnbot.Core.BusinessLayer
         {
             List<SocketGuildUser> users = new List<SocketGuildUser>();
 
-            foreach (var guild in _client.Guilds)
+            foreach (SocketGuild guild in _client.Guilds)
             {
-                foreach (var user in guild.Users)
+                foreach (SocketGuildUser user in guild.Users)
                 {
                     users.Add(user);
                 }
@@ -456,9 +457,9 @@ namespace Prawnbot.Core.BusinessLayer
 
         public SocketTextChannel FindTextChannel(ulong id)
         {
-            foreach (var guild in _client.Guilds)
+            foreach (SocketGuild guild in _client.Guilds)
             {
-                foreach (var channel in guild.TextChannels)
+                foreach (SocketTextChannel channel in guild.TextChannels)
                 {
                     if (channel.Id == id)
                     {

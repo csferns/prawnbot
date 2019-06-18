@@ -10,7 +10,7 @@ namespace Prawnbot.Core.Utility
     {
         public async override Task<TypeReaderResult> ReadAsync(ICommandContext context, string input, IServiceProvider services)
         {
-            var region = await context.Guild.GetVoiceRegionsAsync().ToAsyncEnumerable().Flatten().FirstOrDefault();
+            IVoiceRegion region = await context.Guild.GetVoiceRegionsAsync().ToAsyncEnumerable().Flatten().FirstOrDefault();
             return TypeReaderResult.FromSuccess(region);
         }
     }

@@ -1,8 +1,10 @@
 ﻿using CsvHelper;
 using Discord;
 using Discord.Commands;
+using Discord.Rest;
 using Discord.WebSocket;
 using Prawnbot.Common.Enums;
+using Prawnbot.Core.Framework;
 using Prawnbot.Core.Models;
 using Prawnbot.Core.ServiceLayer;
 using Prawnbot.Data.Models;
@@ -37,8 +39,8 @@ namespace Prawnbot.Core.Module
         {
             Random random = new Random();
 
-            var availableUsers = _botService.GetAllUsers();
-            var randomUser = availableUsers.Entities[random.Next(availableUsers.Entities.Count())];
+            List<SocketGuildUser> availableUsers = _botService.GetAllUsers().Entities;
+            SocketGuildUser randomUser = availableUsers[random.Next(availableUsers.Count())];
 
             await Context.Channel.SendMessageAsync(randomUser.Nickname ?? randomUser.Username);
         }
@@ -47,14 +49,14 @@ namespace Prawnbot.Core.Module
         [Summary("Flips a coin")]
         public async Task FlipACoinAsync(string headsValue = null, string tailsValue = null)
         {
-            var response = _commandService.FlipACoin(headsValue, tailsValue).Entity;
+            string response = _commandService.FlipACoin(headsValue, tailsValue).Entity;
 
             await Context.Channel.SendMessageAsync("Flipping coin...");
             await Task.Delay(1000);
             await Context.Channel.SendMessageAsync(response);
         }
 
-        [Command("ping")]
+        [Command("bot-ping")]
         public async Task PingAsync()
         {
             await Context.Channel.SendMessageAsync($"{Context.Client.Latency}ms");
@@ -87,7 +89,7 @@ namespace Prawnbot.Core.Module
         [Summary("Gets the bot's information")]
         public async Task GetBotInfoAsync()
         {
-            var botInfo = await Context.Client.GetApplicationInfoAsync();
+            RestApplication botInfo = await Context.Client.GetApplicationInfoAsync();
 
             EmbedBuilder builder = new EmbedBuilder();
 
@@ -169,13 +171,13 @@ namespace Prawnbot.Core.Module
         [Summary("Gets all the server regions")]
         public async Task GetAllRegionsAsync()
         {
-            var allRegions = Context.Client.VoiceRegions;
-            var currentRegion = Context.Guild.VoiceRegionId;
+            IReadOnlyCollection<IVoiceRegion> allRegions = Context.Client.VoiceRegions;
+            string currentRegion = Context.Guild.VoiceRegionId;
 
             StringBuilder sb = new StringBuilder();
 
             sb.Append("__Active regions:__ \n");
-            foreach (var region in allRegions.Where(x => !x.IsDeprecated && !x.IsVip))
+            foreach (IVoiceRegion region in allRegions.Where(x => !x.IsDeprecated && !x.IsVip))
             {
                 sb.Append($"{(region.IsOptimal || region.Id == currentRegion ? Format.Bold(region.Name) : region.Name)}");
                 if (region.IsOptimal) sb.Append(" (Optimal)");
@@ -186,7 +188,7 @@ namespace Prawnbot.Core.Module
             sb.AppendLine();
             sb.Append("__Deprecated regions:__ \n");
 
-            foreach (var region in allRegions.Where(x => x.IsDeprecated && !x.IsVip))
+            foreach (IVoiceRegion region in allRegions.Where(x => x.IsDeprecated && !x.IsVip))
             {
                 sb.Append($"{(region.IsOptimal || region.Id == currentRegion ? Format.Bold(region.Name) : region.Name)}");
                 if (region.Id == currentRegion) sb.Append(" (Current)");
@@ -206,12 +208,12 @@ namespace Prawnbot.Core.Module
                 return;
             }
 
-            var regions = await Context.Guild.GetVoiceRegionsAsync();
-            var region = Context.Guild.GetVoiceRegionsAsync().ToAsyncEnumerable().FlattenAsync().Result.FirstOrDefault(x => x.Name == regionName);
+            IReadOnlyCollection<IVoiceRegion> regions = await Context.Guild.GetVoiceRegionsAsync();
+            RestVoiceRegion region = Context.Guild.GetVoiceRegionsAsync().ToAsyncEnumerable().FlattenAsync().Result.FirstOrDefault(x => x.Name == regionName);
 
             bool validRegion = false;
 
-            foreach (var item in regions)
+            foreach (IVoiceRegion item in regions)
             {
                 if (item.Id == region.Id)
                 {
@@ -228,8 +230,7 @@ namespace Prawnbot.Core.Module
 
             await Context.Channel.SendMessageAsync($"Setting server {Format.Bold(Context.Guild.Name)}'s region to {region}");
 
-            var optionalRegion = new Optional<IVoiceRegion>(region);
-
+            Optional<IVoiceRegion> optionalRegion = new Optional<IVoiceRegion>(region);
             await Context.Guild.ModifyAsync(x => x.Region = optionalRegion);
         }
 
@@ -304,7 +305,7 @@ namespace Prawnbot.Core.Module
                 return;
             }
 
-            foreach (var alarm in alarmFile)
+            foreach (Alarm alarm in alarmFile)
             {
                 sb.Append(alarm);
             }
@@ -330,8 +331,8 @@ namespace Prawnbot.Core.Module
 
                     await Context.Channel.SendMessageAsync($"Started backup of channel #{Format.Bold(Context.Guild.GetChannel(id.GetValueOrDefault()).Name)} at {startTime.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
 
-                    var records = await _fileService.CreateCSVList(id.GetValueOrDefault());
-                    var result = _fileService.WriteToCSV(records.Entities, id, Context.Guild.Name).Entity;
+                    ListResponse<CSVColumns> records = await _fileService.CreateCSVList(id.GetValueOrDefault());
+                    string result = _fileService.WriteToCSV(records.Entities, id, Context.Guild.Name).Entity;
 
                     await Context.Channel.SendMessageAsync(result);
                 }
@@ -389,7 +390,7 @@ namespace Prawnbot.Core.Module
             {
                 if (Context.Message.Author.Id != 258627811844030465)
                 {
-                    var quoteRoom = await _botService.GetAllMessages(id);
+                    ListResponse<IMessage> quoteRoom = await _botService.GetAllMessages(id);
                     Random random = new Random();
 
                     IMessage randomQuote = quoteRoom.Entities.ElementAt(random.Next(quoteRoom.Entities.Count()));
@@ -419,12 +420,12 @@ namespace Prawnbot.Core.Module
 
                 await Context.Channel.SendMessageAsync($"Started backup of server {Context.Guild.Name} ({Context.Guild.TextChannels.Count()} channels) at {operationTime.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
 
-                foreach (var textChannel in Context.Guild.TextChannels)
+                foreach (SocketTextChannel textChannel in Context.Guild.TextChannels)
                 {
                     DateTime startTime = DateTime.Now;
 
-                    var records = await _fileService.CreateCSVList(textChannel.Id);
-                    var result = _fileService.WriteToCSV(records.Entities, textChannel.Id, Context.Guild.Name).Entity;
+                    ListResponse<CSVColumns> records = await _fileService.CreateCSVList(textChannel.Id);
+                    string result = _fileService.WriteToCSV(records.Entities, textChannel.Id, Context.Guild.Name).Entity;
                     await Context.Channel.SendMessageAsync(result);
                 }
 
@@ -436,21 +437,21 @@ namespace Prawnbot.Core.Module
         [Command("yotta count")]
         public async Task YottaCountAsync()
         {
-            var response = await _fileService.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
+            Response<string[]> response = await _fileService.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
             string[] yotta = response.Entity;
 
-            var enumValues = Enum.GetValues(typeof(PrependEnum));
+            Array enumValues = Enum.GetValues(typeof(PrependEnum));
             List<YottaModel> valueCount = new List<YottaModel>(yotta.Count());
 
-            foreach (var item in enumValues)
+            foreach (object item in enumValues)
             {
-                var prependCount = yotta.Where(x => x.ToString() == item.ToString()).Count();
+                int prependCount = yotta.Where(x => x.ToString() == item.ToString()).Count();
 
                 valueCount.Add(new YottaModel { PrependValue = (PrependEnum)item, Count = prependCount });
             }
 
             StringBuilder sb = new StringBuilder();
-            foreach (var item in valueCount)
+            foreach (YottaModel item in valueCount)
             {
                 sb.Append($"{item.PrependValue}: {item.Count}\n");
             }
@@ -461,11 +462,10 @@ namespace Prawnbot.Core.Module
         [Command("yotta ordered")]
         public async Task YottaOrderedAsync()
         {
-            var response = await _fileService.ReadFromFileAsync("Yotta.txt");
+            Response<string[]> response = await _fileService.ReadFromFileAsync("Yotta.txt");
             string[] yotta = response.Entity;
 
-            var orderedYotta = yotta.OrderBy(x => x);
-
+            IOrderedEnumerable<string> orderedYotta = yotta.OrderBy(x => x);
             await Context.Channel.SendMessageAsync(string.Join(", ", orderedYotta));
         }
 
@@ -476,7 +476,7 @@ namespace Prawnbot.Core.Module
 
             StringBuilder sb = new StringBuilder();
 
-            foreach (var configItem in configurationValues.OrderBy(x => x.Key))
+            foreach (KeyValuePair<string, string> configItem in configurationValues.OrderBy(x => x.Key))
             {
                 if (configItem.Value != null)
                 {

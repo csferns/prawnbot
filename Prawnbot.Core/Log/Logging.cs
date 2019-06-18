@@ -35,9 +35,9 @@ namespace Prawnbot.Core.Log
 
         public async Task PopulateTranslationLog(List<TranslateData> translation)
         {
-            foreach (var item in translation)
+            foreach (TranslateData item in translation)
             {
-                foreach (var innerTranslation in item.translations)
+                foreach (Translation innerTranslation in item.translations)
                 {
                     await _fileService.WriteToFile($"{innerTranslation.to} : {innerTranslation.text}", "TranslationLog.txt");
                 }

@@ -4,10 +4,12 @@ using Discord.WebSocket;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Framework;
 using Prawnbot.Core.Utility;
+using Prawnbot.Data.Models.API;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -29,7 +31,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             Response<Uri> uri = await _fileService.GetUriFromBlobStore(fileName, "botimages");
 
-            var req = System.Net.WebRequest.Create(uri.Entity);
+            WebRequest req = WebRequest.Create(uri.Entity);
             using (Stream stream = req.GetResponse().GetResponseStream())
             {
                 await context.Channel.SendFileAsync(stream, fileName);
@@ -44,7 +46,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (strippedMessage.ContainsSingleLower("sam") || message.IsUserTagged(258627811844030465))
             {
-                var gifs = await _apiBl.GetGifsAsync("calendar");
+                List<GiphyDatum> gifs = await _apiBl.GetGifsAsync("calendar");
                 await context.Channel.SendMessageAsync($"Have you put it in the calendar? \n{gifs[random.Next(gifs.Count())].bitly_gif_url}");
             }
             if (strippedMessage.ContainsSingleLower("ilja") || strippedMessage.ContainsSingleLower("ultratwink") || message.IsUserTagged(341940376057282560)) await context.Channel.SendMessageAsync("Has terminal gay");
@@ -206,7 +208,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             Array enumValues = Enum.GetValues(typeof(PrependEnum));
 
-            foreach (var enumValue in enumValues)
+            foreach (object enumValue in enumValues)
             {
                 valueDictionary.Add(enumValue.ToString(), 0);
             }

@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Audio;
 using Discord.Commands;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.Module
@@ -13,12 +14,12 @@ namespace Prawnbot.Core.Module
             channel = channel ?? (Context.User as IGuildUser)?.VoiceChannel;
             if (channel == null) { await Context.Channel.SendMessageAsync("User must be in a voice channel, or a voice channel must be passed as an argument."); return; }
 
-            var audioClient = await channel.ConnectAsync();
+            IAudioClient audioClient = await channel.ConnectAsync();
 
             string path = "D:\\Libraries\\Music\\Youtube to mp3\\All Star but they don't stop coming.mp3";
 
-            using (var ffmpeg = _botService.CreateFfmpegProcess(path).Entity)
-            using (var stream = Context.Guild.AudioClient.CreatePCMStream(AudioApplication.Music))
+            using (Process ffmpeg = _botService.CreateFfmpegProcess(path).Entity)
+            using (AudioOutStream stream = Context.Guild.AudioClient.CreatePCMStream(AudioApplication.Music))
             {
                 try { await ffmpeg.StandardOutput.BaseStream.CopyToAsync(stream); }
                 finally { await stream.FlushAsync(); }

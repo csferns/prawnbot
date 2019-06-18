@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Prawnbot.Core.Framework;
 using Prawnbot.Core.ServiceLayer;
+using Prawnbot.Data.Models.API;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,7 +26,7 @@ namespace Prawnbot.Core.Utility
 
             textToFind = textToFind.ToLowerInvariant();
 
-            foreach (var word in splitMessage)
+            foreach (string word in splitMessage)
             {
                 if (word == textToFind)
                 {
@@ -42,7 +44,7 @@ namespace Prawnbot.Core.Utility
 
             int foundWords = 0;
 
-            foreach (var item in splitTextToFind)
+            foreach (string item in splitTextToFind)
             {
                 if (splitMessage.Contains(item)) foundWords++;
             }
@@ -58,9 +60,9 @@ namespace Prawnbot.Core.Utility
         public static async Task<string> GetLanguageFullName(this string origin)
         {
             IAPIService apiService = new APIService();
-            var languages = await apiService.GetLanguagesAsync();
-            var language = languages.Entities.FirstOrDefault().Languages.SelectMany(x => x.LanguageDetails).Where(y => y.dir == origin).FirstOrDefault().name;
+            ListResponse<LanguageTranslationRoot> languages = await apiService.GetLanguagesAsync();
 
+            string language = languages.Entities.FirstOrDefault().Languages.SelectMany(x => x.LanguageDetails).Where(y => y.dir == origin).FirstOrDefault().name;
             return language;
         }
 
