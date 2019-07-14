@@ -19,14 +19,12 @@ namespace Prawnbot.Core.Framework
         public static IBotService _botService;
         public static ICommandService _commandService;
         public static IFileService _fileService;
-        public static IDatabaseAccessService _dbAccessService;
         public static ISpeechRecognitionService _speechRecognitionService;
 
         public static IAPIBl _apiBl;
         public static IBotBl _botBl;
         public static ICommandBl _commandBl;
         public static IFileBl _fileBl;
-        public static IDatabaseAccessBl _databaseAccessBl;
         public static ISpeechRecognitionBl _speechRecognitionBl;
     }
 }
