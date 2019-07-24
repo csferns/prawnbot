@@ -1,25 +1,25 @@
 ﻿using Microsoft.CognitiveServices.Speech;
-using Microsoft.CognitiveServices.Speech.Audio;
+using Prawnbot.Utility.Configuration;
 using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface ISpeechRecognitionBl
+    public interface ISpeechRecognitionBL
     {
-        void Setup();
+        Task Setup(Discord.Audio.AudioInStream discordAudioInStream);
     }
 
-    public class SpeechRecognitionBl : BaseBl, ISpeechRecognitionBl
+    public class SpeechRecognitionBL : BaseBL, ISpeechRecognitionBL
     {
-        private static Discord.Audio.AudioOutStream discordAudioStream;
-        private static SpeechSynthesizer speechSynthesizer; 
-
-        public void Setup()
+        public async Task Setup(Discord.Audio.AudioInStream discordAudioInStream)
         {
-            AudioOutputStream newStream = AudioOutputStream.CreatePullStream(AudioStreamFormat.GetDefaultOutputFormat());
-            //discordAudioStream.CopyTo(newStream);
-
-            speechSynthesizer = new SpeechSynthesizer(SpeechConfig.FromEndpoint(new Uri("https://uksouth.api.cognitive.microsoft.com/sts/v1.0/issuetoken"), ConfigUtility.SpeechServicesKey));
+            using (SpeechSynthesizer synth = new SpeechSynthesizer(SpeechConfig.FromEndpoint(new Uri("https://uksouth.api.cognitive.microsoft.com/sts/v1.0/issuetoken"), ConfigUtility.SpeechServicesKey)))
+            using (MemoryStream streamAudio = new MemoryStream())
+            {
+                await synth.StartSpeakingTextAsync("");
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Data.Models.API;
+using Prawnbot.Core.Model.API.Translation;
+using Prawnbot.Core.ServiceLayer;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -14,22 +15,23 @@ namespace Prawnbot.Core.Log
         Task PopulateTranslationLog(List<TranslateData> translation);
     }
 
-    public class Logging : BaseBl, ILogging
+    public class Logging : BaseBL, ILogging 
     {
-        public Logging()
+        private readonly IFileService fileService;
+        public Logging(IFileService fileService) 
         {
-
+            this.fileService = fileService;
         }
 
         public async Task PopulateEventLog(LogMessage message)
         {
-            await _fileService.WriteToFile(message.ToString(timestampKind: DateTimeKind.Local), "EventLogs.txt");
+            await fileService.WriteToFile(message.ToString(timestampKind: DateTimeKind.Local), "EventLogs.txt");
             await Console.Out.WriteLineAsync(message.ToString(timestampKind: DateTimeKind.Local));
         }
 
         public async Task PopulateMessageLog(LogMessage message)
         {
-            await _fileService.WriteToFile(message.ToString(timestampKind: DateTimeKind.Local), "MessageLogs.txt");
+            await fileService.WriteToFile(message.ToString(timestampKind: DateTimeKind.Local), "MessageLogs.txt");
             await Console.Out.WriteLineAsync(message.ToString(timestampKind: DateTimeKind.Local));
         }
 
@@ -39,9 +41,11 @@ namespace Prawnbot.Core.Log
             {
                 foreach (Translation innerTranslation in item.translations)
                 {
-                    await _fileService.WriteToFile($"{innerTranslation.to} : {innerTranslation.text}", "TranslationLog.txt");
+                    await fileService.WriteToFile($"{innerTranslation.to} : {innerTranslation.text}", "TranslationLog.txt");
                 }
             }
+
+            await PopulateEventLog(new LogMessage(LogSeverity.Info, "Logging", "Translations logged"));
         }
     }
 }

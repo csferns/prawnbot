@@ -2,8 +2,9 @@
 using Discord;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
-using Prawnbot.Core.Models;
-using Prawnbot.Data.Models.API;
+using Prawnbot.Core.Model.API.Translation;
+using Prawnbot.Core.Model.DTOs;
+using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface IFileBl
+    public interface IFileBL
     {
         Task<CloudBlobContainer> GetBlobContainer(string containerName);
         Task<Uri> GetUriFromBlobStore(string fileName, string containerName);
@@ -23,17 +24,14 @@ namespace Prawnbot.Core.BusinessLayer
         Task<bool> UploadFileToBlobStore(string fileName, string containerName);
         FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
         Task<string[]> ReadFromFileAsync(string fileName);
-        string WriteToCSV(List<CSVColumns> columns, ulong? id, string guildName);
+        void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName);
         Task<bool> WriteToFile(string valueToWrite, string fileName);
-        Task<List<CSVColumns>> CreateCSVList(ulong id);
+        List<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
         bool CheckIfTranslationExists();
         List<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
-        Dictionary<string, string> GetAllConfigurationValues();
-        void SetConfigurationValue(string configurationName, string newConfigurationValue);
-        void SetEventListeners(bool newValue);
     }
 
-    public class FileBl : BaseBl, IFileBl
+    public class FileBL : BaseBL, IFileBL
     {
         public async Task<CloudBlobContainer> GetBlobContainer(string containerName)
         {
@@ -55,15 +53,13 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<Stream> GetStreamFromBlobStore(string fileName, string containerName)
         {
-            using (MemoryStream stream = new MemoryStream())
-            {
-                CloudBlobContainer container = await GetBlobContainer(containerName);
-                CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
+            using MemoryStream stream = new MemoryStream();
+            CloudBlobContainer container = await GetBlobContainer(containerName);
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
 
-                await blockBlob.DownloadToStreamAsync(stream);
+            await blockBlob.DownloadToStreamAsync(stream);
 
-                return stream;
-            }
+            return stream;
         }
 
         public async Task<Stream> DownloadFileFromBlobStore(string fileName, string containerName)
@@ -117,16 +113,8 @@ namespace Prawnbot.Core.BusinessLayer
             return fileLines.ToArray();
         }
 
-        public string WriteToCSV(List<CSVColumns> columns, ulong? id, string guildName)
+        public void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName)
         {
-            Stopwatch stopwatch = new Stopwatch();
-
-            stopwatch.Start();
-
-            string fileName;
-            if (id.GetValueOrDefault() != default(ulong)) fileName = $"{_botBl.FindTextChannel(id.GetValueOrDefault(ulong.MinValue)).Name}-backup.csv";
-            else fileName = $"{guildName}-backup.csv";
-
             using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Truncate, FileAccess.Write, FileShare.Write))
             using (StreamWriter writer = new StreamWriter(fileStream))
             using (CsvWriter csv = new CsvWriter(writer))
@@ -134,14 +122,6 @@ namespace Prawnbot.Core.BusinessLayer
                 fileStream.Position = fileStream.Length;
                 csv.WriteRecords(columns);
             }
-
-            StringBuilder sb = new StringBuilder();
-            sb.Append($"Backed up {columns.Count()} messages to {fileName}. \n");
-            stopwatch.Stop();
-
-            sb.Append($"The operation took {stopwatch.Elapsed.Hours}h:{stopwatch.Elapsed.Minutes}m:{stopwatch.Elapsed.Seconds}s:{stopwatch.Elapsed.Milliseconds}ms");
-
-            return sb.ToString();
         }
 
         public async Task<bool> WriteToFile(string valueToWrite, string fileName)
@@ -155,38 +135,38 @@ namespace Prawnbot.Core.BusinessLayer
             return true;
         }
 
-        public async Task<List<CSVColumns>> CreateCSVList(ulong id)
+        public List<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)
         {
             List<CSVColumns> records = new List<CSVColumns>();
 
-            IEnumerable<IMessage> messagesToAdd = await _botBl.GetAllMessages(id);
-
-            for (int i = 0; i < messagesToAdd.Count(); i++)
+            for (int message = 0; message < messagesToAdd.Count(); message++)
             {
-                if (messagesToAdd.ElementAt(i).Type == MessageType.ChannelPinnedMessage)
+                // Not interested in the messages for pinning another message or guild members joining
+                if (messagesToAdd[message].Type == MessageType.ChannelPinnedMessage 
+                    || messagesToAdd[message].Type == MessageType.GuildMemberJoin)
                 {
                     continue;
                 }
 
                 CSVColumns recordToAdd = new CSVColumns
                 {
-                    MessageID = messagesToAdd.ElementAt(i).Id,
-                    Author = messagesToAdd.ElementAt(i).Author.Username,
-                    AuthorIsBot = messagesToAdd.ElementAt(i).Author.IsBot,
-                    MessageContent = messagesToAdd.ElementAt(i).Content,
-                    Timestamp = messagesToAdd.ElementAt(i).Timestamp
+                    MessageID = messagesToAdd[message].Id,
+                    Author = messagesToAdd[message].Author.Username,
+                    AuthorIsBot = messagesToAdd[message].Author.IsBot,
+                    MessageContent = messagesToAdd[message].Content,
+                    Timestamp = messagesToAdd[message].Timestamp
                 };
 
-                if (messagesToAdd.ElementAt(i).Attachments.Count() > 0)
+                if (messagesToAdd[message].Attachments.Count() > 0)
                 {
                     List<string> attachmentUrls = new List<string>();
 
-                    foreach (IAttachment attachment in messagesToAdd.ElementAt(i).Attachments)
+                    foreach (IAttachment attachment in messagesToAdd[message].Attachments)
                     {
                         attachmentUrls.Add(attachment.Url);
                     }
 
-                    string attachmentString = string.Join(", " , attachmentUrls);
+                    string attachmentString = string.Join(", ", attachmentUrls);
                     recordToAdd.Attachments = attachmentString;
                 }
 
@@ -204,21 +184,6 @@ namespace Prawnbot.Core.BusinessLayer
         public List<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate)
         {
             return new List<TranslateData>();
-        }
-
-        public Dictionary<string, string> GetAllConfigurationValues()
-        {
-            return ConfigUtility.GetAllConfig();
-        }
-
-        public void SetConfigurationValue(string configurationName, string newConfigurationValue)
-        {
-            Common.Configuration.ConfigUtility.SetConfig(configurationName, newConfigurationValue);
-        }
-
-        public void SetEventListeners(bool newValue)
-        {
-            ConfigUtility.AllowEventListeners = newValue;
         }
     }
 }

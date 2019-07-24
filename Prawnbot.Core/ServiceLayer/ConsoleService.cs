@@ -1,6 +1,8 @@
 ﻿using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Framework;
-using System.Threading;
+using Prawnbot.Infrastructure;
+using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.ServiceLayer
@@ -13,21 +15,21 @@ namespace Prawnbot.Core.ServiceLayer
 
     public class ConsoleService : BaseService, IConsoleService
     {
-        public IConsoleBl _consoleBl;
+        public IConsoleBL consoleBL;
 
-        public ConsoleService(CancellationTokenSource workerCancellationTokenSource)
+        public ConsoleService(IConsoleBL consoleBL)
         {
-            _consoleBl = new ConsoleBl(workerCancellationTokenSource);
+            this.consoleBL = consoleBL;
         }
 
         public Response<bool> ValidCommand(string command)
         {
-            return LoadResponse(_consoleBl.ValidCommand(command));
+            return LoadResponse(consoleBL.ValidCommand(command));
         }
 
         public async Task<Response<bool>> HandleConsoleCommand(string command)
         {
-            return LoadResponse(await _consoleBl.HandleConsoleCommand(command));
+            return LoadResponse(await consoleBL.HandleConsoleCommand(command));
         }
     }
 }

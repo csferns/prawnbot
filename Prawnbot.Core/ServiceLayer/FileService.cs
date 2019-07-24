@@ -1,6 +1,7 @@
-﻿using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Framework;
-using Prawnbot.Core.Models;
+﻿using Discord;
+using Prawnbot.Core.BusinessLayer;
+using Prawnbot.Core.Model.DTOs;
+using Prawnbot.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,79 +16,59 @@ namespace Prawnbot.Core.ServiceLayer
         Task<Response<Stream>> DownloadFileFromBlobStore(string fileName, string containerName);
         Task<Response<bool>> UploadFileToBlobStore(string fileName, string containerName);
         Task<Response<string[]>> ReadFromFileAsync(string fileName);
-        Response<string> WriteToCSV(List<CSVColumns> columns, ulong? id, string guildName);
+        ResponseBase WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName);
         Task<Response<bool>> WriteToFile(string valueToWrite, string fileName);
-        Task<ListResponse<CSVColumns>> CreateCSVList(ulong id);
-        Response<Dictionary<string,string>> GetAllConfigurationValues();
-        ResponseBase SetConfigurationValue(string configurationName, string newConfigurationValue);
-        ResponseBase SetEventListeners(bool newValue);
+        ListResponse<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
     }
 
     public class FileService : BaseService, IFileService
     {
-        protected IFileBl _fileBl;
+        private readonly IFileBL fileBL;
 
-        public FileService()
+        public FileService(IFileBL fileBL)
         {
-            _fileBl = new FileBl();
+            this.fileBL = fileBL;
         }
 
         public async Task<Response<Uri>> GetUriFromBlobStore(string fileName, string containerName)
         {
-            return LoadResponse(await _fileBl.GetUriFromBlobStore(fileName, containerName));
+            return LoadResponse(await fileBL.GetUriFromBlobStore(fileName, containerName));
         }
 
         public async Task<Response<Stream>> GetStreamFromBlobStore(string fileName, string containerName)
         {
-            return LoadResponse(await _fileBl.GetStreamFromBlobStore(fileName, containerName));
+            return LoadResponse(await fileBL.GetStreamFromBlobStore(fileName, containerName));
         }
 
         public async Task<Response<Stream>> DownloadFileFromBlobStore(string fileName, string containerName)
         {
-            return LoadResponse(await _fileBl.DownloadFileFromBlobStore(fileName, containerName));
+            return LoadResponse(await fileBL.DownloadFileFromBlobStore(fileName, containerName));
         }
 
         public async Task<Response<bool>> UploadFileToBlobStore(string fileName, string containerName)
         {
-            return LoadResponse(await _fileBl.UploadFileToBlobStore(fileName, containerName));
+            return LoadResponse(await fileBL.UploadFileToBlobStore(fileName, containerName));
         }
 
         public async Task<Response<string[]>> ReadFromFileAsync(string fileName)
         {
-            return LoadResponse(await _fileBl.ReadFromFileAsync(fileName));
+            return LoadResponse(await fileBL.ReadFromFileAsync(fileName));
         }
 
-        public Response<string> WriteToCSV(List<CSVColumns> columns, ulong? id, string guildName)
+        public ResponseBase WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName)
         {
-            return LoadResponse(_fileBl.WriteToCSV(columns, id, guildName));
+            fileBL.WriteToCSV(columns, id, fileName);
+            return new ResponseBase();
         }
 
         public async Task<Response<bool>> WriteToFile(string valueToWrite, string fileName)
         {
-            return LoadResponse(await _fileBl.WriteToFile(valueToWrite, fileName));
+            return LoadResponse(await fileBL.WriteToFile(valueToWrite, fileName));
         }
 
-        public async Task<ListResponse<CSVColumns>> CreateCSVList(ulong id)
+        public ListResponse<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)
         {
-            return LoadListResponse(await _fileBl.CreateCSVList(id));
-        }
-
-        public Response<Dictionary<string, string>> GetAllConfigurationValues()
-        {
-            return LoadResponse(_fileBl.GetAllConfigurationValues());
-        }
-
-        public ResponseBase SetConfigurationValue(string configurationName, string newConfigurationValue)
-        {
-            _fileBl.SetConfigurationValue(configurationName, newConfigurationValue);
-            return new ResponseBase();
-        }
-
-        public ResponseBase SetEventListeners(bool newValue)
-        {
-            _fileBl.SetEventListeners(newValue);
-
-            return new ResponseBase();
+            return LoadListResponse(fileBL.CreateCSVList(messagesToAdd));
         }
     }
 }
