@@ -1,9 +1,9 @@
-﻿using CsvHelper;
-using Discord;
+﻿using Discord;
 using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
 using Prawnbot.Common.Enums;
+using Prawnbot.Core.Attributes;
 using Prawnbot.Core.Model.DTOs;
 using Prawnbot.Core.ServiceLayer;
 using Prawnbot.Core.Utility;
@@ -11,7 +11,6 @@ using Prawnbot.Infrastructure;
 using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -44,7 +43,7 @@ namespace Prawnbot.Core.Modules
             await Context.Channel.SendMessageAsync(randomUser.Nickname ?? randomUser.Username);
         }
 
-        [Command("flip a coin")]
+        [Command("flip-a-coin")]
         [Summary("Flips a coin")]
         public async Task FlipACoinAsync(string headsValue = null, string tailsValue = null)
         {
@@ -56,6 +55,7 @@ namespace Prawnbot.Core.Modules
         }
 
         [Command("bot-ping")]
+        [Summary("Returns the connection latency of the bot to the Discord servers")]
         public async Task PingAsync()
         {
             await Context.Channel.SendMessageAsync($"{Context.Client.Latency}ms");
@@ -63,28 +63,44 @@ namespace Prawnbot.Core.Modules
 
         [Command("commands")]
         [Summary("PM's a list of commands to the user")]
-        public async Task CommandsAsync()
+        public async Task CommandsAsync(bool includeNotImplemented = false)
         {
             EmbedBuilder builder = new EmbedBuilder();
 
-            CommandAttribute[] commandAttributes = (CommandAttribute[])Attribute.GetCustomAttributes(typeof(Modules).Assembly, typeof(CommandAttribute));
-            object[] summaryAttribues = typeof(SummaryAttribute).GetCustomAttributes(true);
+            var methods = typeof(Modules).Assembly.GetTypes()
+                      .SelectMany(t => t.GetMethods())
+                      .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
+                      .ToArray();
 
-            var attributes = commandAttributes.Zip(summaryAttribues, (cmd, smr) => new { Command = cmd, Summary = smr });
+            StringBuilder sb = new StringBuilder();
 
-            builder.WithTitle("Commands | All commands follow the structure p!(command)")
-                .WithColor(Color.Blue);
-
-            foreach (var attribute in attributes) 
+            foreach (var method in methods.OrderBy(x => x.Name))
             {
-                builder.AddField(attribute.Command.ToString(), attribute.Summary.ToString());
+                if (method.CustomAttributes.Any(x => x.AttributeType == typeof(NotImplementedAttribute)) && !includeNotImplemented)
+                {
+                    continue;
+                }
+
+                var discordAttributes = method.CustomAttributes.Where(x => x.AttributeType == typeof(SummaryAttribute) || x.AttributeType == typeof(CommandAttribute));
+                string commandAttribute = discordAttributes.First(x => x.AttributeType == typeof(CommandAttribute)).ConstructorArguments.First().Value.ToString();
+                string summaryAttribute = discordAttributes.FirstOrDefault(x => x.AttributeType == typeof(SummaryAttribute))?.ConstructorArguments.First().Value.ToString() ?? "No summary available";
+
+                sb.AppendLine($"{ConfigUtility.CommandDelimiter}{commandAttribute}: {summaryAttribute}");
             }
 
+            builder.WithTitle($"Commands | All commands follow the structure {ConfigUtility.CommandDelimiter}(command)")
+                .WithColor(Color.Blue)
+                .WithDescription(sb.ToString());
+
             await Context.User.SendMessageAsync("", false, builder.Build());
-            await Context.Channel.SendMessageAsync($"{Context.User.Mention}: pm'd with command details!");
+
+            if (Context.Channel.GetType() != typeof(SocketDMChannel))
+            {
+                await Context.Channel.SendMessageAsync($"{Context.User.Mention}: pm'd with command details!");
+            }
         }
 
-        [Command("info")]
+        [Command("bot-info")]
         [Summary("Gets the bot's information")]
         public async Task GetBotInfoAsync()
         {
@@ -103,7 +119,7 @@ namespace Prawnbot.Core.Modules
             await Context.Channel.SendMessageAsync("", false, builder.Build());
         }
 
-        [Command("status")]
+        [Command("server-status")]
         [Summary("Gives the status of the server")]
         public async Task StatusAsync()
         {
@@ -163,23 +179,16 @@ namespace Prawnbot.Core.Modules
 
             StringBuilder sb = new StringBuilder();
 
-            sb.Append("__Active regions:__ \n");
+            sb.AppendLine("__Active regions:__ \n");
             foreach (IVoiceRegion region in allRegions.Where(x => !x.IsDeprecated && !x.IsVip))
             {
-                sb.Append($"{(region.IsOptimal || region.Id == currentRegion ? Format.Bold(region.Name) : region.Name)}");
-                if (region.IsOptimal) sb.Append(" (Optimal)");
-                if (region.Id == currentRegion) sb.Append(" (Current)");
-                sb.AppendLine();
+                sb.AppendLine($"{(region.IsOptimal || region.Id == currentRegion ? Format.Bold(region.Name) : region.Name)} {(region.IsOptimal ? "(Optimal)" : "")} {(region.Id == currentRegion ? "(Current)" : "")}");
             }
 
-            sb.AppendLine();
-            sb.Append("__Deprecated regions:__ \n");
-
+            sb.AppendLine("__Deprecated regions:__ \n");
             foreach (IVoiceRegion region in allRegions.Where(x => x.IsDeprecated && !x.IsVip))
             {
-                sb.Append($"{(region.IsOptimal || region.Id == currentRegion ? Format.Bold(region.Name) : region.Name)}");
-                if (region.Id == currentRegion) sb.Append(" (Current)");
-                sb.AppendLine();
+                sb.AppendLine($"{(region.IsOptimal || region.Id == currentRegion ? Format.Bold(region.Name) : region.Name)} {(region.Id == currentRegion ? "(Current)" : "")}");
             }
 
             await Context.Channel.SendMessageAsync(sb.ToString());
@@ -222,7 +231,8 @@ namespace Prawnbot.Core.Modules
         }
 
         [Command("set-alarm")]
-        [Summary("sets an alarm for a user")]
+        [Summary("Sets an alarm for a user")]
+        [NotImplemented]
         public async Task SetAlarmAsync(int timePassed, [Remainder]string alarmName = null)
         {
             // TODO: Create a service for the Alarm entity and do get / creation / update / delete there
@@ -231,6 +241,8 @@ namespace Prawnbot.Core.Modules
         }
 
         [Command("display-alarms")]
+        [Summary("Display set alarms")]
+        [NotImplemented]
         public async Task GetAlarmAsync()
         {
             // TODO: Create a service for the Alarm entity and do get / creation / update / delete there
@@ -239,6 +251,8 @@ namespace Prawnbot.Core.Modules
         }
 
         [Command("remove-alarm")]
+        [Summary("Remove a set alarm")]
+        [NotImplemented]
         public async Task RemoveAlarmAsync()
         {
             // TODO: Create a service for the Alarm entity and do creation / update / delete there
@@ -246,7 +260,8 @@ namespace Prawnbot.Core.Modules
             throw new NotImplementedException();
         }
 
-        [Command("backup")]
+        [Command("backup-channel")]
+        [Summary("Backs up a channel with a given ID")]
         public async Task BackupQuotesAsync(ulong? id = null)
         {
             if (Context.Message.Author.Id == 216177905712103424 || Context.Message.Author.Id == 466926694431719424)
@@ -257,7 +272,8 @@ namespace Prawnbot.Core.Modules
             }
         }
 
-        [Command("addquote")]
+        [Command("add-quote")]
+        [Summary("Add a quote in the correct format to the default channel")]
         public async Task AddQuoteAsync(string author = "", [Remainder]string quote = "")
         {
             ulong id = Context.Guild.DefaultChannel.Id;
@@ -265,7 +281,7 @@ namespace Prawnbot.Core.Modules
 
             await Context.Guild.GetTextChannel(id).SendMessageAsync($"\"{quote}\" - {author} {DateTime.Now.Year}");
 
-            string filePath = $"{ConfigUtility.TextFileDirectory}\\ChannelBackups\\{Context.Guild.GetChannel(id).Name}-backup.csv";
+            string fileName = $"{Context.Guild.Name}-{Context.Guild.GetChannel(id).Name}-backup.csv";
 
             List<CSVColumns> columns = new List<CSVColumns>()
             {
@@ -278,12 +294,13 @@ namespace Prawnbot.Core.Modules
                 }
             };
 
-            fileService.WriteToCSV(columns, id, filePath);
+            fileService.WriteToCSV(columns, id, fileName);
 
             if (Context.Message.Channel.Id == id) await Context.Message.DeleteAsync();
         }
 
-        [Command("randomquote")]
+        [Command("random-quote")]
+        [Summary("Gets a random quote from a given channel")]
         public async Task RandomQuoteAsync(ulong id = 453899130486521859)
         {
             Response<IMessage> response = await coreService.GetRandomQuoteAsync(id);
@@ -299,13 +316,15 @@ namespace Prawnbot.Core.Modules
             await Context.Channel.SendMessageAsync("", false, builder.Build());
         }
 
-        [Command("backupserver")]
+        [Command("backup-server")]
+        [Summary("Backs up the current server to a CSV file")]
         public async Task BackupServerAsync()
         {
             await coreService.BackupServerAsync(Context.Guild.Id, true);
         }
 
-        [Command("yotta count")]
+        [Command("yotta-count")]
+        [Summary("Gets a count of the items in the Yotta file")]
         public async Task YottaCountAsync()
         {
             Response<string[]> response = await fileService.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
@@ -330,7 +349,8 @@ namespace Prawnbot.Core.Modules
             await Context.Channel.SendMessageAsync(sb.ToString());
         }
 
-        [Command("yotta ordered")]
+        [Command("yotta-ordered")]
+        [Summary("Reads the Yotta count and gives an ordered representation of it")]
         public async Task YottaOrderedAsync()
         {
             Response<string[]> response = await fileService.ReadFromFileAsync("Yotta.txt");
@@ -341,6 +361,8 @@ namespace Prawnbot.Core.Modules
         }
 
         [Command("emoji-usage")]
+        [Summary("Gets the usage of a given emoji in the guild")]
+        [NotImplemented]
         public async Task EmojiUsageAsync(ulong emojiId)
         {
             await coreService.GetEmoteFromGuild(emojiId, Context.Guild);
@@ -350,6 +372,7 @@ namespace Prawnbot.Core.Modules
         }
 
         [Command("shutdown")]
+        [Summary("Shuts down the bot")]
         public async Task ShutdownAsync()
         {
             await Context.Channel.SendMessageAsync("Shutting down...");
@@ -358,10 +381,19 @@ namespace Prawnbot.Core.Modules
         }
 
         [Command("change-boticon")]
+        [NotImplemented]
         public async Task ChangeIconAsync()
         {
             await Task.Delay(2);
             throw new NotImplementedException();
+        }
+
+        [Command("ping-server")]
+        [Summary("Pings a server with a given name or address")]
+        [NotImplemented]
+        public async Task PingServer(string ipAddress)
+        {
+            await coreService.PingHostAsync(ipAddress);
         }
     }
 }

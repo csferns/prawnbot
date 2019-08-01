@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
+using Prawnbot.Core.Attributes;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -12,6 +13,7 @@ namespace Prawnbot.Core.Modules
     public partial class Modules : ModuleBase<SocketCommandContext>
     {
         [Command("impersonate-user")]
+        [NotImplemented]
         public async Task ImpersonateUser(SocketGuildUser user)
         {
             if (user == null)

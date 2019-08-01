@@ -62,7 +62,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "", $"Error in GET request for type {typeof(T).FullName}", e));
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "", $"Error in GET request for type {typeof(T).FullName}", e));
                 return default(T);
             }
         }
@@ -88,7 +88,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "", $"Error in POST request for type {typeof(T).FullName}", e));
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "", $"Error in POST request for type {typeof(T).FullName}", e));
                 return default(T);
             }
         }
@@ -160,7 +160,7 @@ namespace Prawnbot.Core.BusinessLayer
                         "user",
                         CancellationToken.None,
                         new FileDataStore(credPath, true)).Result;
-                    await logging.PopulateEventLog(new LogMessage(LogSeverity.Info, "Calendar", "Credential file saved to: " + credPath));
+                    await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Calendar", "Credential file saved to: " + credPath));
                 }
 
                 CalendarService service = new CalendarService(new BaseClientService.Initializer()
@@ -183,7 +183,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "Calendar", "Error in GetCalendarEntries", e));
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Calendar", "Error in GetCalendarEntries", e));
                 return new List<Event>();
             }
         }

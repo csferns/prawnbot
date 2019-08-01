@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Prawnbot.Core.BusinessLayer;
 using Prawnbot.Core.Log;
@@ -20,9 +21,10 @@ namespace Prawnbot.Application
 
             using ILifetimeScope scope = container.BeginLifetimeScope();
             IBotService botService = scope.Resolve<IBotService>();
-            BaseApplication adminApplication = new BaseApplication(botService);
+            ILogging logging = scope.Resolve<ILogging>();
+            BaseApplication adminApplication = new BaseApplication(botService, logging);
 
-            adminApplication.Main();
+            adminApplication.Main(container);
         }
 
         private static IContainer AutofacSetup()
@@ -38,11 +40,6 @@ namespace Prawnbot.Application
                 .AsImplementedInterfaces()
                 .InstancePerLifetimeScope();
 
-            containerBuilder.RegisterAssemblyTypes(Assembly.GetAssembly(typeof(Prawnbot.Core.Modules.Modules)))
-                .AsImplementedInterfaces()
-                .InstancePerLifetimeScope()
-                .InNamespace("Prawnbot.Core.Modules");
-
             containerBuilder.RegisterType<Logging>().As<ILogging>().InstancePerLifetimeScope();
 
             return containerBuilder.Build();
@@ -52,12 +49,14 @@ namespace Prawnbot.Application
     public class BaseApplication
     {
         private readonly IBotService botService;
-        public BaseApplication(IBotService botService)
+        private readonly ILogging logging;
+        public BaseApplication(IBotService botService, ILogging logging)
         {
             this.botService = botService;
+            this.logging = logging;
         }
 
-        public void Main()
+        public void Main(IContainer autofacContainer)
         {
             try
             {
@@ -74,7 +73,7 @@ namespace Prawnbot.Application
                 Console.Clear();
 
                 AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
-                ConnectAsync(token).GetAwaiter().GetResult();
+                ConnectAsync(token, autofacContainer).GetAwaiter().GetResult();
             }
             catch (Exception e)
             {
@@ -82,11 +81,15 @@ namespace Prawnbot.Application
             }
         }
 
-        public async Task ConnectAsync(string token)
+        public async Task ConnectAsync(string token, IContainer autofacContainer)
         {
             try
             {
-                await botService.ConnectAsync(token);
+                await botService.ConnectAsync(token, autofacContainer);
+
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Debug, "ConnectAsync", $"Memory used before collection: {GC.GetTotalMemory(false)}"));
+                GC.Collect();
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Debug, "ConnectAsync", $"Memory used after collection: {GC.GetTotalMemory(true)}"));
 
                 await Task.Delay(-1);
             }

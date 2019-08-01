@@ -1,11 +1,18 @@
-﻿using Discord;
+﻿using Autofac;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Prawnbot.Core.Log;
+using Prawnbot.Core.Quartz;
+using Prawnbot.Core.ServiceLayer;
 using Prawnbot.Core.Utility;
 using Prawnbot.Utility.Configuration;
+using Quartz;
+using Quartz.Impl;
 using System;
+using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -18,28 +25,28 @@ namespace Prawnbot.Core.BusinessLayer
         /// </summary>
         /// <param name="token">The token to connect with</param>
         /// <returns></returns>
-        Task<bool> ConnectAsync(string token);
+        Task ConnectAsync(string token, IContainer autofacContainer);
         /// <summary>
         /// Method to disconnect the bot
         /// </summary>
         /// <returns></returns>
-        Task<bool> DisconnectAsync(bool switchBot = false);
+        Task DisconnectAsync(bool switchBot = false);
         /// <summary>
         /// Disconnects and Reconnects the bot
         /// </summary>
         /// <returns></returns>
-        Task<bool> ReconnectAsync();
+        Task ReconnectAsync();
         /// <summary>
         /// Event handler to handle the messages that come in
         /// </summary>
         /// <param name="arg">Message to pass into the commands</param>
         /// <returns></returns>
-        Task<bool> HandleCommandAsync(SocketMessage arg);
+        Task HandleCommandAsync(SocketMessage arg);
         /// <summary>
         /// Set up the Quartz scheduler for the scheduled jobs
         /// </summary>
         /// <returns></returns>
-        Task QuartzSetup();
+        Task QuartzSetupAsync();
         /// <summary>
         /// Event that is fired when the client disconnects
         /// </summary>
@@ -78,17 +85,17 @@ namespace Prawnbot.Core.BusinessLayer
             this.logging = logging;
         }
 
-        private static string _token;
+        private static string Token { get; set; }
         private static bool IsQuartzInitialized { get; set; }
 
         private static Discord.Commands.CommandService Commands;
         private static IServiceProvider BotServices;
 
-        public async Task<bool> ConnectAsync(string token)
+        public async Task ConnectAsync(string token, IContainer autofacContainer = null)
         {
             try
             {
-                _token = token;
+                Token = token;
 
                 Client = new DiscordSocketClient(new DiscordSocketConfig
                 {
@@ -101,37 +108,40 @@ namespace Prawnbot.Core.BusinessLayer
                 BotServices = new ServiceCollection()
                     .AddSingleton(Client)
                     .AddSingleton(Commands)
+                    .AddSingleton(autofacContainer.Resolve<IBotService>())
+                    .AddSingleton(autofacContainer.Resolve<ICoreService>())
+                    .AddSingleton(autofacContainer.Resolve<IAPIService>())
+                    .AddSingleton(autofacContainer.Resolve<IFileService>())
+                    .AddSingleton(autofacContainer.Resolve<ISpeechRecognitionService>())
                     .BuildServiceProvider();
 
                 Client.MessageReceived += HandleCommandAsync;
                 Client.UserJoined += AnnounceUserJoined;
                 Client.UserBanned += AnnounceUserBan;
                 Client.UserUnbanned += Client_UserUnbanned;
-                Client.Log += logging.PopulateEventLog;
+                Client.Log += logging.PopulateEventLogAsync;
                 Client.Disconnected += Client_Disconnected;
 
                 //_unitOfWork = new UnitOfWork(new BotDatabaseContext());
 
-                //await Commands.AddModulesAsync(Assembly.Load(typeof(Modules.Modules).Assembly.FullName), BotServices);
+                await Commands.AddModulesAsync(typeof(Modules.Modules).Assembly, BotServices);
 
-                await Client.LoginAsync(TokenType.Bot, _token);
+                await Client.LoginAsync(TokenType.Bot, Token);
                 await Client.StartAsync();
                 await coreBL.SetBotStatusAsync(UserStatus.Online);
 
                 if (!IsQuartzInitialized)
                 {
-                    await QuartzSetup();
+                    await QuartzSetupAsync();
                 }
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "ConnectAsync()", "Error connecting the bot", e));
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "ConnectAsync()", "Error connecting the bot", e));
             }
-
-            return true;
         }
 
-        public async Task<bool> DisconnectAsync(bool switchBot = false)
+        public async Task DisconnectAsync(bool switchBot = false)
         {
             try
             {
@@ -140,64 +150,115 @@ namespace Prawnbot.Core.BusinessLayer
                     await Client.LogoutAsync();
                     await Client.StopAsync();
 
-                    _token = switchBot 
-                        ? string.Empty
-                        : null;
-                    //else workerCancellationTokenSource.Cancel();
+                    Token = switchBot
+                        ? null
+                        : Token;
+                    //workerCancellationTokenSource.Cancel();
                 }
-
-                return true;
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "Disconnect", "Error disconnecting the bot", e));
-                return false;
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Disconnect", "Error disconnecting the bot", e));
+                return;
             }
         }
 
-        public async Task<bool> ReconnectAsync()
+        public async Task ReconnectAsync()
         {
             try
             {
                 await DisconnectAsync();
-                await ConnectAsync(_token);
 
-                return true;
+                // TODO: handle autofac container on reconnect
+                await ConnectAsync(Token);
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "Reconnect", "Error reconnecting the bot", e));
-                return false;
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Reconnect", "Error reconnecting the bot", e));
+                return;
             }
         }
 
-        public async Task<bool> HandleCommandAsync(SocketMessage arg)
+        public async Task QuartzSetupAsync()
+        {
+            try
+            {
+                NameValueCollection props = new NameValueCollection
+                {
+                    { "quartz.serializer.type", "binary" }
+                };
+                StdSchedulerFactory factory = new StdSchedulerFactory(props);
+                IScheduler scheduler = await factory.GetScheduler();
+
+                // and start it off
+                await scheduler.Start();
+
+                IJobDetail mocJob = JobBuilder.Create<MOC>()
+                    .WithIdentity("MOC")
+                    .Build();
+
+                ITrigger mocTrigger = TriggerBuilder.Create()
+                    .WithIdentity("MOCTrigger")
+                    .StartAt(DateBuilder.DateOf(9, 11, 0))
+                    .WithSimpleSchedule(x => x
+                                            .WithIntervalInHours(12)
+                                            .RepeatForever())
+                    .ForJob("MOC")
+                    .Build();
+
+                await scheduler.ScheduleJob(mocJob, mocTrigger);
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "QuartzSetup", $"Job {typeof(MOC).FullName} scheduled"));
+
+                IJobDetail yearlyQuoteJob = JobBuilder.Create<YearlyQuote>()
+                    .WithIdentity("YearlyQuote")
+                    .Build();
+
+                ITrigger yearlyQuoteTrigger = TriggerBuilder.Create()
+                    .WithIdentity("YearlyQuoteTrigger")
+                    .StartAt(DateBuilder.DateOf(8, 0, 0))
+                    .WithSimpleSchedule(x => x
+                                            .WithIntervalInHours(24)
+                                            .RepeatForever())
+                    .ForJob("YearlyQuote")
+                    .Build();
+
+                await scheduler.ScheduleJob(yearlyQuoteJob, yearlyQuoteTrigger);
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "QuartzSetup", $"Job {typeof(YearlyQuote).FullName} scheduled"));
+
+                IsQuartzInitialized = true;
+            }
+            catch (Exception e)
+            {
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "QuartzSetup", $"An error occured while scheduling Quartz jobs", e));
+            }
+        }
+
+        #region Event Listeners
+        public async Task HandleCommandAsync(SocketMessage arg)
         {
             try
             {
                 SocketUserMessage message = arg as SocketUserMessage;
 
-                if (message is null || message.Author.IsBot) return false;
+                if (message is null || message.Author.IsBot) return;
 
                 SocketCommandContext context = new SocketCommandContext(Client, message);
 
                 int argPos = 0;
 
-                if (message.HasStringPrefix("p!", ref argPos) || message.HasMentionPrefix(Client.CurrentUser, ref argPos) || context.IsPrivate)
+                if (message.HasStringPrefix(ConfigUtility.CommandDelimiter, ref argPos) || message.HasMentionPrefix(Client.CurrentUser, ref argPos) || context.IsPrivate)
                 {
                     IResult result = await Commands.ExecuteAsync(context, argPos, BotServices);
 
-                    if (message.Channel.GetType() == typeof(SocketDMChannel)) await logging.PopulateMessageLog(new LogMessage(LogSeverity.Info, "Message", $"{message.Author.Username}: {message.Content}"));
+                    if (message.Channel.GetType() == typeof(SocketDMChannel)) await logging.PopulateMessageLogAsync(new LogMessage(LogSeverity.Info, "Message", $"{message.Author.Username}: {message.Content}"));
 
-                    if (!result.IsSuccess) await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "Commands", result.ErrorReason));
-
-                    if (
-                        result.ErrorReason != null
-                        && message.Channel.GetType() != typeof(SocketDMChannel)
-                       )
+                    if (!result.IsSuccess && result.ErrorReason != null)
                     {
+                        await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Commands", result.ErrorReason));
                         await context.Channel.SendMessageAsync(result.ErrorReason);
                     }
+
+                    await logging.LogCommandUseAsync(context.Message.Author.Username, context.Guild.Name, context.Message.Content);
                 }
                 else
                 {
@@ -205,33 +266,22 @@ namespace Prawnbot.Core.BusinessLayer
                     {
                         Context = context;
 
-                        if ((message.ContainsEmote() || message.ContainsEmoji()) && ConfigUtility.EmojiRepeat) await context.Channel.SendMessageAsync(coreBL.FindEmojis(message));
-                        await coreBL.ContainsText(message);
-                        await coreBL.ContainsUser(message);
+                        if (message.ContainsEmote() && ConfigUtility.EmojiRepeat) await context.Channel.SendMessageAsync(coreBL.FindEmojis(message));
+                        await coreBL.ContainsTextAsync(message);
+                        await coreBL.ContainsUserAsync(message);
                     }
                 }
-
-                return true;
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "HandleCommand", "Error handling the command", e));
-                return false;
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "HandleCommand", "Error handling the command", e));
+                return;
             }
 
         }
-
-        public async Task QuartzSetup()
-        {
-            await Prawnbot.Core.Quartz.QuartzSetup.Setup();
-
-            IsQuartzInitialized = true;
-        }
-
-        #region Event Listeners
         public async Task Client_Disconnected(Exception arg)
         {
-            await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "", "Client disconnected", arg));
+            await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "", "Client disconnected", arg));
         }
 
         public async Task AnnounceUserJoined(SocketGuildUser user)

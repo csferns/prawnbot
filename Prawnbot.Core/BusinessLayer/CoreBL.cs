@@ -25,17 +25,17 @@ namespace Prawnbot.Core.BusinessLayer
 {
     public interface ICoreBL
     {
-        Task SendImageFromBlobStore(string fileName);
-        Task<bool> ContainsUser(SocketUserMessage message);
-        Task<bool> ContainsText(SocketUserMessage message);
+        Task SendImageFromBlobStoreAsync(string fileName);
+        Task<bool> ContainsUserAsync(SocketUserMessage message);
+        Task<bool> ContainsTextAsync(SocketUserMessage message);
         string FlipACoin(string headsValue, string tailsValue);
-        Task<string[]> YottaPrepend();
+        Task<string[]> YottaPrependAsync();
         /// <summary>
         /// Method to set the status of the bot
         /// </summary>
         /// <param name="status">UserStatus to change to</param>
         /// <returns>Task</returns>
-        Task<bool> SetBotStatusAsync(UserStatus status);
+        Task SetBotStatusAsync(UserStatus status);
         /// <summary>
         /// Updates the bot's rich presence
         /// </summary>
@@ -139,12 +139,12 @@ namespace Prawnbot.Core.BusinessLayer
         /// <param name="messageText">Text of the message</param>
         /// <returns></returns>
         Task SendDMAsync(SocketGuildUser user, string messageText);
-        Task ReactToMessageAsync(string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null);
+        Task<int> ReactToMessageAsync(int eventListenersTriggered, string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null);
         string TagUser(ulong id);
-        bool PingHost(string nameOrAddress);
+        Task<bool> PingHostAsync(string nameOrAddress);
         Task<IMessage> GetRandomQuoteAsync(ulong id);
         Task BackupServerAsync(ulong id, bool server);
-        Task<GuildEmote> GetEmoteFromGuild(ulong id, SocketGuild guild);
+        Task<GuildEmote> GetEmoteFromGuildAsync(ulong id, SocketGuild guild);
     }
 
     public class CoreBL : BaseBL, ICoreBL
@@ -163,38 +163,50 @@ namespace Prawnbot.Core.BusinessLayer
         private static string StrippedMessage { get; set; }
         protected readonly ConcurrentDictionary<ulong, IAudioClient> ConnectedChannels = new ConcurrentDictionary<ulong, IAudioClient>();
 
-        public async Task<bool> ContainsUser(SocketUserMessage message)
+        public async Task<bool> ContainsUserAsync(SocketUserMessage message)
         {
+            int eventListenersTriggered = 0;
+
             StrippedMessage = message.Content.RemoveSpecialCharacters();
 
             if (StrippedMessage.ContainsSingleLower("sam") || message.IsUserTagged(258627811844030465))
             {
                 List<GiphyDatum> gifs = await apiBL.GetGifsAsync("calendar");
                 await Context.Channel.SendMessageAsync($"Have you put it in the calendar? \n{gifs.RandomOrDefault().bitly_gif_url}");
+                eventListenersTriggered++;
             }
-            if (StrippedMessage.ContainsSingleLower("ilja") || StrippedMessage.ContainsSingleLower("ultratwink") || message.IsUserTagged(341940376057282560)) await Context.Channel.SendMessageAsync("Has terminal gay");
-            if (StrippedMessage.ContainsSingleLower("cam") || StrippedMessage.ContainsSingleLower("cameron") || message.IsUserTagged(216177905712103424)) await Context.Channel.SendMessageAsync("*Father Cammy");
+
+            if (StrippedMessage.ContainsSingleLower("ilja") || StrippedMessage.ContainsSingleLower("ultratwink") || message.IsUserTagged(341940376057282560)) { await Context.Channel.SendMessageAsync("Has terminal gay"); eventListenersTriggered++; }
+            if (StrippedMessage.ContainsSingleLower("cam") || StrippedMessage.ContainsSingleLower("cameron") || message.IsUserTagged(216177905712103424)) { await Context.Channel.SendMessageAsync("*Father Cammy"); eventListenersTriggered++; }
 
             if (ConfigUtility.YottaMode && (StrippedMessage.ContainsSingleLower("sean") || message.IsUserTagged(201371614489608192) || StrippedMessage.ContainsSingleLower("seans")))
             {
-                string[] yotta = await YottaPrepend();
+                string[] yotta = await YottaPrependAsync();
                 string yottaFull = string.Join(", ", yotta);
 
-                await Context.Channel.SendMessageAsync($"{yottaFull} {(yottaFull.Length != 0 ? 'c' : 'C')}had Sean, stud of the co-op, leader of the Corfe Mullen massive");
+                await Context.Channel.SendMessageAsync($"{yottaFull} {(yottaFull.Length > 0 ? 'c' : 'C')}had Sean, stud of the co-op, leader of the Corfe Mullen massive");
+                eventListenersTriggered++;
+            }
+
+            if (eventListenersTriggered > 0)
+            {
+                await logging.LogCommandUseAsync(Context.Message.Author.Username, Context.Guild.Name, Context.Message.Content);
             }
 
             return true;
         }
 
-        public async Task<bool> ContainsText(SocketUserMessage message)
+        public async Task<bool> ContainsTextAsync(SocketUserMessage message)
         {
+            int eventListenersTriggered = 0;
+
             StrippedMessage = message.Content.RemoveSpecialCharacters();
 
             #region Config
             if (ConfigUtility.DadMode)
             {
-                await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "kys" }, replyText: $"Alright {Context.User.Mention}, that was very rude. Instead, take your own advice.");
-                await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "dad" }, replyText: "404 dad not found");
+                eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "kys" }, replyText: $"Alright {Context.User.Mention}, that was very rude. Instead, take your own advice.");
+                eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "dad" }, replyText: "404 dad not found");
             }
 
             if (ConfigUtility.DadMode && StrippedMessage.StartsWith("im"))
@@ -206,6 +218,7 @@ namespace Prawnbot.Core.BusinessLayer
                     messageArray.RemoveAt(0);
 
                     await Context.Channel.SendMessageAsync($"Hi {string.Join(' ', messageArray.ToList())}, i'm dad");
+                    eventListenersTriggered++;
                 }
             }
 
@@ -215,32 +228,34 @@ namespace Prawnbot.Core.BusinessLayer
                 {
                     var gifs = await apiBL.GetGifsAsync("swearing", 50);
                     await Context.Channel.SendMessageAsync(gifs.RandomOrDefault().bitly_gif_url);
+                    eventListenersTriggered++;
                 }
             }
             #endregion
 
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "daddy" }, replyText: $"{Context.User.Mention} you can be my daddy if you want :wink:");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "africa" }, replyText: "toto by africa");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "big" }, replyText: "chunky");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "round" }, replyText: "plumpy");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "huge" }, replyText: "Girl, you huge");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "marvin" }, replyText: "Marvout");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "marvout" }, replyText: "Marvin");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "engineer" }, replyText: "The engineer is engihere");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "ban" }, replyText: "Did I hear somebody say Macro pad?");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "2realirl4meirl" }, replyText: "REEEEEEEEEEEEEEEEEEE");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "bruh" }, replyText: "https://www.youtube.com/watch?v=2ZIpFytCSVc");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "what", "can", "i", "say" }, replyText: "except, you're welcome!");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "oi", "oi" }, replyText: "big boi");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "plastic", "bag" }, replyText: "Drifting through the wind?");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "you", "so" }, replyText: $"you so\nfucking\nprecious\nwhen you\nsmile\nhit it\nfrom the \nback and\ndrive you\nwild");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "who", "can", "relate" }, replyText: "I don't know");
-            await ReactToMessageAsync(message.Content, lookupValues: new string[] { "!skip" }, replyText: "you fucking what", giffedMessage: true, gifSearchText: "what");
-            await ReactToMessageAsync(StrippedMessage, lookupValues: new string[] { "pipe", "down" }, replyText: "pipe down", giffedMessage: true, gifSearchText: "pipe down");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "daddy" }, replyText: $"{Context.User.Mention} you can be my daddy if you want :wink:");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "africa" }, replyText: "toto by africa");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "big" }, replyText: "chunky");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "round" }, replyText: "plumpy");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "huge" }, replyText: "Girl, you huge");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "marvin" }, replyText: "Marvout");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "marvout" }, replyText: "Marvin");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "engineer" }, replyText: "The engineer is engihere");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "ban" }, replyText: "Did I hear somebody say Macro pad?");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "2realirl4meirl" }, replyText: "REEEEEEEEEEEEEEEEEEE");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "bruh" }, replyText: "https://www.youtube.com/watch?v=2ZIpFytCSVc");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "what", "can", "i", "say" }, replyText: "except, you're welcome!");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "oi", "oi" }, replyText: "big boi");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "plastic", "bag" }, replyText: "Drifting through the wind?");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "you", "so" }, replyText: $"you so\nfucking\nprecious\nwhen you\nsmile\nhit it\nfrom the \nback and\ndrive you\nwild");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "who", "can", "relate" }, replyText: "I don't know");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, message.Content, lookupValues: new string[] { "!skip" }, replyText: "you fucking what", giffedMessage: true, gifSearchText: "what");
+            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "pipe", "down" }, replyText: "pipe down", giffedMessage: true, gifSearchText: "pipe down");
 
             if (StrippedMessage.ContainsSingleLower("wheel") || StrippedMessage.ContainsSingleLower("bus"))
             {
                 await Context.Channel.SendMessageAsync(new List<string>() { "The wheels on the bus go round and round", "Excuse me sir, you can't have wheels in this area" }.RandomItemFromList());
+                eventListenersTriggered++;
             }
 
             if (StrippedMessage.ContainsSingleLower("hentai"))
@@ -251,48 +266,53 @@ namespace Prawnbot.Core.BusinessLayer
                 WebRequest req = WebRequest.Create(randomResult.file_url);
                 using Stream stream = req.GetResponse().GetResponseStream();
                 await Context.Channel.SendFileAsync(stream, $"{randomResult.id}.png", isSpoiler: true);
+                eventListenersTriggered++;
             }
 
-            //if (StrippedMessage.ContainsSingleLower("kowalski") || StrippedMessage.ContainsSingleLower("analysis"))  await SendGiffedMessage("kowalski", $"{TagUser(147860921488900097)} analysis");
+            //if (StrippedMessage.ContainsSingleLower("kowalski") || StrippedMessage.ContainsSingleLower("analysis")) await SendGiffedMessage("kowalski", $"{TagUser(147860921488900097)} analysis");
 
             if (StrippedMessage.ContainsSingleLower("uwu") || StrippedMessage.ContainsManyLower(new string[] { "u", "w", "u" }))
             {
                 await Context.Message.DeleteAsync();
                 await Context.Channel.SendMessageAsync("This is an uwu free zone");
+                eventListenersTriggered++;
             }
 
-            if (StrippedMessage.ContainsManyLower(new string[] { "top", "elims" }) || StrippedMessage.ContainsManyLower(new string[] { "gold", "elims" })) await SendImageFromBlobStore("top_elims.png");
-            if (StrippedMessage.ContainsManyLower(new string[] { "taps", "head" })) await SendImageFromBlobStore("james_tapping_head.png");
-            if (StrippedMessage.ContainsManyLower(new string[] { "one", "last", "ride" })) await SendImageFromBlobStore("one_last_ride.png");
-            if (StrippedMessage.ContainsManyLower(new string[] { "cam", "murray" })) await SendImageFromBlobStore("cam_murray.png");
+            if (StrippedMessage.ContainsManyLower(new string[] { "top", "elims" }) || StrippedMessage.ContainsManyLower(new string[] { "gold", "elims" })) { await SendImageFromBlobStoreAsync("top_elims.png"); eventListenersTriggered++; }
+            if (StrippedMessage.ContainsManyLower(new string[] { "taps", "head" })) { await SendImageFromBlobStoreAsync("james_tapping_head.png"); eventListenersTriggered++; }
+            if (StrippedMessage.ContainsManyLower(new string[] { "one", "last", "ride" })) { await SendImageFromBlobStoreAsync("one_last_ride.png"); eventListenersTriggered++; }
+            if (StrippedMessage.ContainsManyLower(new string[] { "cam", "murray" })) { await SendImageFromBlobStoreAsync("cam_murray.png"); eventListenersTriggered++; }
+
+            if (eventListenersTriggered > 0)
+            {
+                await logging.LogCommandUseAsync(Context.Message.Author.Username, Context.Guild.Name, Context.Message.Content);
+            }
 
             return true;
         }
 
-        public async Task SendImageFromBlobStore(string fileName)
+        public async Task SendImageFromBlobStoreAsync(string fileName)
         {
             await Context.Message.AddReactionAsync(new Emoji("👍"));
 
-            Uri uri = await fileBL.GetUriFromBlobStore(fileName, "botimages");
+            Uri uri = await fileBL.GetUriFromBlobStoreAsync(fileName, "botimages");
 
             WebRequest req = WebRequest.Create(uri);
             using Stream stream = req.GetResponse().GetResponseStream();
             await Context.Channel.SendFileAsync(stream, fileName);
         }
 
-        public async Task<bool> SetBotStatusAsync(UserStatus status)
+        public async Task SetBotStatusAsync(UserStatus status)
         {
             try
             {
                 await Client.SetStatusAsync(status);
-                return true;
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "BotStatus", "Error setting bot status", e));
-                return false;
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "BotStatus", "Error setting bot status", e));
+                return;
             }
-
         }
 
         public async Task UpdateRichPresenceAsync(string name, ActivityType activityType, string streamUrl)
@@ -303,7 +323,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Error, "RichPresence", "Error occured while updating rich presence", e));
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "RichPresence", "Error occured while updating rich presence", e));
             }
         }
 
@@ -446,7 +466,7 @@ namespace Prawnbot.Core.BusinessLayer
             return Client.Guilds.SelectMany(x => x.Emotes).FirstOrDefault(x => x.Id == emojiId);
         }
 
-        public async Task ReactToMessageAsync(string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null)
+        public async Task<int> ReactToMessageAsync(int eventListenersTriggered, string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null)
         {
             List<GiphyDatum> gifs = new List<GiphyDatum>();
 
@@ -457,12 +477,23 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (lookupValues.Count() > 1)
             {
-                if (Content.ContainsManyLower(lookupValues)) await Context.Channel.SendMessageAsync(replyMessage);
+                if (Content.ContainsManyLower(lookupValues))
+                {
+                    await Context.Channel.SendMessageAsync(replyMessage);
+                    return eventListenersTriggered + 1;
+                }
+
             }
-            else
+            else if (lookupValues.Count() == 1)
             {
-                if (Content.ContainsSingleLower(lookupValues.First())) await Context.Channel.SendMessageAsync(replyMessage);
+                if (Content.ContainsSingleLower(lookupValues.First()))
+                {
+                    await Context.Channel.SendMessageAsync(replyMessage);
+                    return eventListenersTriggered + 1;
+                }
             }
+
+            return eventListenersTriggered;
         }
 
         public string TagUser(ulong id)
@@ -483,36 +514,38 @@ namespace Prawnbot.Core.BusinessLayer
             }.RandomItemFromList();
         }
 
-        public async Task<string[]> YottaPrepend()
+        public async Task<string[]> YottaPrependAsync()
         {
+            Random random = new Random();
+
             string[] fileContents = await fileBL.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
 
-            Dictionary<string, int> valueDictionary = new Dictionary<string, int>();
+            Dictionary<PrependEnum, int> valueDictionary = new Dictionary<PrependEnum, int>();
 
-            string[] enumValues = (string[])Enum.GetValues(typeof(PrependEnum));
+            PrependEnum[] enumValues = (PrependEnum[])Enum.GetValues(typeof(PrependEnum));
 
-            foreach (string enumValue in enumValues)
+            foreach (var enumValue in enumValues)
             {
                 valueDictionary.Add(enumValue, 0);
             }
 
-            foreach (string line in fileContents)
+            foreach (var line in fileContents)
             {
-                valueDictionary[line]++;
+                valueDictionary[(PrependEnum)Enum.Parse(typeof(PrependEnum), line)]++;
             }
 
             bool validValue = false;
 
             while (!validValue)
             {
-                List<string> invalidValues = new List<string>();
+                List<PrependEnum> invalidValues = new List<PrependEnum>();
 
-                var randomEnumValue = enumValues.RandomItemFromList(); // enumValues.GetValue(random.Next(enumValues.Length)).ToString();
+                PrependEnum randomEnumValue = (PrependEnum)enumValues.GetValue(random.Next(enumValues.Length)); //.GetValue().ToString();
 
                 if (valueDictionary[randomEnumValue] < 69)
                 {
-                    await fileBL.WriteToFile(randomEnumValue, $"{Context.Guild.Name}\\Yotta.txt");
-                    fileContents.Append(randomEnumValue);
+                    await fileBL.WriteToFileAsync(randomEnumValue.ToString(), $"{Context.Guild.Name}\\Yotta.txt");
+                    fileContents.Append(randomEnumValue.ToString());
                     break;
                 }
                 else
@@ -526,7 +559,7 @@ namespace Prawnbot.Core.BusinessLayer
             return fileContents.Reverse().ToArray();
         }
 
-        public bool PingHost(string nameOrAddress)
+        public async Task<bool> PingHostAsync(string nameOrAddress)
         {
             bool pingable = false;
             Ping pinger = null;
@@ -534,8 +567,8 @@ namespace Prawnbot.Core.BusinessLayer
             try
             {
                 pinger = new Ping();
-                PingReply reply = pinger.Send(nameOrAddress);
-                pingable = reply.Status == IPStatus.Success;
+                //PingReply reply = pinger.SendAsync(IPAddress.Parse(nameOrAddress));
+                //pingable = reply.Status == IPStatus.Success;
             }
             catch (PingException)
             {
@@ -601,7 +634,7 @@ namespace Prawnbot.Core.BusinessLayer
             });
         }
 
-        public async Task<GuildEmote> GetEmoteFromGuild(ulong id, SocketGuild guild) 
+        public async Task<GuildEmote> GetEmoteFromGuildAsync(ulong id, SocketGuild guild) 
         {
             GuildEmote emote = await guild.GetEmoteAsync(id);
 

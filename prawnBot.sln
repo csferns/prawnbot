@@ -23,9 +23,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.Infrastructure", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.Utility", "Prawnbot.Utility\Prawnbot.Utility.csproj", "{6CDE1AD8-F324-40BD-84DE-472B125D1089}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prawnbot.API", "Prawnbot.API\Prawnbot.API.csproj", "{6A5DA6E5-15D0-4BC5-A322-82D9A7618AD1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.API", "Prawnbot.API\Prawnbot.API.csproj", "{6A5DA6E5-15D0-4BC5-A322-82D9A7618AD1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prawnbot.WindowsForms", "Prawnbot.WindowsForms\Prawnbot.WindowsForms.csproj", "{7FDFD3D4-4BB0-4F2A-A53F-0492EACA87FC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.WindowsForms", "Prawnbot.WindowsForms\Prawnbot.WindowsForms.csproj", "{7FDFD3D4-4BB0-4F2A-A53F-0492EACA87FC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -29,6 +29,12 @@ namespace Prawnbot.Utility.Configuration
             IConfigurationRoot configuration = GetConfigFile();
             return configuration.GetSection("ConnectionStrings").GetSection(connectionString).Value ?? string.Empty;
         }
+
+        public static string GetLocalEnvSetting(string configName)
+        {
+            IConfigurationRoot configuration = GetConfigFile();
+            return configuration.GetSection("LocalEnvSettings").GetSection(configName).Value ?? string.Empty;
+        }
         #endregion
 
         #region Generic App Config
@@ -36,9 +42,14 @@ namespace Prawnbot.Utility.Configuration
         {
             get
             {
-                string configValue = GetConfig("TextFileDirectory");
+                string configValue = GetLocalEnvSetting("TextFileDirectory");
                 return string.IsNullOrEmpty(configValue) ? Environment.CurrentDirectory + "/Text Files" : configValue;
             }
+        }
+
+        public static string CommandDelimiter
+        {
+            get { return GetLocalEnvSetting("CommandDelimiter"); }
         }
 
         public static bool AllowEventListeners

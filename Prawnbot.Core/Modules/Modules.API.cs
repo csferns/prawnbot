@@ -20,7 +20,7 @@ namespace Prawnbot.Core.Modules
             //await logging.PopulateEventLog(new LogMessage(LogSeverity.Info, "Translation", translation.text));
         }
 
-        [Command("r34tags")]
+        [Command("r34-tags")]
         [Summary("Gets rule 34 tags")]
         public async Task Rule34TagsAsync()
         {

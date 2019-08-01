@@ -26,7 +26,7 @@ namespace Prawnbot.Core.Quartz
                     return;
                 }
 
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Info, "Quartz", "MOC Triggered."));
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Quartz", "MOC Triggered."));
 
                 foreach (SocketGuild guild in Client.Guilds)
                 {
@@ -47,7 +47,7 @@ namespace Prawnbot.Core.Quartz
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Info, "Quartz", "An error occured during MOC", e));
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Quartz", "An error occured during MOC", e));
             }
         }
     }

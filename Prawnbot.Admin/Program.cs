@@ -9,8 +9,8 @@ namespace Prawnbot.Admin
     {
         static void Main(string[] args)
         {
-            AdminApplication adminApplication = new AdminApplication();
-            adminApplication.CommandListener().GetAwaiter().GetResult();
+            //AdminApplication adminApplication = new AdminApplication();
+            //adminApplication.CommandListener().GetAwaiter().GetResult();
         }
     }
 

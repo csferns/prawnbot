@@ -9,6 +9,7 @@ namespace Prawnbot.Data
         public DbSet<Yotta> Yottas { get; set; }
         public DbSet<SavedTranslation> Translations { get; set; }
         public DbSet<BotResponse> BotResponse { get; set; }
+        public DbSet<Alarm> Alarms { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

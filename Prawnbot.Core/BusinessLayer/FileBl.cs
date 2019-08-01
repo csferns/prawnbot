@@ -18,14 +18,14 @@ namespace Prawnbot.Core.BusinessLayer
     public interface IFileBL
     {
         Task<CloudBlobContainer> GetBlobContainer(string containerName);
-        Task<Uri> GetUriFromBlobStore(string fileName, string containerName);
-        Task<Stream> GetStreamFromBlobStore(string fileName, string containerName);
-        Task<Stream> DownloadFileFromBlobStore(string fileName, string containerName);
-        Task<bool> UploadFileToBlobStore(string fileName, string containerName);
+        Task<Uri> GetUriFromBlobStoreAsync(string fileName, string containerName);
+        Task<Stream> GetStreamFromBlobStoreAsync(string fileName, string containerName);
+        Task<Stream> DownloadFileFromBlobStoreAsync(string fileName, string containerName);
+        Task UploadFileToBlobStoreAsync(string fileName, string containerName);
         FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
         Task<string[]> ReadFromFileAsync(string fileName);
         void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName);
-        Task<bool> WriteToFile(string valueToWrite, string fileName);
+        Task WriteToFileAsync(string valueToWrite, string fileName);
         List<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
         bool CheckIfTranslationExists();
         List<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
@@ -43,7 +43,7 @@ namespace Prawnbot.Core.BusinessLayer
             return container;
         }
 
-        public async Task<Uri> GetUriFromBlobStore(string fileName, string containerName)
+        public async Task<Uri> GetUriFromBlobStoreAsync(string fileName, string containerName)
         {
             CloudBlobContainer container = await GetBlobContainer(containerName);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
@@ -51,7 +51,7 @@ namespace Prawnbot.Core.BusinessLayer
             return blockBlob.Uri;
         }
 
-        public async Task<Stream> GetStreamFromBlobStore(string fileName, string containerName)
+        public async Task<Stream> GetStreamFromBlobStoreAsync(string fileName, string containerName)
         {
             using MemoryStream stream = new MemoryStream();
             CloudBlobContainer container = await GetBlobContainer(containerName);
@@ -62,7 +62,7 @@ namespace Prawnbot.Core.BusinessLayer
             return stream;
         }
 
-        public async Task<Stream> DownloadFileFromBlobStore(string fileName, string containerName)
+        public async Task<Stream> DownloadFileFromBlobStoreAsync(string fileName, string containerName)
         {
             CloudBlobContainer container = await GetBlobContainer(containerName);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
@@ -73,13 +73,11 @@ namespace Prawnbot.Core.BusinessLayer
             return stream;
         }
 
-        public async Task<bool> UploadFileToBlobStore(string fileName, string containerName)
+        public async Task UploadFileToBlobStoreAsync(string fileName, string containerName)
         {
             CloudBlobContainer container = await GetBlobContainer(containerName);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
             await blockBlob.UploadFromFileAsync(fileName);
-
-            return true;
         }
 
         public FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare)
@@ -91,48 +89,45 @@ namespace Prawnbot.Core.BusinessLayer
 
             string filePath = ConfigUtility.TextFileDirectory + $"\\{fileName}";
 
+            if (!File.Exists(filePath))
+            {
+                using FileStream file = File.Create(fileName);
+            }
+
             return new FileStream(filePath, fileMode, fileAccess, fileShare);
         }
 
         public async Task<string[]> ReadFromFileAsync(string fileName)
         {
-            using (CreateLocalFileIfNotExists(fileName, FileMode.Open, FileAccess.Read, FileShare.Read)) {  }
+            using FileStream file = CreateLocalFileIfNotExists(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using StreamReader reader = new StreamReader(file);
 
-            string filePath = ConfigUtility.TextFileDirectory + $"\\{fileName}";
+            string[] fileLines = new string[short.MaxValue];
 
-            List<string> fileLines = new List<string>();
-
-            using (StreamReader reader = new StreamReader(filePath))
+            while (!reader.EndOfStream)
             {
-                while (!reader.EndOfStream)
-                {
-                    fileLines.Add(await reader.ReadLineAsync());
-                }
+                fileLines.Append(await reader.ReadLineAsync());
             }
 
-            return fileLines.ToArray();
+            return fileLines;
         }
 
         public void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName)
         {
-            using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Truncate, FileAccess.Write, FileShare.Write))
-            using (StreamWriter writer = new StreamWriter(fileStream))
-            using (CsvWriter csv = new CsvWriter(writer))
-            {
-                fileStream.Position = fileStream.Length;
-                csv.WriteRecords(columns);
-            }
+            using FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Truncate, FileAccess.Write, FileShare.Write);
+            using StreamWriter writer = new StreamWriter(fileStream);
+            using CsvWriter csv = new CsvWriter(writer);
+
+            fileStream.Position = fileStream.Length;
+            csv.WriteRecords(columns);
         }
 
-        public async Task<bool> WriteToFile(string valueToWrite, string fileName)
+        public async Task WriteToFileAsync(string valueToWrite, string fileName)
         {
-            using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
-            using (StreamWriter writer = new StreamWriter(fileStream))
-            {
-                await writer.WriteLineAsync(valueToWrite);
-            }
+            using FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write);
+            using StreamWriter writer = new StreamWriter(fileStream);
 
-            return true;
+            await writer.WriteLineAsync(valueToWrite);
         }
 
         public List<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)

@@ -4,15 +4,17 @@ using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Core.ServiceLayer;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.Log
 {
     public interface ILogging
     {
-        Task PopulateEventLog(LogMessage message);
-        Task PopulateMessageLog(LogMessage message);
-        Task PopulateTranslationLog(List<TranslateData> translation);
+        Task PopulateEventLogAsync(LogMessage message);
+        Task PopulateMessageLogAsync(LogMessage message);
+        Task LogCommandUseAsync(string username, string guild, string messageContent);
+        Task PopulateTranslationLogAsync(List<TranslateData> translation);
     }
 
     public class Logging : BaseBL, ILogging 
@@ -23,29 +25,39 @@ namespace Prawnbot.Core.Log
             this.fileService = fileService;
         }
 
-        public async Task PopulateEventLog(LogMessage message)
+        private string GetLogMessageString(LogMessage message)
         {
-            await fileService.WriteToFile(message.ToString(timestampKind: DateTimeKind.Local), "EventLogs.txt");
-            await Console.Out.WriteLineAsync(message.ToString(timestampKind: DateTimeKind.Local));
+            return $"{DateTime.Now.ToString("dd/MM/yyy hh:mm:ss tt", CultureInfo.InvariantCulture)} {message.ToString(prependTimestamp: false)}";
         }
 
-        public async Task PopulateMessageLog(LogMessage message)
+        public async Task PopulateEventLogAsync(LogMessage message)
         {
-            await fileService.WriteToFile(message.ToString(timestampKind: DateTimeKind.Local), "MessageLogs.txt");
-            await Console.Out.WriteLineAsync(message.ToString(timestampKind: DateTimeKind.Local));
+            await fileService.WriteToFileAsync(GetLogMessageString(message), "EventLogs.txt");
+            await Console.Out.WriteLineAsync(GetLogMessageString(message));
         }
 
-        public async Task PopulateTranslationLog(List<TranslateData> translation)
+        public async Task PopulateMessageLogAsync(LogMessage message)
+        {
+            await fileService.WriteToFileAsync(GetLogMessageString(message), "MessageLogs.txt");
+            await Console.Out.WriteLineAsync(GetLogMessageString(message));
+        }
+
+        public async Task LogCommandUseAsync(string username, string guild, string messageContent)
+        {
+            await PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "LogCommandUse", $"Message recieved from {username}: ({guild}) \"{messageContent}\""));
+        }
+
+        public async Task PopulateTranslationLogAsync(List<TranslateData> translation)
         {
             foreach (TranslateData item in translation)
             {
                 foreach (Translation innerTranslation in item.translations)
                 {
-                    await fileService.WriteToFile($"{innerTranslation.to} : {innerTranslation.text}", "TranslationLog.txt");
+                    await fileService.WriteToFileAsync($"{innerTranslation.to} : {innerTranslation.text}", "TranslationLog.txt");
                 }
             }
 
-            await PopulateEventLog(new LogMessage(LogSeverity.Info, "Logging", "Translations logged"));
+            await PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Logging", "Translations logged"));
         }
     }
 }

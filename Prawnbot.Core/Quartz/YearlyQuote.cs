@@ -22,7 +22,7 @@ namespace Prawnbot.Core.Quartz
         {
             try
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Info, "Quartz", "YearlyQuote Triggered."));
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Quartz", "YearlyQuote Triggered."));
 
                 IEnumerable<IMessage> messages = new List<IMessage>(); //await botBL.GetAllMessages(453899130486521859);
                 List<IMessage> filteredMessages = messages.Where(x => x.Timestamp == DateTime.Now.AddYears(-1)).ToList();
@@ -45,7 +45,7 @@ namespace Prawnbot.Core.Quartz
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLog(new LogMessage(LogSeverity.Info, "Quartz", "An error occured during YearlyQuote", e));
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Quartz", "An error occured during YearlyQuote", e));
             }
         }
     }

@@ -1,4 +1,5 @@
-﻿using Prawnbot.Core.BusinessLayer;
+﻿using Autofac;
+using Prawnbot.Core.BusinessLayer;
 using Prawnbot.Infrastructure;
 using System.Threading.Tasks;
 
@@ -6,9 +7,9 @@ namespace Prawnbot.Core.ServiceLayer
 {
     public interface IBotService
     {
-        Task<Response<bool>> ConnectAsync(string token);
-        Task<Response<bool>> DisconnectAsync(bool switchBot);
-        Task<Response<bool>> ReconnectAsync();
+        Task<ResponseBase> ConnectAsync(string token, IContainer autofacContainer);
+        Task<ResponseBase> DisconnectAsync(bool switchBot);
+        Task<ResponseBase> ReconnectAsync();
     }
 
     public class BotService : BaseService, IBotService
@@ -20,19 +21,22 @@ namespace Prawnbot.Core.ServiceLayer
             this.botBL = botBL;
         }
 
-        public async Task<Response<bool>> ConnectAsync(string token)
+        public async Task<ResponseBase> ConnectAsync(string token, IContainer autofacContainer)
         {
-            return LoadResponse(await botBL.ConnectAsync(token));
+            await botBL.ConnectAsync(token, autofacContainer);
+            return new ResponseBase();
         }
 
-        public async Task<Response<bool>> DisconnectAsync(bool switchBot)
+        public async Task<ResponseBase> DisconnectAsync(bool switchBot)
         {
-            return LoadResponse(await botBL.DisconnectAsync(switchBot));
+            await botBL.DisconnectAsync(switchBot);
+            return new ResponseBase();
         }
 
-        public async Task<Response<bool>> ReconnectAsync()
+        public async Task<ResponseBase> ReconnectAsync()
         {
-            return LoadResponse(await botBL.ReconnectAsync());
+            await botBL.ReconnectAsync();
+            return new ResponseBase();
         }
     }
 }

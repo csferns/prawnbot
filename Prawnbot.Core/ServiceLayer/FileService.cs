@@ -11,13 +11,13 @@ namespace Prawnbot.Core.ServiceLayer
 {
     public interface IFileService
     {
-        Task<Response<Uri>> GetUriFromBlobStore(string fileName, string containerName);
-        Task<Response<Stream>> GetStreamFromBlobStore(string fileName, string containerName);
-        Task<Response<Stream>> DownloadFileFromBlobStore(string fileName, string containerName);
-        Task<Response<bool>> UploadFileToBlobStore(string fileName, string containerName);
+        Task<Response<Uri>> GetUriFromBlobStoreAsync(string fileName, string containerName);
+        Task<Response<Stream>> GetStreamFromBlobStoreAsync(string fileName, string containerName);
+        Task<Response<Stream>> DownloadFileFromBlobStoreAsync(string fileName, string containerName);
+        Task<ResponseBase> UploadFileToBlobStoreAsync(string fileName, string containerName);
         Task<Response<string[]>> ReadFromFileAsync(string fileName);
         ResponseBase WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName);
-        Task<Response<bool>> WriteToFile(string valueToWrite, string fileName);
+        Task<ResponseBase> WriteToFileAsync(string valueToWrite, string fileName);
         ListResponse<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
     }
 
@@ -30,24 +30,25 @@ namespace Prawnbot.Core.ServiceLayer
             this.fileBL = fileBL;
         }
 
-        public async Task<Response<Uri>> GetUriFromBlobStore(string fileName, string containerName)
+        public async Task<Response<Uri>> GetUriFromBlobStoreAsync(string fileName, string containerName)
         {
-            return LoadResponse(await fileBL.GetUriFromBlobStore(fileName, containerName));
+            return LoadResponse(await fileBL.GetUriFromBlobStoreAsync(fileName, containerName));
         }
 
-        public async Task<Response<Stream>> GetStreamFromBlobStore(string fileName, string containerName)
+        public async Task<Response<Stream>> GetStreamFromBlobStoreAsync(string fileName, string containerName)
         {
-            return LoadResponse(await fileBL.GetStreamFromBlobStore(fileName, containerName));
+            return LoadResponse(await fileBL.GetStreamFromBlobStoreAsync(fileName, containerName));
         }
 
-        public async Task<Response<Stream>> DownloadFileFromBlobStore(string fileName, string containerName)
+        public async Task<Response<Stream>> DownloadFileFromBlobStoreAsync(string fileName, string containerName)
         {
-            return LoadResponse(await fileBL.DownloadFileFromBlobStore(fileName, containerName));
+            return LoadResponse(await fileBL.DownloadFileFromBlobStoreAsync(fileName, containerName));
         }
 
-        public async Task<Response<bool>> UploadFileToBlobStore(string fileName, string containerName)
+        public async Task<ResponseBase> UploadFileToBlobStoreAsync(string fileName, string containerName)
         {
-            return LoadResponse(await fileBL.UploadFileToBlobStore(fileName, containerName));
+            await fileBL.UploadFileToBlobStoreAsync(fileName, containerName);
+            return new ResponseBase();
         }
 
         public async Task<Response<string[]>> ReadFromFileAsync(string fileName)
@@ -61,9 +62,10 @@ namespace Prawnbot.Core.ServiceLayer
             return new ResponseBase();
         }
 
-        public async Task<Response<bool>> WriteToFile(string valueToWrite, string fileName)
+        public async Task<ResponseBase> WriteToFileAsync(string valueToWrite, string fileName)
         {
-            return LoadResponse(await fileBL.WriteToFile(valueToWrite, fileName));
+            await fileBL.WriteToFileAsync(valueToWrite, fileName);
+            return new ResponseBase();
         }
 
         public ListResponse<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)

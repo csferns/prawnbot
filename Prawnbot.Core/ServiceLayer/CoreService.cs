@@ -19,7 +19,7 @@ namespace Prawnbot.Core.ServiceLayer
         /// </summary>
         /// <param name="status">UserStatus to change to</param>
         /// <returns>Task</returns>
-        Task<Response<bool>> SetBotStatusAsync(UserStatus status);
+        Task<ResponseBase> SetBotStatusAsync(UserStatus status);
         /// <summary>
         /// Updates the bot's rich presence
         /// </summary>
@@ -123,9 +123,9 @@ namespace Prawnbot.Core.ServiceLayer
         /// <param name="messageText">Text of the message</param>
         /// <returns></returns>
         Task<ResponseBase> SendDMAsync(SocketGuildUser user, string messageText);
-        Task<ResponseBase> ReactToMessageAsync(string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null);
+        Task<Response<int>> ReactToMessageAsync(int eventListenersTriggered, string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null);
         Response<string> TagUser(ulong id);
-        Response<bool> PingHost(string nameOrAddress);
+        Task<Response<bool>> PingHostAsync(string nameOrAddress);
         Task<Response<IMessage>> GetRandomQuoteAsync(ulong id);
         Task<ResponseBase> BackupServerAsync(ulong id, bool server);
         Task<Response<GuildEmote>> GetEmoteFromGuild(ulong id, SocketGuild guild);
@@ -141,12 +141,12 @@ namespace Prawnbot.Core.ServiceLayer
 
         public async Task<Response<bool>> ContainsText(SocketUserMessage message)
         {
-            return LoadResponse(await coreBL.ContainsText(message));
+            return LoadResponse(await coreBL.ContainsTextAsync(message));
         }
 
         public async Task<Response<bool>> ContainsUser(SocketUserMessage message)
         {
-            return LoadResponse(await coreBL.ContainsUser(message));
+            return LoadResponse(await coreBL.ContainsUserAsync(message));
         }
 
         public Response<Process> CreateFfmpegProcess(string path)
@@ -201,7 +201,7 @@ namespace Prawnbot.Core.ServiceLayer
 
         public async Task<ListResponse<IMessage>> GetAllMessagesAsync(ulong id)
         {
-            return LoadListResponse<IMessage>(await coreBL.GetAllMessagesAsync(id));
+            return LoadListResponse(await coreBL.GetAllMessagesAsync(id));
         }
 
         public ListResponse<SocketGuildUser> GetAllUsers()
@@ -225,15 +225,14 @@ namespace Prawnbot.Core.ServiceLayer
             return new ResponseBase();
         }
 
-        public Response<bool> PingHost(string nameOrAddress)
+        public async Task<Response<bool>> PingHostAsync(string nameOrAddress)
         {
-            return LoadResponse(coreBL.PingHost(nameOrAddress));
+            return LoadResponse(await coreBL.PingHostAsync(nameOrAddress));
         }
 
-        public async Task<ResponseBase> ReactToMessageAsync(string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null)
+        public async Task<Response<int>> ReactToMessageAsync(int eventListenersTriggered, string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null)
         {
-            await coreBL.ReactToMessageAsync(Content, lookupValues, replyText, giffedMessage, gifSearchText);
-            return new ResponseBase();
+            return LoadResponse(await coreBL.ReactToMessageAsync(eventListenersTriggered, Content, lookupValues, replyText, giffedMessage, gifSearchText));
         }
 
         public async Task<ResponseBase> SendChannelMessageAsync(SocketGuild guild, SocketTextChannel channel, string messageText)
@@ -250,15 +249,15 @@ namespace Prawnbot.Core.ServiceLayer
 
         public async Task<ResponseBase> SendImageFromBlobStore(string fileName)
         {
-            await coreBL.SendImageFromBlobStore(fileName);
+            await coreBL.SendImageFromBlobStoreAsync(fileName);
             return new ResponseBase();
         }
 
-        public async Task<Response<bool>> SetBotStatusAsync(UserStatus status)
+        public async Task<ResponseBase> SetBotStatusAsync(UserStatus status)
         {
-            return LoadResponse(await coreBL.SetBotStatusAsync(status));
+            await coreBL.SetBotStatusAsync(status);
+            return new ResponseBase();
         }
-
 
         public Response<string> TagUser(ulong id)
         {
@@ -273,7 +272,7 @@ namespace Prawnbot.Core.ServiceLayer
 
         public async Task<Response<string[]>> YottaPrepend()
         {
-            return LoadResponse(await coreBL.YottaPrepend());
+            return LoadResponse(await coreBL.YottaPrependAsync());
         }
 
         public async Task<Response<IMessage>> GetRandomQuoteAsync(ulong id)
@@ -290,7 +289,7 @@ namespace Prawnbot.Core.ServiceLayer
 
         public async Task<Response<GuildEmote>> GetEmoteFromGuild(ulong id, SocketGuild guild)
         {
-            return LoadResponse(await coreBL.GetEmoteFromGuild(id, guild));
+            return LoadResponse(await coreBL.GetEmoteFromGuildAsync(id, guild));
         }
     }
 }
