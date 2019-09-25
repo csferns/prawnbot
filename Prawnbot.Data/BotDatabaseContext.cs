@@ -1,15 +1,19 @@
-﻿using Prawnbot.Common.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
 using Prawnbot.Data.Entities;
-using System.Data.Entity;
+using Prawnbot.Utility.Configuration;
 
 namespace Prawnbot.Data
 {
     public class BotDatabaseContext : DbContext
     {
-        public BotDatabaseContext() : base(ConfigUtility.DatabaseConnectionString)
-        {
-        }
-
         public DbSet<Yotta> Yottas { get; set; }
+        public DbSet<SavedTranslation> Translations { get; set; }
+        public DbSet<BotResponse> BotResponse { get; set; }
+        public DbSet<Alarm> Alarms { get; set; }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlServer(ConfigUtility.DatabaseConnectionString);
+        }
     }
 }

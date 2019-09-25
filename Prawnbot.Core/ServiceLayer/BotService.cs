@@ -1,101 +1,62 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
+﻿using Autofac;
 using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Framework;
-using System.Diagnostics;
+using Prawnbot.Infrastructure;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.ServiceLayer
 {
     public interface IBotService
     {
-        Task<Response<bool>> ConnectAsync(string token);
-        Task<Response<bool>> DisconnectAsync(bool switchBot);
-        Task<Response<bool>> ReconnectAsync();
-        Task<Response<bool>> SetBotStatusAsync(UserStatus status);
-        ListResponse<SocketGuildUser> GetAllUsers();
-        Task<ListResponse<IMessage>> GetAllMessages(ulong id);
-        ListResponse<SocketGuild> GetAllGuilds();
-        Response<SocketTextChannel> GetDefaultChannel(SocketGuild guild);
-        ListResponse<SocketTextChannel> GetGuildTextChannels(SocketGuild guild);
-        Response<SocketTextChannel> GetGuildTextChannel(SocketGuild guild, SocketTextChannel channel);
-        Response<Process> CreateFfmpegProcess(string path);
-        Response<Task> LeaveAudio(IGuild guild);
+        Task<ResponseBase> ConnectAsync(string token, IContainer autofacContainer);
+        Task<ResponseBase> DisconnectAsync(bool switchBot = false);
+        Task<ResponseBase> ReconnectAsync();
+        Task<Response<object>> GetStatusAsync();
+        Task<ResponseBase> SetBotRegionAsync(string regionName);
+        ResponseBase ShutdownQuartz();
     }
 
     public class BotService : BaseService, IBotService
     {
-        protected IBotBl _businessLayer;
+        private readonly IBotBL botBL;
 
-        public BotService()
-        {
-            _businessLayer = new BotBl();
+        public BotService(IBotBL botBL)
+        { 
+            this.botBL = botBL;
         }
 
-        public BotService(SocketCommandContext _context)
+        public async Task<Response<object>> GetStatusAsync()
         {
-            _businessLayer = new BotBl(_context);
+            return LoadResponse(await botBL.GetStatusAsync());
         }
 
-        public async Task<Response<bool>> ConnectAsync(string token)
+        public async Task<ResponseBase> ConnectAsync(string token, IContainer autofacContainer)
         {
-            return LoadResponse(await _businessLayer.ConnectAsync(token));
+            await botBL.ConnectAsync(token, autofacContainer);
+            return new ResponseBase();
         }
 
-        public async Task<Response<bool>> DisconnectAsync(bool switchBot)
+        public async Task<ResponseBase> DisconnectAsync(bool switchBot = false)
         {
-            return LoadResponse(await _businessLayer.DisconnectAsync(switchBot));
+            await botBL.DisconnectAsync(switchBot);
+            return new ResponseBase();
         }
 
-        public ListResponse<SocketGuildUser> GetAllUsers()
+        public async Task<ResponseBase> ReconnectAsync()
         {
-            return LoadListResponse(_businessLayer.GetAllUsers());
+            await botBL.ReconnectAsync();
+            return new ResponseBase();
         }
 
-        public async Task<Response<bool>> ReconnectAsync()
+        public async Task<ResponseBase> SetBotRegionAsync(string regionName)
         {
-            return LoadResponse(await _businessLayer.ReconnectAsync());
+            await botBL.SetBotRegionAsync(regionName);
+            return new ResponseBase();
         }
 
-        public async Task<Response<bool>> SetBotStatusAsync(UserStatus status)
+        public ResponseBase ShutdownQuartz()
         {
-            return LoadResponse(await _businessLayer.SetBotStatusAsync(status));
-        }
-
-        public Response<Process> CreateFfmpegProcess(string path)
-        {
-            return LoadResponse(_businessLayer.CreateFfmpegProcess(path));
-        }
-
-        public async Task<ListResponse<IMessage>> GetAllMessages(ulong id)
-        {
-            return LoadListResponse(await _businessLayer.GetAllMessages(id));
-        }
-
-        public ListResponse<SocketGuild> GetAllGuilds()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Response<SocketTextChannel> GetDefaultChannel(SocketGuild guild)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public ListResponse<SocketTextChannel> GetGuildTextChannels(SocketGuild guild)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Response<SocketTextChannel> GetGuildTextChannel(SocketGuild guild, SocketTextChannel channel)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Response<Task> LeaveAudio(IGuild guild)
-        {
-            return LoadResponse(_businessLayer.LeaveAudio(guild));
+            botBL.ShutdownQuartz();
+            return new ResponseBase();
         }
     }
 }

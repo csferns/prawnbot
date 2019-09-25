@@ -1,4 +1,4 @@
-﻿using Prawnbot.Core.Framework;
+﻿using Prawnbot.Infrastructure;
 using System.Collections.Generic;
 
 namespace Prawnbot.Core.ServiceLayer
@@ -15,7 +15,7 @@ namespace Prawnbot.Core.ServiceLayer
             return response;
         }
 
-        protected ListResponse<TEntity> LoadListResponse<TEntity>(List<TEntity> list)
+        protected ListResponse<TEntity> LoadListResponse<TEntity>(IList<TEntity> list)
         {
             ListResponse<TEntity> response = new ListResponse<TEntity>
             {

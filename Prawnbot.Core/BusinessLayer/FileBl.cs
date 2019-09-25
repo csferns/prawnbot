@@ -2,38 +2,35 @@
 using Discord;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
-using Prawnbot.Core.Models;
-using Prawnbot.Data.Models.API;
+using Prawnbot.Core.Collections;
+using Prawnbot.Core.Model.API.Translation;
+using Prawnbot.Core.Model.DTOs;
+using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface IFileBl
+    public interface IFileBL
     {
         Task<CloudBlobContainer> GetBlobContainer(string containerName);
-        Task<Uri> GetUriFromBlobStore(string fileName, string containerName);
-        Task<Stream> GetStreamFromBlobStore(string fileName, string containerName);
-        Task<Stream> DownloadFileFromBlobStore(string fileName, string containerName);
-        Task<bool> UploadFileToBlobStore(string fileName, string containerName);
+        Task<Uri> GetUriFromBlobStoreAsync(string fileName, string containerName);
+        Task<Stream> GetStreamFromBlobStoreAsync(string fileName, string containerName);
+        Task<Stream> DownloadFileFromBlobStoreAsync(string fileName, string containerName);
+        Task UploadFileToBlobStoreAsync(string fileName, string containerName);
         FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
-        Task<string[]> ReadFromFileAsync(string fileName);
-        string WriteToCSV(List<CSVColumns> columns, ulong? id, string guildName);
-        Task<bool> WriteToFile(string valueToWrite, string fileName);
-        Task<List<CSVColumns>> CreateCSVList(ulong id);
+        Task<Bunch<string>> ReadFromFileAsync(string fileName);
+        void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName);
+        Task WriteToFileAsync(string valueToWrite, string fileName);
+        Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
         bool CheckIfTranslationExists();
-        TranslateData GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
-        Dictionary<string, string> GetAllConfigurationValues();
-        void SetConfigurationValue(string configurationName, string newConfigurationValue);
-        void SetEventListeners(bool newValue);
+        Bunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
     }
 
-    public class FileBl : BaseBl, IFileBl
+    public class FileBL : BaseBL, IFileBL
     {
         public async Task<CloudBlobContainer> GetBlobContainer(string containerName)
         {
@@ -45,30 +42,28 @@ namespace Prawnbot.Core.BusinessLayer
             return container;
         }
 
-        public async Task<Uri> GetUriFromBlobStore(string fileName, string containerName)
+        public async Task<Uri> GetUriFromBlobStoreAsync(string fileName, string containerName)
         {
-            var container = await GetBlobContainer(containerName);
+            CloudBlobContainer container = await GetBlobContainer(containerName);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
 
             return blockBlob.Uri;
         }
 
-        public async Task<Stream> GetStreamFromBlobStore(string fileName, string containerName)
+        public async Task<Stream> GetStreamFromBlobStoreAsync(string fileName, string containerName)
         {
-            using (var stream = new MemoryStream())
-            {
-                var container = await GetBlobContainer(containerName);
-                CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
+            using MemoryStream stream = new MemoryStream();
+            CloudBlobContainer container = await GetBlobContainer(containerName);
+            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
 
-                await blockBlob.DownloadToStreamAsync(stream);
+            await blockBlob.DownloadToStreamAsync(stream);
 
-                return stream;
-            }
+            return stream;
         }
 
-        public async Task<Stream> DownloadFileFromBlobStore(string fileName, string containerName)
+        public async Task<Stream> DownloadFileFromBlobStoreAsync(string fileName, string containerName)
         {
-            var container = await GetBlobContainer(containerName);
+            CloudBlobContainer container = await GetBlobContainer(containerName);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
 
             MemoryStream stream = new MemoryStream();
@@ -77,56 +72,50 @@ namespace Prawnbot.Core.BusinessLayer
             return stream;
         }
 
-        public async Task<bool> UploadFileToBlobStore(string fileName, string containerName)
+        public async Task UploadFileToBlobStoreAsync(string fileName, string containerName)
         {
-            var container = await GetBlobContainer(containerName);
+            CloudBlobContainer container = await GetBlobContainer(containerName);
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
             await blockBlob.UploadFromFileAsync(fileName);
-
-            return true;
         }
 
         public FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare)
         {
-            if (!Directory.Exists(ConfigUtility.TextFileDirectory))
+            string TextFileDirectory = ConfigUtility.TextFileDirectory;
+
+            if (!Directory.Exists(TextFileDirectory))
             {
-                Directory.CreateDirectory(ConfigUtility.TextFileDirectory);
+                Directory.CreateDirectory(TextFileDirectory);
             }
 
-            string filePath = ConfigUtility.TextFileDirectory + $"\\{fileName}";
+            string filePath = TextFileDirectory + "\\" + fileName;
+
+            if (!File.Exists(filePath))
+            {
+                using (FileStream file = File.Create(fileName)) { };
+            }
 
             return new FileStream(filePath, fileMode, fileAccess, fileShare);
         }
 
-        public async Task<string[]> ReadFromFileAsync(string fileName)
+        public async Task<Bunch<string>> ReadFromFileAsync(string fileName)
         {
-            using (CreateLocalFileIfNotExists(fileName, FileMode.Open, FileAccess.Read, FileShare.Read)) {  }
-
-            string filePath = ConfigUtility.TextFileDirectory + $"\\{fileName}";
-
-            List<string> fileLines = new List<string>();
-
-            using (StreamReader reader = new StreamReader(filePath))
+            using (FileStream file = CreateLocalFileIfNotExists(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (StreamReader reader = new StreamReader(file)) 
             {
+                Bunch<string> fileLines = new Bunch<string>();
+
                 while (!reader.EndOfStream)
                 {
                     fileLines.Add(await reader.ReadLineAsync());
                 }
-            }
 
-            return fileLines.ToArray();
+                return fileLines;
+            };
         }
 
-        public string WriteToCSV(List<CSVColumns> columns, ulong? id, string guildName)
+        public void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName)
         {
-            Stopwatch stopwatch = new Stopwatch();
-
-            stopwatch.Start();
-
-            string fileName;
-            if (id.GetValueOrDefault() != default(ulong)) fileName = $"{_botBl.FindTextChannel(id.GetValueOrDefault(ulong.MinValue)).Name}-backup.csv";
-            else fileName = $"{guildName}-backup.csv";
-
             using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Truncate, FileAccess.Write, FileShare.Write))
             using (StreamWriter writer = new StreamWriter(fileStream))
             using (CsvWriter csv = new CsvWriter(writer))
@@ -134,60 +123,35 @@ namespace Prawnbot.Core.BusinessLayer
                 fileStream.Position = fileStream.Length;
                 csv.WriteRecords(columns);
             }
-
-            StringBuilder sb = new StringBuilder();
-            sb.Append($"Backed up {columns.Count()} messages to {fileName}. \n");
-            stopwatch.Stop();
-
-            sb.Append($"The operation took {stopwatch.Elapsed.Hours}h:{stopwatch.Elapsed.Minutes}m:{stopwatch.Elapsed.Seconds}s:{stopwatch.Elapsed.Milliseconds}ms");
-
-            return sb.ToString();
         }
 
-        public async Task<bool> WriteToFile(string valueToWrite, string fileName)
+        public async Task WriteToFileAsync(string valueToWrite, string fileName)
         {
-            using (var fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
+            using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
             using (StreamWriter writer = new StreamWriter(fileStream))
             {
                 await writer.WriteLineAsync(valueToWrite);
             }
-
-            return true;
         }
 
-        public async Task<List<CSVColumns>> CreateCSVList(ulong id)
+        public Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)
         {
-            List<CSVColumns> records = new List<CSVColumns>();
+            Bunch<CSVColumns> records = new Bunch<CSVColumns>();
 
-            IEnumerable<IMessage> messagesToAdd = await _botBl.GetAllMessages(id);
-
-            for (int i = 0; i < messagesToAdd.Count(); i++)
+            for (int message = 0; message < messagesToAdd.Count(); message++)
             {
-                if (messagesToAdd.ElementAt(i).Type == MessageType.ChannelPinnedMessage)
-                {
-                    continue;
-                }
-
                 CSVColumns recordToAdd = new CSVColumns
                 {
-                    MessageID = messagesToAdd.ElementAt(i).Id,
-                    Author = messagesToAdd.ElementAt(i).Author.Username,
-                    AuthorIsBot = messagesToAdd.ElementAt(i).Author.IsBot,
-                    MessageContent = messagesToAdd.ElementAt(i).Content,
-                    Timestamp = messagesToAdd.ElementAt(i).Timestamp
+                    MessageID = messagesToAdd[message].Id,
+                    Author = messagesToAdd[message].Author.Username,
+                    AuthorIsBot = messagesToAdd[message].Author.IsBot,
+                    MessageContent = messagesToAdd[message].Content,
+                    Timestamp = messagesToAdd[message].Timestamp
                 };
 
-                if (messagesToAdd.ElementAt(i).Attachments.Count() > 0)
+                if (messagesToAdd[message].Attachments.Count() > 0)
                 {
-                    List<string> attachmentUrls = new List<string>();
-
-                    foreach (var attachment in messagesToAdd.ElementAt(i).Attachments)
-                    {
-                        attachmentUrls.Add(attachment.Url);
-                    }
-
-                    var attachmentString = string.Join(", " , attachmentUrls);
-                    recordToAdd.Attachments = attachmentString;
+                    recordToAdd.Attachments = string.Join(", ", messagesToAdd[message].Attachments);
                 }
 
                 records.Add(recordToAdd);
@@ -201,24 +165,9 @@ namespace Prawnbot.Core.BusinessLayer
             return false;
         }
 
-        public TranslateData GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate)
+        public Bunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate)
         {
-            return null;
-        }
-
-        public Dictionary<string, string> GetAllConfigurationValues()
-        {
-            return ConfigUtility.GetAllConfig();
-        }
-
-        public void SetConfigurationValue(string configurationName, string newConfigurationValue)
-        {
-            Common.Configuration.ConfigUtility.SetConfig(configurationName, newConfigurationValue);
-        }
-
-        public void SetEventListeners(bool newValue)
-        {
-            ConfigUtility.AllowEventListeners = newValue;
+            return new Bunch<TranslateData>();
         }
     }
 }

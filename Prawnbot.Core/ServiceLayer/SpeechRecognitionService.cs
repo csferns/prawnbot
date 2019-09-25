@@ -1,5 +1,5 @@
 ﻿using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Framework;
+using Prawnbot.Infrastructure;
 
 namespace Prawnbot.Core.ServiceLayer
 {
@@ -10,15 +10,15 @@ namespace Prawnbot.Core.ServiceLayer
 
     public class SpeechRecognitionService : BaseService, ISpeechRecognitionService
     {
-        protected ISpeechRecognitionBl _speechRecognitionBl;
-        public SpeechRecognitionService()
+        private readonly ISpeechRecognitionBL speechRecognitionBL;
+        public SpeechRecognitionService(ISpeechRecognitionBL speechRecognitionBL)
         {
-            _speechRecognitionBl = new SpeechRecognitionBl();
+            this.speechRecognitionBL = speechRecognitionBL;
         }
 
         public ResponseBase Setup()
         {
-            _speechRecognitionBl.Setup();
+            //speechRecognitionBL.Setup();
 
             return new ResponseBase();
         }

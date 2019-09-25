@@ -11,8 +11,7 @@
         Mega = 1,
         Zetta = 6,
         Exa = 5,
-        LobsterLadd = 9,
-        Mecca = 10,
-        Yoinka = 11
+        Mecca = 9,
+        Yoinka = 10
     }
 }

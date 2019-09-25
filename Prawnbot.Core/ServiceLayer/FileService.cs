@@ -1,6 +1,7 @@
-﻿using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Framework;
-using Prawnbot.Core.Models;
+﻿using Discord;
+using Prawnbot.Core.BusinessLayer;
+using Prawnbot.Core.Model.DTOs;
+using Prawnbot.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,84 +11,66 @@ namespace Prawnbot.Core.ServiceLayer
 {
     public interface IFileService
     {
-        Task<Response<Uri>> GetUriFromBlobStore(string fileName, string containerName);
-        Task<Response<Stream>> GetStreamFromBlobStore(string fileName, string containerName);
-        Task<Response<Stream>> DownloadFileFromBlobStore(string fileName, string containerName);
-        Task<Response<bool>> UploadFileToBlobStore(string fileName, string containerName);
-        Task<Response<string[]>> ReadFromFileAsync(string fileName);
-        Response<string> WriteToCSV(List<CSVColumns> columns, ulong? id, string guildName);
-        Task<Response<bool>> WriteToFile(string valueToWrite, string fileName);
-        Task<ListResponse<CSVColumns>> CreateCSVList(ulong id);
-        Response<Dictionary<string,string>> GetAllConfigurationValues();
-        ResponseBase SetConfigurationValue(string configurationName, string newConfigurationValue);
-        ResponseBase SetEventListeners(bool newValue);
+        Task<Response<Uri>> GetUriFromBlobStoreAsync(string fileName, string containerName);
+        Task<Response<Stream>> GetStreamFromBlobStoreAsync(string fileName, string containerName);
+        Task<Response<Stream>> DownloadFileFromBlobStoreAsync(string fileName, string containerName);
+        Task<ResponseBase> UploadFileToBlobStoreAsync(string fileName, string containerName);
+        Task<ListResponse<string>> ReadFromFileAsync(string fileName);
+        ResponseBase WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName);
+        Task<ResponseBase> WriteToFileAsync(string valueToWrite, string fileName);
+        ListResponse<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
     }
 
     public class FileService : BaseService, IFileService
     {
-        protected IFileBl _fileBl;
+        private readonly IFileBL fileBL;
 
-        public FileService()
+        public FileService(IFileBL fileBL)
         {
-            _fileBl = new FileBl();
+            this.fileBL = fileBL;
         }
 
-        public async Task<Response<Uri>> GetUriFromBlobStore(string fileName, string containerName)
+        public async Task<Response<Uri>> GetUriFromBlobStoreAsync(string fileName, string containerName)
         {
-            return LoadResponse(await _fileBl.GetUriFromBlobStore(fileName, containerName));
+            return LoadResponse(await fileBL.GetUriFromBlobStoreAsync(fileName, containerName));
         }
 
-        public async Task<Response<Stream>> GetStreamFromBlobStore(string fileName, string containerName)
+        public async Task<Response<Stream>> GetStreamFromBlobStoreAsync(string fileName, string containerName)
         {
-            return LoadResponse(await _fileBl.GetStreamFromBlobStore(fileName, containerName));
+            return LoadResponse(await fileBL.GetStreamFromBlobStoreAsync(fileName, containerName));
         }
 
-        public async Task<Response<Stream>> DownloadFileFromBlobStore(string fileName, string containerName)
+        public async Task<Response<Stream>> DownloadFileFromBlobStoreAsync(string fileName, string containerName)
         {
-            return LoadResponse(await _fileBl.DownloadFileFromBlobStore(fileName, containerName));
+            return LoadResponse(await fileBL.DownloadFileFromBlobStoreAsync(fileName, containerName));
         }
 
-        public async Task<Response<bool>> UploadFileToBlobStore(string fileName, string containerName)
+        public async Task<ResponseBase> UploadFileToBlobStoreAsync(string fileName, string containerName)
         {
-            return LoadResponse(await _fileBl.UploadFileToBlobStore(fileName, containerName));
-        }
-
-        public async Task<Response<string[]>> ReadFromFileAsync(string fileName)
-        {
-            return LoadResponse(await _fileBl.ReadFromFileAsync(fileName));
-        }
-
-        public Response<string> WriteToCSV(List<CSVColumns> columns, ulong? id, string guildName)
-        {
-            return LoadResponse(_fileBl.WriteToCSV(columns, id, guildName));
-        }
-
-        public async Task<Response<bool>> WriteToFile(string valueToWrite, string fileName)
-        {
-            return LoadResponse(await _fileBl.WriteToFile(valueToWrite, fileName));
-        }
-
-        public async Task<ListResponse<CSVColumns>> CreateCSVList(ulong id)
-        {
-            return LoadListResponse(await _fileBl.CreateCSVList(id));
-        }
-
-        public Response<Dictionary<string, string>> GetAllConfigurationValues()
-        {
-            return LoadResponse(_fileBl.GetAllConfigurationValues());
-        }
-
-        public ResponseBase SetConfigurationValue(string configurationName, string newConfigurationValue)
-        {
-            _fileBl.SetConfigurationValue(configurationName, newConfigurationValue);
+            await fileBL.UploadFileToBlobStoreAsync(fileName, containerName);
             return new ResponseBase();
         }
 
-        public ResponseBase SetEventListeners(bool newValue)
+        public async Task<ListResponse<string>> ReadFromFileAsync(string fileName)
         {
-            _fileBl.SetEventListeners(newValue);
+            return LoadListResponse(await fileBL.ReadFromFileAsync(fileName));
+        }
 
+        public ResponseBase WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName)
+        {
+            fileBL.WriteToCSV(columns, id, fileName);
             return new ResponseBase();
+        }
+
+        public async Task<ResponseBase> WriteToFileAsync(string valueToWrite, string fileName)
+        {
+            await fileBL.WriteToFileAsync(valueToWrite, fileName);
+            return new ResponseBase();
+        }
+
+        public ListResponse<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)
+        {
+            return LoadListResponse(fileBL.CreateCSVList(messagesToAdd));
         }
     }
 }

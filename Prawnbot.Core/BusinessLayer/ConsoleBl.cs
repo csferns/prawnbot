@@ -1,27 +1,28 @@
 ﻿using Discord;
-using Prawnbot.Core.Enums;
+using Discord.WebSocket;
+using Prawnbot.Common.Enums;
+using Prawnbot.Core.Collections;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface IConsoleBl
+    public interface IConsoleBL
     {
         bool ValidCommand(string command);
         Task<bool> HandleConsoleCommand(string command);
     }
 
-    public class ConsoleBl : BaseBl, IConsoleBl
+    public class ConsoleBL : BaseBL, IConsoleBL
     {
-        private CancellationTokenSource workerCancellationTokenSource;
-
-        public ConsoleBl(CancellationTokenSource workerCancellationTokenSource)
+        private readonly IBotBL botBL;
+        private readonly ICoreBL coreBL;
+        public ConsoleBL(IBotBL botBL, ICoreBL coreBL)
         {
-            this.workerCancellationTokenSource = workerCancellationTokenSource;
+            this.botBL = botBL;
+            this.coreBL = coreBL;
         }
 
         public bool ValidCommand(string command)
@@ -31,7 +32,7 @@ namespace Prawnbot.Core.BusinessLayer
                 command = command.Remove(0, 1);
                 string[] commandComponents = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-                var enumParse = (CommandsEnum)Enum.Parse(typeof(CommandsEnum), commandComponents[0].ToLower());
+                CommandsEnum enumParse = (CommandsEnum)Enum.Parse(typeof(CommandsEnum), commandComponents[0].ToLower());
 
                 return true;
             }
@@ -44,9 +45,9 @@ namespace Prawnbot.Core.BusinessLayer
         public async Task<bool> HandleConsoleCommand(string command)
         {
             command = command.Remove(0, 1);
-            List<string> commandComponents = command.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+            Bunch<string> commandComponents = command.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToBunch();
 
-            var commands = (CommandsEnum)Enum.Parse(typeof(CommandsEnum), commandComponents[0].ToLower());
+            CommandsEnum commands = (CommandsEnum)Enum.Parse(typeof(CommandsEnum), commandComponents[0].ToLower());
 
             switch (commands)
             {
@@ -54,15 +55,15 @@ namespace Prawnbot.Core.BusinessLayer
                     Dictionary<string, string> commandsDictionary = new Dictionary<string, string>()
                     {
                         { "disconnect", "(No additional parameters)" },
-                        { "sendmessage {dm}", "{username}" },
-                        { "sendmessage {guild}", "{guild name} {guild channel name}" },
+                        { "sendmessage dm", "{username}" },
+                        { "sendmessage guild", "{guild name} {guild channel name}" },
                         { "richpresence", "{activitytype} {name} {(Optional) stream url}" }
                     };
 
                     commandComponents.Remove("help");
                     if (commandComponents.Count() > 0)
                     {
-                        var givenCommand = commandsDictionary.Where(x => x.Key.Contains(commandComponents[0]));
+                        IEnumerable<KeyValuePair<string, string>> givenCommand = commandsDictionary.Where(x => x.Key.Contains(commandComponents[0]));
 
                         if (givenCommand.Count() == 0)
                         {
@@ -71,7 +72,7 @@ namespace Prawnbot.Core.BusinessLayer
 
                         await Console.Out.WriteLineAsync();
 
-                        foreach (var givenCommandItem in givenCommand)
+                        foreach (KeyValuePair<string, string> givenCommandItem in givenCommand)
                         {
                             await Console.Out.WriteLineAsync($"/{givenCommandItem.Key} {givenCommandItem.Value}");
                         }
@@ -81,7 +82,7 @@ namespace Prawnbot.Core.BusinessLayer
                     {
                         await Console.Out.WriteLineAsync();
 
-                        foreach (var commandItem in commandsDictionary)
+                        foreach (KeyValuePair<string, string> commandItem in commandsDictionary)
                         {
                             await Console.Out.WriteLineAsync($"/{commandItem.Key} {commandItem.Value}");
                         }
@@ -89,8 +90,7 @@ namespace Prawnbot.Core.BusinessLayer
 
                     return true;
                 case CommandsEnum.disconnect:
-                    workerCancellationTokenSource.Cancel();
-                    await _botBl.DisconnectAsync(true);
+                    await botBL.DisconnectAsync(true);
 
                     Console.Clear();
 
@@ -103,7 +103,7 @@ namespace Prawnbot.Core.BusinessLayer
                         {
                             case "guild":
                                 {
-                                    var guild = _botBl.GetGuild(commandComponents[1]);
+                                    SocketGuild guild = coreBL.GetGuild(commandComponents[1]);
 
                                     if (guild == null)
                                     {
@@ -111,7 +111,7 @@ namespace Prawnbot.Core.BusinessLayer
                                         return true;
                                     }
 
-                                    var textChannel = _botBl.FindTextChannel(guild, commandComponents[2]);
+                                    SocketTextChannel textChannel = coreBL.FindTextChannel(guild, commandComponents[2]);
 
                                     if (textChannel == null)
                                     {
@@ -120,14 +120,14 @@ namespace Prawnbot.Core.BusinessLayer
                                     }
 
                                     await Console.Out.WriteLineAsync("Please enter the message you want to send...");
-                                    var message = Console.ReadLine();
+                                    string message = Console.ReadLine();
 
                                     await textChannel.SendMessageAsync(message);
                                     return true;
                                 }
                             case "dm":
                                 {
-                                    var user = _botBl.GetUser(commandComponents[1]);
+                                    SocketGuildUser user = coreBL.GetUser(commandComponents[1]);
 
                                     if (user == null)
                                     {
@@ -136,11 +136,14 @@ namespace Prawnbot.Core.BusinessLayer
                                     }
 
                                     await Console.Out.WriteLineAsync("Please enter the message you want to send...");
-                                    var message = Console.ReadLine();
+                                    string message = Console.ReadLine();
 
-                                    await _botBl.SendDMAsync(user, message);
+                                    await coreBL.SendDMAsync(user, message);
                                     return true;
                                 }
+                            default:
+                                Console.Out.WriteLine($"Unsupported argument: {commandComponents[0]}");
+                                return true;
                         }
                     }
                     else
@@ -148,14 +151,12 @@ namespace Prawnbot.Core.BusinessLayer
                         await Console.Out.WriteLineAsync("Invalid number of arguments!");
                         return true;
                     }
-
-                    return true;
                 case CommandsEnum.richpresence:
                     commandComponents.Remove("richpresence");
 
                     if (commandComponents.Count() == 2 || commandComponents.Count() == 3)
                     {
-                        await _botBl.UpdateRichPresence(
+                        await coreBL.UpdateRichPresenceAsync(
                             commandComponents[1],
                             (ActivityType)Enum.Parse(typeof(ActivityType), commandComponents[0]),
                             commandComponents.Count() == 2 ? null : commandComponents[2]);
@@ -168,7 +169,6 @@ namespace Prawnbot.Core.BusinessLayer
                         return true;
                     }
                     return true;
-                
             }
 
             return true;

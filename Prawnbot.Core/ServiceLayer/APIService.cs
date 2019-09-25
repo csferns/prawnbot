@@ -1,7 +1,11 @@
 ﻿using Google.Apis.Calendar.v3.Data;
 using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Framework;
-using Prawnbot.Data.Models.API;
+using Prawnbot.Core.Model.API.Giphy;
+using Prawnbot.Core.Model.API.Overwatch;
+using Prawnbot.Core.Model.API.Reddit;
+using Prawnbot.Core.Model.API.Rule34;
+using Prawnbot.Core.Model.API.Translation;
+using Prawnbot.Infrastructure;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.ServiceLayer
@@ -12,35 +16,53 @@ namespace Prawnbot.Core.ServiceLayer
         Task<ListResponse<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate);
         Task<ListResponse<LanguageTranslationRoot>> GetLanguagesAsync();
         Task<ListResponse<Event>> GetCalendarEntries(string calendarId);
+        Task<ListResponse<Rule34Types>> Rule34TagsAsync();
+        Task<Response<OverwatchStats>> OverwatchStatsAsync(string battletag, string region, string platform);
+        Task<Response<RedditRoot>> GetTopPostsBySubreddit(string subredditName, int count);
     }
 
     public class APIService : BaseService, IAPIService
     {
-        protected IAPIBl _apiBl;
+        private readonly IAPIBL apiBL;
 
-        public APIService()
+        public APIService(IAPIBL apiBL)
         {
-            _apiBl = new APIBl();
+            this.apiBL = apiBL;
         }
 
         public async Task<ListResponse<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
         {
-            return LoadListResponse(await _apiBl.GetGifsAsync(searchTerm, limit));
+            return LoadListResponse(await apiBL.GetGifsAsync(searchTerm, limit));
         }
 
         public async Task<ListResponse<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate)
         {
-            return LoadListResponse(await _apiBl.TranslateAsync(toLanguage, fromLanguage, textToTranslate));
+            return LoadListResponse(await apiBL.TranslateAsync(toLanguage, fromLanguage, textToTranslate));
         }
 
         public async Task<ListResponse<LanguageTranslationRoot>> GetLanguagesAsync()
         {
-            return LoadListResponse(await _apiBl.GetLanguagesAsync());
+            return LoadListResponse(await apiBL.GetLanguagesAsync());
         }
 
         public async Task<ListResponse<Event>> GetCalendarEntries(string calendarId)
         {
-            return LoadListResponse(await _apiBl.GetCalendarEntries(calendarId)); 
+            return LoadListResponse(await apiBL.GetCalendarEntries(calendarId));
+        }
+
+        public async Task<ListResponse<Rule34Types>> Rule34TagsAsync()
+        {
+            return LoadListResponse(await apiBL.Rule34TagsAsync());
+        }
+
+        public async Task<Response<OverwatchStats>> OverwatchStatsAsync(string battletag, string region, string platform)
+        {
+            return LoadResponse(await apiBL.OverwatchStatsAsync(battletag, region, platform));
+        }
+
+        public async Task<Response<RedditRoot>> GetTopPostsBySubreddit(string subredditName, int count)
+        {
+            return LoadResponse(await apiBL.GetTopPostsBySubreddit(subredditName, count));
         }
     }
 }
