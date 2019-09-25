@@ -1,8 +1,5 @@
 ﻿using Prawnbot.Core.BusinessLayer;
 using Prawnbot.Infrastructure;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.ServiceLayer

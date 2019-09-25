@@ -2,15 +2,14 @@
 using Discord;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Prawnbot.Core.Collections;
 using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Core.Model.DTOs;
 using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
@@ -23,12 +22,12 @@ namespace Prawnbot.Core.BusinessLayer
         Task<Stream> DownloadFileFromBlobStoreAsync(string fileName, string containerName);
         Task UploadFileToBlobStoreAsync(string fileName, string containerName);
         FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
-        Task<string[]> ReadFromFileAsync(string fileName);
+        Task<Bunch<string>> ReadFromFileAsync(string fileName);
         void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName);
         Task WriteToFileAsync(string valueToWrite, string fileName);
-        List<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
+        Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
         bool CheckIfTranslationExists();
-        List<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
+        Bunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
     }
 
     public class FileBL : BaseBL, IFileBL
@@ -82,67 +81,65 @@ namespace Prawnbot.Core.BusinessLayer
 
         public FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare)
         {
-            if (!Directory.Exists(ConfigUtility.TextFileDirectory))
+            string TextFileDirectory = ConfigUtility.TextFileDirectory;
+
+            if (!Directory.Exists(TextFileDirectory))
             {
-                Directory.CreateDirectory(ConfigUtility.TextFileDirectory);
+                Directory.CreateDirectory(TextFileDirectory);
             }
 
-            string filePath = ConfigUtility.TextFileDirectory + $"\\{fileName}";
+            string filePath = TextFileDirectory + "\\" + fileName;
 
             if (!File.Exists(filePath))
             {
-                using FileStream file = File.Create(fileName);
+                using (FileStream file = File.Create(fileName)) { };
             }
 
             return new FileStream(filePath, fileMode, fileAccess, fileShare);
         }
 
-        public async Task<string[]> ReadFromFileAsync(string fileName)
+        public async Task<Bunch<string>> ReadFromFileAsync(string fileName)
         {
-            using FileStream file = CreateLocalFileIfNotExists(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            using StreamReader reader = new StreamReader(file);
-
-            string[] fileLines = new string[short.MaxValue];
-
-            while (!reader.EndOfStream)
+            using (FileStream file = CreateLocalFileIfNotExists(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (StreamReader reader = new StreamReader(file)) 
             {
-                fileLines.Append(await reader.ReadLineAsync());
-            }
+                Bunch<string> fileLines = new Bunch<string>();
 
-            return fileLines;
+                while (!reader.EndOfStream)
+                {
+                    fileLines.Add(await reader.ReadLineAsync());
+                }
+
+                return fileLines;
+            };
         }
 
         public void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName)
         {
-            using FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Truncate, FileAccess.Write, FileShare.Write);
-            using StreamWriter writer = new StreamWriter(fileStream);
-            using CsvWriter csv = new CsvWriter(writer);
-
-            fileStream.Position = fileStream.Length;
-            csv.WriteRecords(columns);
+            using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Truncate, FileAccess.Write, FileShare.Write))
+            using (StreamWriter writer = new StreamWriter(fileStream))
+            using (CsvWriter csv = new CsvWriter(writer))
+            {
+                fileStream.Position = fileStream.Length;
+                csv.WriteRecords(columns);
+            }
         }
 
         public async Task WriteToFileAsync(string valueToWrite, string fileName)
         {
-            using FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write);
-            using StreamWriter writer = new StreamWriter(fileStream);
-
-            await writer.WriteLineAsync(valueToWrite);
+            using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
+            using (StreamWriter writer = new StreamWriter(fileStream))
+            {
+                await writer.WriteLineAsync(valueToWrite);
+            }
         }
 
-        public List<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)
+        public Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)
         {
-            List<CSVColumns> records = new List<CSVColumns>();
+            Bunch<CSVColumns> records = new Bunch<CSVColumns>();
 
             for (int message = 0; message < messagesToAdd.Count(); message++)
             {
-                // Not interested in the messages for pinning another message or guild members joining
-                if (messagesToAdd[message].Type == MessageType.ChannelPinnedMessage 
-                    || messagesToAdd[message].Type == MessageType.GuildMemberJoin)
-                {
-                    continue;
-                }
-
                 CSVColumns recordToAdd = new CSVColumns
                 {
                     MessageID = messagesToAdd[message].Id,
@@ -154,15 +151,7 @@ namespace Prawnbot.Core.BusinessLayer
 
                 if (messagesToAdd[message].Attachments.Count() > 0)
                 {
-                    List<string> attachmentUrls = new List<string>();
-
-                    foreach (IAttachment attachment in messagesToAdd[message].Attachments)
-                    {
-                        attachmentUrls.Add(attachment.Url);
-                    }
-
-                    string attachmentString = string.Join(", ", attachmentUrls);
-                    recordToAdd.Attachments = attachmentString;
+                    recordToAdd.Attachments = string.Join(", ", messagesToAdd[message].Attachments);
                 }
 
                 records.Add(recordToAdd);
@@ -176,9 +165,9 @@ namespace Prawnbot.Core.BusinessLayer
             return false;
         }
 
-        public List<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate)
+        public Bunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate)
         {
-            return new List<TranslateData>();
+            return new Bunch<TranslateData>();
         }
     }
 }

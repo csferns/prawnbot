@@ -6,7 +6,7 @@ namespace Prawnbot.Data
 {
     public class UnitOfWork : IUnitOfWork
     {
-        private DbContext context;
+        private readonly DbContext context;
 
         public UnitOfWork(DbContext context)
         {
@@ -20,15 +20,15 @@ namespace Prawnbot.Data
 
         public void Dispose()
         {
-            if (this.context != null)
+            if (context != null)
             {
                 try
                 {
-                    this.context.Dispose();
+                    context.Dispose();
                 }
                 catch
                 {
-                    
+
                 }
             }
             GC.SuppressFinalize(this);

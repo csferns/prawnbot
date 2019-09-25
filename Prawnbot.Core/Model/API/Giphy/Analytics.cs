@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Prawnbot.Core.Model.API.Giphy
+﻿namespace Prawnbot.Core.Model.API.Giphy
 {
     public class Analytics
     {

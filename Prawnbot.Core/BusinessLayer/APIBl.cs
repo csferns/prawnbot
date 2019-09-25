@@ -5,14 +5,18 @@ using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using Newtonsoft.Json;
+using Prawnbot.Core.Collections;
 using Prawnbot.Core.Log;
 using Prawnbot.Core.Model.API.Giphy;
+using Prawnbot.Core.Model.API.Overwatch;
+using Prawnbot.Core.Model.API.Reddit;
 using Prawnbot.Core.Model.API.Rule34;
 using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Core.Utility;
 using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -25,18 +29,19 @@ namespace Prawnbot.Core.BusinessLayer
 {
     public interface IAPIBL
     {
-        Task<T> GetRequestAsync<T>(string url);
-        Task<T> PostRequestAsync<T>(string url, object postData, Dictionary<string, string> headers);
-        Task<List<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25);
-        Task<List<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate);
-        Task<List<LanguageTranslationRoot>> GetLanguagesAsync();
+        Task<Bunch<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25);
+        Task<Bunch<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate);
+        Task<Bunch<LanguageTranslationRoot>> GetLanguagesAsync();
         Task<bool> GetProfanityFilterAsync(string message);
-        Task<List<Rule34Model>> Rule34PostsAsync(string[] tags);
-        Task<List<Rule34Types>> Rule34TagsAsync();
-        Task<List<Event>> GetCalendarEntries(string calendarId);
+        Task<Bunch<Rule34Model>> Rule34PostsAsync(string[] tags);
+        Task<Bunch<Rule34Types>> Rule34TagsAsync(); 
+        Task<Bunch<Event>> GetCalendarEntries(string calendarId);
+        Task<OverwatchStats> OverwatchStatsAsync(string battletag, string region, string platform);
+        Task<RedditRoot> GetTopPostsBySubreddit(string subredditName, int count);
+
     }
 
-    public class APIBL : BaseBL, IAPIBL 
+    public class APIBL : BaseBL, IAPIBL
     {
         private readonly IFileBL fileBL;
         private readonly ILogging logging;
@@ -47,59 +52,80 @@ namespace Prawnbot.Core.BusinessLayer
             this.logging = logging;
         }
 
-        private static HttpClient httpClient;
-
-        public async Task<T> GetRequestAsync<T>(string url)
+        private async Task<T> GetRequestAsync<T>(string url, Dictionary<string, string> parameters = null)
         {
             try
             {
-                httpClient = httpClient ?? new HttpClient();
+                UriBuilder uriBuilder = new UriBuilder(url);
+                NameValueCollection query = HttpUtility.ParseQueryString(uriBuilder.Query);
 
-                HttpResponseMessage httpResponse = await httpClient.GetAsync(url);
-
-                T responseObject = JsonConvert.DeserializeObject<T>(await httpResponse.Content.ReadAsStringAsync());
-                return responseObject;
-            }
-            catch (Exception e)
-            {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "", $"Error in GET request for type {typeof(T).FullName}", e));
-                return default(T);
-            }
-        }
-
-        public async Task<T> PostRequestAsync<T>(string url, object postData, Dictionary<string, string> headers)
-        {
-            try
-            {
-                httpClient = httpClient ?? new HttpClient();
-
-                string requestBody = JsonConvert.SerializeObject(postData);
-                StringContent content = new StringContent(requestBody, Encoding.UTF8, "application/json");
-
-                foreach (KeyValuePair<string, string> header in headers)
+                if (parameters != null && parameters.Any())
                 {
-                    httpClient.DefaultRequestHeaders.Add(header.Key, header.Value);
+                    foreach (KeyValuePair<string, string> parameter in parameters)
+                    {
+                        query[parameter.Key] = parameter.Value;
+                    }
                 }
 
-                HttpResponseMessage httpResponse = await httpClient.PostAsync(url, content);
+                uriBuilder.Query = query.ToString();
 
-                T responseObject = JsonConvert.DeserializeObject<T>(await httpResponse.Content.ReadAsStringAsync());
-                return responseObject;
+                using (HttpClient client = new HttpClient())
+                {
+                    HttpResponseMessage httpResponse = await client.GetAsync(uriBuilder.ToString());
+
+                    T responseObject = JsonConvert.DeserializeObject<T>(await httpResponse.Content.ReadAsStringAsync());
+                    return responseObject;
+                }
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "", $"Error in POST request for type {typeof(T).FullName}", e));
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "GetRequestAsync", $"Error in GET request for type {typeof(T).FullName}", e));
                 return default(T);
             }
         }
 
-        public async Task<List<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
+        private async Task<T> PostRequestAsync<T>(string url, object postData, Dictionary<string, string> headers)
         {
-            GiphyRootobject response = await GetRequestAsync<GiphyRootobject>("https://api.giphy.com/v1/gifs/search?api_key=" + ConfigUtility.GiphyAPIKey + "&q=" + HttpUtility.UrlEncode(searchTerm) + "&limit=" + limit + "&lang=en");
-            return response.data.OrderBy(x => x.trending_datetime).ToList();
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    string requestBody = JsonConvert.SerializeObject(postData);
+                    StringContent content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+
+                    foreach (KeyValuePair<string, string> header in headers)
+                    {
+                        client.DefaultRequestHeaders.Add(header.Key, header.Value);
+                    }
+
+                    HttpResponseMessage httpResponse = await client.PostAsync(url, content);
+
+                    T responseObject = JsonConvert.DeserializeObject<T>(await httpResponse.Content.ReadAsStringAsync());
+                    return responseObject;
+                }
+            }
+            catch (Exception e)
+            {
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "PostRequestAsync", $"Error in POST request for type {typeof(T).FullName}", e));
+                return default(T);
+            }
         }
 
-        public async Task<List<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate)
+        public async Task<Bunch<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
+        {
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                { "api_key", ConfigUtility.GiphyAPIKey },
+                { "q", HttpUtility.UrlEncode(searchTerm) },
+                { "limit", limit.ToString() },
+                { "lang", "en" }
+            };
+
+            GiphyRootobject response = await GetRequestAsync<GiphyRootobject>(ConfigUtility.GiphyEndpoint, parameters);
+            return response.data.OrderBy(x => x.trending_datetime).ToBunch();
+        }
+
+        public async Task<Bunch<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate)
         {
             if (fileBL.CheckIfTranslationExists())
             {
@@ -109,83 +135,117 @@ namespace Prawnbot.Core.BusinessLayer
             {
                 object[] postData = new object[] { new { Text = textToTranslate.RemoveSpecialCharacters() } };
 
-                string url = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=" + toLanguage;
-                if (fromLanguage != null) url += $"&from={fromLanguage}";
+                string url = ConfigUtility.MicrosoftTranslateEndpoint + "translate?api-version=3.0&to=" + toLanguage;
+
+                if (fromLanguage != null)
+                {
+                    url += $"&from={fromLanguage}";
+                }
 
                 Dictionary<string, string> headers = new Dictionary<string, string>()
                 {
                     { "Ocp-Apim-Subscription-Key", ConfigUtility.TranslateAPIKey }
                 };
 
-                return await PostRequestAsync<List<TranslateData>>(url, postData, headers);
+                return await PostRequestAsync<Bunch<TranslateData>>(url, postData, headers);
             }
         }
 
-        public async Task<List<LanguageTranslationRoot>> GetLanguagesAsync()
+        public async Task<Bunch<LanguageTranslationRoot>> GetLanguagesAsync()
         {
-            return await GetRequestAsync<List<LanguageTranslationRoot>>("https://api.cognitive.microsofttranslator.com/languages?api-version=3.0");
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                { "api-version", "3.0" }
+            };
+
+            return await GetRequestAsync<Bunch<LanguageTranslationRoot>>(ConfigUtility.MicrosoftTranslateEndpoint + "languages", parameters);
         }
 
         public async Task<bool> GetProfanityFilterAsync(string message)
         {
-            return await GetRequestAsync<bool>("https://www.purgomalum.com/service/containsprofanity?text=" + message);
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                { "text", message }
+            };
+
+            return await GetRequestAsync<bool>(ConfigUtility.ProfanityFilterEndpoint, parameters);
         }
 
-        public async Task<List<Rule34Model>> Rule34PostsAsync(string[] tags)
+        public async Task<Bunch<Rule34Model>> Rule34PostsAsync(string[] tags)
         {
-            return await GetRequestAsync<List<Rule34Model>>("https://r34-json-api.herokuapp.com/posts?tags=" + string.Join('+', tags));
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                { "tags", string.Join('+', tags) }
+            };
+
+            return await GetRequestAsync<Bunch<Rule34Model>>(ConfigUtility.R34Endpoint + "posts", parameters);
         }
 
-        public async Task<List<Rule34Types>> Rule34TagsAsync()
+        public async Task<Bunch<Rule34Types>> Rule34TagsAsync()
         {
-            return await GetRequestAsync<List<Rule34Types>>("https://r34-json-api.herokuapp.com/tags");
+            return await GetRequestAsync<Bunch<Rule34Types>>(ConfigUtility.R34Endpoint + "tags");
         }
 
-        public async Task<List<Event>> GetCalendarEntries(string calendarId)
+        public async Task<Bunch<Event>> GetCalendarEntries(string calendarId)
         {
             try
             {
-                string[] scopes = { CalendarService.Scope.CalendarEventsReadonly };
+                // Authentication
+                string clientId = ConfigUtility.GoogleAPIKey; //From Google Developer console https://console.developers.google.com
+                string clientSecret = ""; //From Google Developer console https://console.developers.google.com
+                string userName = ""; // A string used to identify a user.
+                string[] scopes = new string[] {
+                    CalendarService.Scope.Calendar, // Manage your calendars
+ 	                CalendarService.Scope.CalendarReadonly // View your Calendars
+                };
 
-                UserCredential credential;
-
-                using (FileStream stream = new FileStream("Configuration/credentials.json", FileMode.Open, FileAccess.Read))
+                // here is where we Request the user to give us access, or use the Refresh Token that was previously stored in %AppData%
+                UserCredential credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new ClientSecrets
                 {
-                    // The file token.json stores the user's access and refresh tokens, and is created
-                    // automatically when the authorization flow completes for the first time.
-                    string credPath = "Configuration/token.json";
-                    credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                        GoogleClientSecrets.Load(stream).Secrets,
-                        scopes,
-                        "user",
-                        CancellationToken.None,
-                        new FileDataStore(credPath, true)).Result;
-                    await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Calendar", "Credential file saved to: " + credPath));
-                }
+                    ClientId = clientId,
+                    ClientSecret = clientSecret
+                }, scopes, userName, CancellationToken.None, new FileDataStore("Daimto.GoogleCalendar.Auth.Store")).Result;
 
-                CalendarService service = new CalendarService(new BaseClientService.Initializer()
+                // Create the service.
+                using (CalendarService service = new CalendarService(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
                     ApplicationName = ConfigUtility.GoogleApplicationName,
-                });
+                }))
+                {
+                    // Define parameters of request.
+                    EventsResource.ListRequest request = service.Events.List(calendarId);
+                    request.TimeMin = DateTime.Now;
+                    request.ShowDeleted = false;
+                    request.SingleEvents = true;
+                    request.MaxResults = 10;
+                    request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
 
-                // Define parameters of request.
-                EventsResource.ListRequest request = service.Events.List(calendarId);
-                request.TimeMin = DateTime.Now;
-                request.ShowDeleted = false;
-                request.SingleEvents = true;
-                request.MaxResults = 10;
-                request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
-
-                // List events.
-                Events events = await request.ExecuteAsync();
-                return events.Items.ToList();
+                    // List events.
+                    Events events = await request.ExecuteAsync();
+                    return events.Items.ToBunch();
+                }
             }
             catch (Exception e)
             {
                 await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Calendar", "Error in GetCalendarEntries", e));
-                return new List<Event>();
+                return new Bunch<Event>();
             }
+        }
+
+        public async Task<OverwatchStats> OverwatchStatsAsync(string battletag, string region, string platform)
+        {
+            return await GetRequestAsync<OverwatchStats>(ConfigUtility.OverwatchStatsEndpoint + "stats/" + platform + "/" + region + "/" + battletag + "/");
+        }
+
+        public async Task<RedditRoot> GetTopPostsBySubreddit(string subredditName, int count)
+        {
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                { "count", count.ToString() }
+            };
+
+            return await GetRequestAsync<RedditRoot>("https://www.reddit.com/r/" + subredditName + "/top/.json", parameters);
         }
     }
 }

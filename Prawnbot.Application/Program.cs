@@ -3,10 +3,12 @@ using Autofac.Extensions.DependencyInjection;
 using Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Prawnbot.Core.BusinessLayer;
+using Prawnbot.Core.Exceptions;
 using Prawnbot.Core.Log;
 using Prawnbot.Core.ServiceLayer;
 using Prawnbot.Utility.Configuration;
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,14 +19,15 @@ namespace Prawnbot.Application
     {
         public static void Main(string[] args)
         {
-            IContainer container = AutofacSetup();
+            using (IContainer container = AutofacSetup())
+            using (ILifetimeScope scope = container.BeginLifetimeScope())
+            {
+                IBotService botService = scope.Resolve<IBotService>();
+                ILogging logging = scope.Resolve<ILogging>();
+                BaseApplication adminApplication = new BaseApplication(botService, logging);
 
-            using ILifetimeScope scope = container.BeginLifetimeScope();
-            IBotService botService = scope.Resolve<IBotService>();
-            ILogging logging = scope.Resolve<ILogging>();
-            BaseApplication adminApplication = new BaseApplication(botService, logging);
-
-            adminApplication.Main(container);
+                adminApplication.Main(container);
+            };
         }
 
         private static IContainer AutofacSetup()
@@ -77,7 +80,7 @@ namespace Prawnbot.Application
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Don't be a dingbat: {e.Message}");
+                logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Main", $"Don't be a dingbat: \n{e.Message}", e)).Wait();
             }
         }
 
@@ -85,6 +88,9 @@ namespace Prawnbot.Application
         {
             try
             {
+                Process currentProcess = Process.GetCurrentProcess();
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "ConnectAsync", $"Process {currentProcess.ProcessName} ({currentProcess.Id}) started on {Environment.MachineName} "));
+
                 await botService.ConnectAsync(token, autofacContainer);
 
                 await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Debug, "ConnectAsync", $"Memory used before collection: {GC.GetTotalMemory(false)}"));
@@ -93,15 +99,16 @@ namespace Prawnbot.Application
 
                 await Task.Delay(-1);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                throw;
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Main", $"Don't be a dingbat: \n{e.Message}", e));
             }
         }
 
         public async void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
-            await botService.DisconnectAsync(false);
+            await botService.DisconnectAsync();
+            botService.ShutdownQuartz();
         }
     }
 }

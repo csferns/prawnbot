@@ -1,8 +1,11 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Prawnbot.Core.BusinessLayer;
+using Prawnbot.Core.Exceptions;
 using Prawnbot.Infrastructure;
+using System;
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.ServiceLayer
@@ -10,10 +13,9 @@ namespace Prawnbot.Core.ServiceLayer
     public interface ICoreService
     {
         Task<ResponseBase> SendImageFromBlobStore(string fileName);
-        Task<Response<bool>> ContainsUser(SocketUserMessage message);
-        Task<Response<bool>> ContainsText(SocketUserMessage message);
+        Task<ResponseBase> MessageEventListeners(SocketUserMessage message);
         Response<string> FlipACoin(string headsValue, string tailsValue);
-        Task<Response<string[]>> YottaPrepend();
+        Task<ListResponse<string>> YottaPrepend();
         /// <summary>
         /// Method to set the status of the bot
         /// </summary>
@@ -44,7 +46,7 @@ namespace Prawnbot.Core.ServiceLayer
         /// </summary>
         /// <param name="id">Text channel ID</param>
         /// <returns></returns>
-        Task<ListResponse<IMessage>> GetAllMessagesAsync(ulong id);
+        Task<ListResponse<IMessage>> GetAllMessagesAsync(ulong textChannelId); 
         /// <summary>
         /// Get a guild by name
         /// </summary>
@@ -123,12 +125,17 @@ namespace Prawnbot.Core.ServiceLayer
         /// <param name="messageText">Text of the message</param>
         /// <returns></returns>
         Task<ResponseBase> SendDMAsync(SocketGuildUser user, string messageText);
-        Task<Response<int>> ReactToMessageAsync(int eventListenersTriggered, string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null);
         Response<string> TagUser(ulong id);
-        Task<Response<bool>> PingHostAsync(string nameOrAddress);
+        Task<Response<IPStatus>> PingHostAsync(string nameOrAddress);
         Task<Response<IMessage>> GetRandomQuoteAsync(ulong id);
         Task<ResponseBase> BackupServerAsync(ulong id, bool server);
         Task<Response<GuildEmote>> GetEmoteFromGuild(ulong id, SocketGuild guild);
+        Task<ListResponse<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp);
+        Response<SocketGuild> GetGuildById(ulong guildId);
+
+        Task<ResponseBase> CommandsAsync(bool includeNotImplemented);
+        Task<ResponseBase> GetBotInfoAsync();
+        Task<ResponseBase> StatusAsync();
     }
 
     public class CoreService : BaseService, ICoreService
@@ -139,14 +146,10 @@ namespace Prawnbot.Core.ServiceLayer
             this.coreBL = coreBL;
         }
 
-        public async Task<Response<bool>> ContainsText(SocketUserMessage message)
+        public async Task<ResponseBase> MessageEventListeners(SocketUserMessage message)
         {
-            return LoadResponse(await coreBL.ContainsTextAsync(message));
-        }
-
-        public async Task<Response<bool>> ContainsUser(SocketUserMessage message)
-        {
-            return LoadResponse(await coreBL.ContainsUserAsync(message));
+            await coreBL.MessageEventListeners(message);
+            return new ResponseBase();
         }
 
         public Response<Process> CreateFfmpegProcess(string path)
@@ -166,7 +169,7 @@ namespace Prawnbot.Core.ServiceLayer
 
         public ListResponse<SocketTextChannel> FindGuildTextChannels(SocketGuild guild)
         {
-            return LoadListResponse(coreBL.FindGuildTextChannels(guild)); 
+            return LoadListResponse(coreBL.FindGuildTextChannels(guild));
         }
 
         public Response<SocketTextChannel> FindTextChannel(ulong id)
@@ -225,14 +228,9 @@ namespace Prawnbot.Core.ServiceLayer
             return new ResponseBase();
         }
 
-        public async Task<Response<bool>> PingHostAsync(string nameOrAddress)
+        public async Task<Response<IPStatus>> PingHostAsync(string nameOrAddress)
         {
             return LoadResponse(await coreBL.PingHostAsync(nameOrAddress));
-        }
-
-        public async Task<Response<int>> ReactToMessageAsync(int eventListenersTriggered, string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null)
-        {
-            return LoadResponse(await coreBL.ReactToMessageAsync(eventListenersTriggered, Content, lookupValues, replyText, giffedMessage, gifSearchText));
         }
 
         public async Task<ResponseBase> SendChannelMessageAsync(SocketGuild guild, SocketTextChannel channel, string messageText)
@@ -270,9 +268,9 @@ namespace Prawnbot.Core.ServiceLayer
             return new ResponseBase();
         }
 
-        public async Task<Response<string[]>> YottaPrepend()
+        public async Task<ListResponse<string>> YottaPrepend()
         {
-            return LoadResponse(await coreBL.YottaPrependAsync());
+            return LoadListResponse(await coreBL.YottaPrependAsync());
         }
 
         public async Task<Response<IMessage>> GetRandomQuoteAsync(ulong id)
@@ -290,6 +288,34 @@ namespace Prawnbot.Core.ServiceLayer
         public async Task<Response<GuildEmote>> GetEmoteFromGuild(ulong id, SocketGuild guild)
         {
             return LoadResponse(await coreBL.GetEmoteFromGuildAsync(id, guild));
+        }
+
+        public async Task<ListResponse<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp)
+        {
+            return LoadListResponse(await coreBL.GetAllMessagesByTimestampAsync(guildId, timestamp));
+        }
+
+        public Response<SocketGuild> GetGuildById(ulong guildId)
+        {
+            return LoadResponse(coreBL.GetGuildById(guildId));
+        }
+
+        public async Task<ResponseBase> CommandsAsync(bool includeNotImplemented)
+        {
+            await coreBL.CommandsAsync(includeNotImplemented);
+            return new ResponseBase();
+        }
+
+        public async Task<ResponseBase> GetBotInfoAsync()
+        {
+            await coreBL.GetBotInfoAsync();
+            return new ResponseBase();
+        }
+
+        public async Task<ResponseBase> StatusAsync()
+        {
+            await coreBL.StatusAsync();
+            return new ResponseBase();
         }
     }
 }

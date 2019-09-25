@@ -1,6 +1,5 @@
 ﻿using Discord.Commands;
 using Discord.WebSocket;
-using System;
 
 namespace Prawnbot.Core.BusinessLayer
 {
@@ -8,5 +7,7 @@ namespace Prawnbot.Core.BusinessLayer
     {
         public static DiscordSocketClient Client { get; set; }
         public static SocketCommandContext Context { get; set; }
+
+        public static bool UseTTS { get; set; }
     }
 }

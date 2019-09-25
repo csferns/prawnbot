@@ -1,7 +1,6 @@
 ﻿using Discord;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Prawnbot.Core.Model.DTOs
 {

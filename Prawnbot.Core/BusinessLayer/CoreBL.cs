@@ -1,9 +1,16 @@
 ﻿using Discord;
 using Discord.Audio;
+using Discord.Commands;
+using Discord.Rest;
 using Discord.WebSocket;
 using Prawnbot.Common.Enums;
+using Prawnbot.Core.Attributes;
+using Prawnbot.Core.Collections;
 using Prawnbot.Core.Log;
 using Prawnbot.Core.Model.API.Giphy;
+using Prawnbot.Core.Model.API.Reddit;
+using Prawnbot.Core.Model.API.Rule34;
+using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Core.Model.DTOs;
 using Prawnbot.Core.Utility;
 using Prawnbot.Utility.Configuration;
@@ -16,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -26,10 +34,9 @@ namespace Prawnbot.Core.BusinessLayer
     public interface ICoreBL
     {
         Task SendImageFromBlobStoreAsync(string fileName);
-        Task<bool> ContainsUserAsync(SocketUserMessage message);
-        Task<bool> ContainsTextAsync(SocketUserMessage message);
+        Task MessageEventListeners(SocketUserMessage message);
         string FlipACoin(string headsValue, string tailsValue);
-        Task<string[]> YottaPrependAsync();
+        Task<Bunch<string>> YottaPrependAsync();
         /// <summary>
         /// Method to set the status of the bot
         /// </summary>
@@ -54,24 +61,27 @@ namespace Prawnbot.Core.BusinessLayer
         /// Get all the current users in the servers the bot is connected to
         /// </summary>
         /// <returns></returns>
-        List<SocketGuildUser> GetAllUsers();
+        Bunch<SocketGuildUser> GetAllUsers();
         /// <summary>
         /// Gets all messages from a guild text channel
         /// </summary>
         /// <param name="id">Text channel ID</param>
         /// <returns></returns>
-        Task<IList<IMessage>> GetAllMessagesAsync(ulong id);
+        Task<Bunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 5000);
+        Task<Bunch<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp);
+        Task<Bunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 5000);
         /// <summary>
         /// Get a guild by name
         /// </summary>
         /// <param name="guildName">Name of the guild</param>
         /// <returns></returns>
         SocketGuild GetGuild(string guildName);
+        SocketGuild GetGuildById(ulong guildId);
         /// <summary>
         /// Get all the current guilds the bot is connected to
         /// </summary>
         /// <returns>List of IGuilds</returns>
-        List<SocketGuild> GetAllGuilds();
+        Bunch<SocketGuild> GetAllGuilds();
         /// <summary>
         /// Gets the default channel of the given guild
         /// </summary>
@@ -104,7 +114,7 @@ namespace Prawnbot.Core.BusinessLayer
         /// <param name="guild">Server</param>
         /// <param name="channel">Channel</param>
         /// <returns>SocketTextChannel</returns>
-        SocketTextChannel FindTextChannel(SocketGuild guild, SocketTextChannel channel); 
+        SocketTextChannel FindTextChannel(SocketGuild guild, SocketTextChannel channel);
         /// <summary>
         /// Gets all the channels of the given guild
         /// </summary>
@@ -139,12 +149,15 @@ namespace Prawnbot.Core.BusinessLayer
         /// <param name="messageText">Text of the message</param>
         /// <returns></returns>
         Task SendDMAsync(SocketGuildUser user, string messageText);
-        Task<int> ReactToMessageAsync(int eventListenersTriggered, string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null);
         string TagUser(ulong id);
-        Task<bool> PingHostAsync(string nameOrAddress);
+        Task<IPStatus> PingHostAsync(string nameOrAddress);
         Task<IMessage> GetRandomQuoteAsync(ulong id);
         Task BackupServerAsync(ulong id, bool server);
         Task<GuildEmote> GetEmoteFromGuildAsync(ulong id, SocketGuild guild);
+
+        Task CommandsAsync(bool includeNotImplemented);
+        Task GetBotInfoAsync();
+        Task StatusAsync();
     }
 
     public class CoreBL : BaseBL, ICoreBL
@@ -153,6 +166,9 @@ namespace Prawnbot.Core.BusinessLayer
         private readonly IAPIBL apiBL;
         private readonly ILogging logging;
 
+        private int EventsTriggered { get; set; }
+        private bool MessageSent { get; set; }
+
         public CoreBL(IFileBL fileBL, IAPIBL apiBL, ILogging logging)
         {
             this.fileBL = fileBL;
@@ -160,53 +176,44 @@ namespace Prawnbot.Core.BusinessLayer
             this.logging = logging;
         }
 
-        private static string StrippedMessage { get; set; }
+        private string StrippedMessage { get; set; }
         protected readonly ConcurrentDictionary<ulong, IAudioClient> ConnectedChannels = new ConcurrentDictionary<ulong, IAudioClient>();
 
-        public async Task<bool> ContainsUserAsync(SocketUserMessage message)
+        public async Task MessageEventListeners(SocketUserMessage message)
         {
-            int eventListenersTriggered = 0;
+            if ((message.ContainsEmote() || message.ContainsEmoji()) && ConfigUtility.EmojiRepeat)
+            {
+                await Context.Channel.SendMessageAsync(FindEmojis(message));
+                EventsTriggered++;
+            }
 
             StrippedMessage = message.Content.RemoveSpecialCharacters();
 
-            if (StrippedMessage.ContainsSingleLower("sam") || message.IsUserTagged(258627811844030465))
-            {
-                List<GiphyDatum> gifs = await apiBL.GetGifsAsync("calendar");
-                await Context.Channel.SendMessageAsync($"Have you put it in the calendar? \n{gifs.RandomOrDefault().bitly_gif_url}");
-                eventListenersTriggered++;
-            }
+            await ReactToSingleWordWithGifAsync(StrippedMessage, lookupValue: "sam", replyMessage: "Have you put it in the calendar?", gifSearchText: "calendar");
+            await ReactToTaggedUserWithGifAsync(message, userId: 258627811844030465, replyMessage: "Have you put it in the calendar?", gifSearchText: "calendar");
 
-            if (StrippedMessage.ContainsSingleLower("ilja") || StrippedMessage.ContainsSingleLower("ultratwink") || message.IsUserTagged(341940376057282560)) { await Context.Channel.SendMessageAsync("Has terminal gay"); eventListenersTriggered++; }
-            if (StrippedMessage.ContainsSingleLower("cam") || StrippedMessage.ContainsSingleLower("cameron") || message.IsUserTagged(216177905712103424)) { await Context.Channel.SendMessageAsync("*Father Cammy"); eventListenersTriggered++; }
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "ilja", replyMessage: "Has terminal gay");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "ultratwink", replyMessage: "Has terminal gay");
+            await ReactToTaggedUserAsync(message, userId: 341940376057282560, replyMessage: "Has terminal gay");
+
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "cam", replyMessage: "*Father Cammy");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "cameron", replyMessage: "*Father Cammy");
+            await ReactToTaggedUserAsync(message, userId: 216177905712103424, replyMessage: "*Father Cammy");
 
             if (ConfigUtility.YottaMode && (StrippedMessage.ContainsSingleLower("sean") || message.IsUserTagged(201371614489608192) || StrippedMessage.ContainsSingleLower("seans")))
             {
-                string[] yotta = await YottaPrependAsync();
+                Bunch<string> yotta = await YottaPrependAsync();
                 string yottaFull = string.Join(", ", yotta);
 
                 await Context.Channel.SendMessageAsync($"{yottaFull} {(yottaFull.Length > 0 ? 'c' : 'C')}had Sean, stud of the co-op, leader of the Corfe Mullen massive");
-                eventListenersTriggered++;
+                EventsTriggered++;
             }
-
-            if (eventListenersTriggered > 0)
-            {
-                await logging.LogCommandUseAsync(Context.Message.Author.Username, Context.Guild.Name, Context.Message.Content);
-            }
-
-            return true;
-        }
-
-        public async Task<bool> ContainsTextAsync(SocketUserMessage message)
-        {
-            int eventListenersTriggered = 0;
-
-            StrippedMessage = message.Content.RemoveSpecialCharacters();
 
             #region Config
             if (ConfigUtility.DadMode)
             {
-                eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "kys" }, replyText: $"Alright {Context.User.Mention}, that was very rude. Instead, take your own advice.");
-                eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "dad" }, replyText: "404 dad not found");
+                await ReactToSingleWordAsync(StrippedMessage, lookupValue: "kys", replyMessage: $"Alright {Context.User.Mention}, that was very rude. Instead, take your own advice.");
+                await ReactToSingleWordAsync(StrippedMessage, lookupValue: "dad", replyMessage: "404 dad not found");
             }
 
             if (ConfigUtility.DadMode && StrippedMessage.StartsWith("im"))
@@ -218,7 +225,7 @@ namespace Prawnbot.Core.BusinessLayer
                     messageArray.RemoveAt(0);
 
                     await Context.Channel.SendMessageAsync($"Hi {string.Join(' ', messageArray.ToList())}, i'm dad");
-                    eventListenersTriggered++;
+                    EventsTriggered++;
                 }
             }
 
@@ -226,69 +233,138 @@ namespace Prawnbot.Core.BusinessLayer
             {
                 if (await apiBL.GetProfanityFilterAsync(StrippedMessage))
                 {
-                    var gifs = await apiBL.GetGifsAsync("swearing", 50);
+                    Bunch<GiphyDatum> gifs = await apiBL.GetGifsAsync("swearing", 50);
                     await Context.Channel.SendMessageAsync(gifs.RandomOrDefault().bitly_gif_url);
-                    eventListenersTriggered++;
+                    EventsTriggered++;
                 }
             }
             #endregion
 
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "daddy" }, replyText: $"{Context.User.Mention} you can be my daddy if you want :wink:");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "africa" }, replyText: "toto by africa");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "big" }, replyText: "chunky");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "round" }, replyText: "plumpy");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "huge" }, replyText: "Girl, you huge");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "marvin" }, replyText: "Marvout");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "marvout" }, replyText: "Marvin");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "engineer" }, replyText: "The engineer is engihere");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "ban" }, replyText: "Did I hear somebody say Macro pad?");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "2realirl4meirl" }, replyText: "REEEEEEEEEEEEEEEEEEE");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "bruh" }, replyText: "https://www.youtube.com/watch?v=2ZIpFytCSVc");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "what", "can", "i", "say" }, replyText: "except, you're welcome!");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "oi", "oi" }, replyText: "big boi");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "plastic", "bag" }, replyText: "Drifting through the wind?");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "you", "so" }, replyText: $"you so\nfucking\nprecious\nwhen you\nsmile\nhit it\nfrom the \nback and\ndrive you\nwild");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "who", "can", "relate" }, replyText: "I don't know");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, message.Content, lookupValues: new string[] { "!skip" }, replyText: "you fucking what", giffedMessage: true, gifSearchText: "what");
-            eventListenersTriggered = await ReactToMessageAsync(eventListenersTriggered, StrippedMessage, lookupValues: new string[] { "pipe", "down" }, replyText: "pipe down", giffedMessage: true, gifSearchText: "pipe down");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "daddy", replyMessage: $"{Context.User.Mention} you can be my daddy if you want :wink:");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "africa", replyMessage: "toto by africa");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "big", replyMessage: "chunky");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "round", replyMessage: "plumpy");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "huge", replyMessage: "Girl, you huge");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "marvin", replyMessage: "Marvout");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "marvout", replyMessage: "Marvin");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "engineer", replyMessage: "The engineer is engihere");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "ban", replyMessage: "Did I hear somebody say Macro pad?");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "2realirl4meirl", replyMessage: "REEEEEEEEEEEEEEEEEEE");
+            await ReactToSingleWordAsync(StrippedMessage, lookupValue: "bruh", replyMessage: "https://www.youtube.com/watch?v=2ZIpFytCSVc");
+
+            await ReactToSingleWordWithGifAsync(StrippedMessage, lookupValue: "!skip", replyMessage: "you fucking what", gifSearchText: "what");
+
+            await ReactToMultipleWordsAsync(StrippedMessage, lookupValues: new string[] { "what", "can", "i", "say" }, replyMessage: "except, you're welcome!");
+            await ReactToMultipleWordsAsync(StrippedMessage, lookupValues: new string[] { "oi", "oi" }, replyMessage: "big boi");
+            await ReactToMultipleWordsAsync(StrippedMessage, lookupValues: new string[] { "plastic", "bag" }, replyMessage: "Drifting through the wind?");
+            await ReactToMultipleWordsAsync(StrippedMessage, lookupValues: new string[] { "you", "so" }, replyMessage: "you so\nfucking\nprecious\nwhen you\nsmile\nhit it\nfrom the \nback and\ndrive you\nwild");
+            await ReactToMultipleWordsAsync(StrippedMessage, lookupValues: new string[] { "who", "can", "relate" }, replyMessage: "I don't know");
+
+            await ReactToMultipleWordsWithGifAsync(StrippedMessage, lookupValues: new string[] { "pipe", "down" }, replyMessage: "", gifSearchText: "pipe down");
 
             if (StrippedMessage.ContainsSingleLower("wheel") || StrippedMessage.ContainsSingleLower("bus"))
             {
-                await Context.Channel.SendMessageAsync(new List<string>() { "The wheels on the bus go round and round", "Excuse me sir, you can't have wheels in this area" }.RandomItemFromList());
-                eventListenersTriggered++;
+                await Context.Channel.SendMessageAsync(new Bunch<string>() { "The wheels on the bus go round and round", "Excuse me sir, you can't have wheels in this area" }.RandomOrDefault());
+                EventsTriggered++;
             }
 
-            if (StrippedMessage.ContainsSingleLower("hentai"))
-            {
-                var apiResult = await apiBL.Rule34PostsAsync(new string[] { "blonde" });
-                var randomResult = apiResult.RandomOrDefault();
+            await ReactToSingleWordWithGifAsync(StrippedMessage, lookupValue: "kowalski", replyMessage: $"{TagUser(147860921488900097)} analysis", gifSearchText: "kowalski");
+            await ReactToSingleWordWithGifAsync(StrippedMessage, lookupValue: "analysis", replyMessage: $"{TagUser(147860921488900097)} analysis", gifSearchText: "kowalski");
 
-                WebRequest req = WebRequest.Create(randomResult.file_url);
-                using Stream stream = req.GetResponse().GetResponseStream();
-                await Context.Channel.SendFileAsync(stream, $"{randomResult.id}.png", isSpoiler: true);
-                eventListenersTriggered++;
-            }
-
-            //if (StrippedMessage.ContainsSingleLower("kowalski") || StrippedMessage.ContainsSingleLower("analysis")) await SendGiffedMessage("kowalski", $"{TagUser(147860921488900097)} analysis");
-
-            if (StrippedMessage.ContainsSingleLower("uwu") || StrippedMessage.ContainsManyLower(new string[] { "u", "w", "u" }))
+            if (StrippedMessage.ContainsSingleLower("uwu"))
             {
                 await Context.Message.DeleteAsync();
                 await Context.Channel.SendMessageAsync("This is an uwu free zone");
-                eventListenersTriggered++;
+                EventsTriggered++;
             }
 
-            if (StrippedMessage.ContainsManyLower(new string[] { "top", "elims" }) || StrippedMessage.ContainsManyLower(new string[] { "gold", "elims" })) { await SendImageFromBlobStoreAsync("top_elims.png"); eventListenersTriggered++; }
-            if (StrippedMessage.ContainsManyLower(new string[] { "taps", "head" })) { await SendImageFromBlobStoreAsync("james_tapping_head.png"); eventListenersTriggered++; }
-            if (StrippedMessage.ContainsManyLower(new string[] { "one", "last", "ride" })) { await SendImageFromBlobStoreAsync("one_last_ride.png"); eventListenersTriggered++; }
-            if (StrippedMessage.ContainsManyLower(new string[] { "cam", "murray" })) { await SendImageFromBlobStoreAsync("cam_murray.png"); eventListenersTriggered++; }
+            if (StrippedMessage.ContainsManyLower(new string[] { "top", "elims" }) || StrippedMessage.ContainsManyLower(new string[] { "gold", "elims" })) { await SendImageFromBlobStoreAsync("top_elims.png"); EventsTriggered++; }
+            if (StrippedMessage.ContainsManyLower(new string[] { "taps", "head" })) { await SendImageFromBlobStoreAsync("james_tapping_head.png"); EventsTriggered++; }
+            if (StrippedMessage.ContainsManyLower(new string[] { "one", "last", "ride" })) { await SendImageFromBlobStoreAsync("one_last_ride.png"); EventsTriggered++; }
+            if (StrippedMessage.ContainsManyLower(new string[] { "cam", "murray" })) { await SendImageFromBlobStoreAsync("cam_murray.png"); EventsTriggered++; }
 
-            if (eventListenersTriggered > 0)
+            if (EventsTriggered > 0)
             {
                 await logging.LogCommandUseAsync(Context.Message.Author.Username, Context.Guild.Name, Context.Message.Content);
             }
 
-            return true;
+            EventsTriggered = 0;
+            MessageSent = false;
+        }
+
+        public async Task ReactToTaggedUserWithGifAsync(SocketUserMessage message, ulong userId, string replyMessage, string gifSearchText)
+        {
+            Bunch<GiphyDatum> gifs = gifSearchText != null
+                ? await apiBL.GetGifsAsync(gifSearchText)
+                : new Bunch<GiphyDatum>();
+
+            replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
+
+            await ReactToTaggedUserAsync(message, userId, replyMessage);
+        }
+
+        public async Task ReactToTaggedUserAsync(SocketUserMessage message, ulong userId, string replyMessage)
+        {
+            if (message.IsUserTagged(userId))
+            {
+                if (!MessageSent)
+                {
+                    await Context.Channel.SendMessageAsync(replyMessage);
+                    MessageSent = true;
+                }
+
+                EventsTriggered++;
+            }
+        }
+
+        public async Task ReactToSingleWordWithGifAsync(string Content, string lookupValue, string replyMessage, string gifSearchText)
+        {
+            Bunch<GiphyDatum> gifs = gifSearchText != null
+                ? await apiBL.GetGifsAsync(gifSearchText)
+                : new Bunch<GiphyDatum>();
+
+            replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
+
+            await ReactToSingleWordAsync(Content, lookupValue, replyMessage);
+        }
+
+        public async Task ReactToMultipleWordsWithGifAsync(string Content, string[] lookupValues, string replyMessage, string gifSearchText)
+        {
+            Bunch<GiphyDatum> gifs = gifSearchText != null
+                ? await apiBL.GetGifsAsync(gifSearchText)
+                : new Bunch<GiphyDatum>();
+
+            replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
+
+            await ReactToMultipleWordsAsync(Content, lookupValues, replyMessage);
+        }
+
+        public async Task ReactToSingleWordAsync(string Content, string lookupValue, string replyMessage)
+        {
+            if (Content.ContainsSingleLower(lookupValue))
+            {
+                if (!MessageSent)
+                {
+                    await Context.Channel.SendMessageAsync(replyMessage);
+                    MessageSent = true;
+                }
+
+                EventsTriggered++;
+            }
+        }
+
+        public async Task ReactToMultipleWordsAsync(string Content, string[] lookupValues, string replyMessage)
+        {
+            if (Content.ContainsManyLower(lookupValues))
+            {
+                if (!MessageSent)
+                {
+                    await Context.Channel.SendMessageAsync(replyMessage);
+                    MessageSent = true;
+                }
+
+                EventsTriggered++;
+            }
         }
 
         public async Task SendImageFromBlobStoreAsync(string fileName)
@@ -340,7 +416,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        public List<SocketGuildUser> GetAllUsers()
+        public Bunch<SocketGuildUser> GetAllUsers()
         {
             List<SocketGuildUser> users = new List<SocketGuildUser>();
 
@@ -352,21 +428,39 @@ namespace Prawnbot.Core.BusinessLayer
                 }
             }
 
-            return users;
+            return users.ToBunch();
         }
 
-        public async Task<IList<IMessage>> GetAllMessagesAsync(ulong id)
+        public async Task<Bunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 5000)
         {
-            RequestOptions options = new RequestOptions
+            IEnumerable<IMessage> messages = new Bunch<IMessage>();
+
+            await Task.Run(async () =>
             {
-                Timeout = 2000,
-                RetryMode = RetryMode.RetryTimeouts,
-                CancelToken = CancellationToken.None
-            };
+                RequestOptions options = new RequestOptions
+                {
+                    Timeout = 2000,
+                    RetryMode = RetryMode.RetryTimeouts,
+                    CancelToken = CancellationToken.None
+                };
 
-            IEnumerable<IMessage> messages = await FindTextChannel(id).GetMessagesAsync(limit: 500000, options: options).FlattenAsync();
+                messages = await FindTextChannel(id).GetMessagesAsync(limit: limit, options: options).FlattenAsync();
+            });
 
-            return messages.Reverse().ToList();
+            return messages.Reverse().ToBunch();
+        }
+
+        public async Task<Bunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 5000)
+        {
+            Bunch<IMessage> messages = await GetAllMessagesAsync(id, limit);
+
+            return messages.Where(x => x.Type == MessageType.Default).ToBunch();
+        }
+
+        public async Task<Bunch<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp)
+        {
+            IList<IMessage> allMessages = await GetAllMessagesAsync(guildId);
+            return allMessages.Where(x => x.Timestamp == timestamp || x.EditedTimestamp == timestamp).ToBunch();
         }
 
         public SocketGuild GetGuild(string guildName)
@@ -382,9 +476,14 @@ namespace Prawnbot.Core.BusinessLayer
 
         }
 
-        public List<SocketGuild> GetAllGuilds()
+        public SocketGuild GetGuildById(ulong guildId)
         {
-            return Client.Guilds.ToList();
+            return Client.GetGuild(guildId);
+        }
+
+        public Bunch<SocketGuild> GetAllGuilds()
+        {
+            return Client.Guilds.ToBunch();
         }
 
         public SocketTextChannel FindDefaultChannel(SocketGuild guild)
@@ -416,7 +515,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             return Client.Guilds.FirstOrDefault(x => x == guild).TextChannels.FirstOrDefault(x => x == channel);
         }
-         
+
         public Process CreateFfmpegProcess(string path)
         {
             return Process.Start(new ProcessStartInfo
@@ -450,8 +549,8 @@ namespace Prawnbot.Core.BusinessLayer
         {
             StringBuilder sb = new StringBuilder();
 
-            var regex = new Regex(@"(\<(\:.*?\:)(.*?\d)\>)", RegexOptions.IgnoreCase);
-            var matches = regex.Matches(message.Content);
+            Regex regex = new Regex(@"(\<(\:.*?\:)(.*?\d)\>)", RegexOptions.IgnoreCase);
+            MatchCollection matches = regex.Matches(message.Content);
 
             foreach (Match match in matches)
             {
@@ -466,36 +565,6 @@ namespace Prawnbot.Core.BusinessLayer
             return Client.Guilds.SelectMany(x => x.Emotes).FirstOrDefault(x => x.Id == emojiId);
         }
 
-        public async Task<int> ReactToMessageAsync(int eventListenersTriggered, string Content, string[] lookupValues, string replyText, bool giffedMessage = false, string gifSearchText = null)
-        {
-            List<GiphyDatum> gifs = new List<GiphyDatum>();
-
-            if (giffedMessage && gifSearchText != null) gifs = await apiBL.GetGifsAsync(gifSearchText);
-            string replyMessage = giffedMessage && gifs != null 
-                    ? $"{replyText}\n{gifs.RandomOrDefault().bitly_gif_url}" 
-                    : replyText;
-
-            if (lookupValues.Count() > 1)
-            {
-                if (Content.ContainsManyLower(lookupValues))
-                {
-                    await Context.Channel.SendMessageAsync(replyMessage);
-                    return eventListenersTriggered + 1;
-                }
-
-            }
-            else if (lookupValues.Count() == 1)
-            {
-                if (Content.ContainsSingleLower(lookupValues.First()))
-                {
-                    await Context.Channel.SendMessageAsync(replyMessage);
-                    return eventListenersTriggered + 1;
-                }
-            }
-
-            return eventListenersTriggered;
-        }
-
         public string TagUser(ulong id)
         {
             StringBuilder sb = new StringBuilder("<@!");
@@ -507,29 +576,29 @@ namespace Prawnbot.Core.BusinessLayer
 
         public string FlipACoin(string headsValue, string tailsValue)
         {
-            return new List<string>
+            return new Bunch<string>
             {
                headsValue ?? "HEADS",
                tailsValue ?? "TAILS"
-            }.RandomItemFromList();
+            }.Random();
         }
 
-        public async Task<string[]> YottaPrependAsync()
+        public async Task<Bunch<string>> YottaPrependAsync()
         {
             Random random = new Random();
 
-            string[] fileContents = await fileBL.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
+            Bunch<string> fileContents = await fileBL.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
 
             Dictionary<PrependEnum, int> valueDictionary = new Dictionary<PrependEnum, int>();
 
             PrependEnum[] enumValues = (PrependEnum[])Enum.GetValues(typeof(PrependEnum));
 
-            foreach (var enumValue in enumValues)
+            foreach (PrependEnum enumValue in enumValues)
             {
                 valueDictionary.Add(enumValue, 0);
             }
 
-            foreach (var line in fileContents)
+            foreach (string line in fileContents)
             {
                 valueDictionary[(PrependEnum)Enum.Parse(typeof(PrependEnum), line)]++;
             }
@@ -538,7 +607,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             while (!validValue)
             {
-                List<PrependEnum> invalidValues = new List<PrependEnum>();
+                Bunch<PrependEnum> invalidValues = new Bunch<PrependEnum>();
 
                 PrependEnum randomEnumValue = (PrependEnum)enumValues.GetValue(random.Next(enumValues.Length)); //.GetValue().ToString();
 
@@ -552,50 +621,61 @@ namespace Prawnbot.Core.BusinessLayer
                 {
                     invalidValues.Add(randomEnumValue);
 
-                    if (invalidValues.Count == enumValues.Length) break;
+                    if (invalidValues.Count == enumValues.Length)
+                    {
+                        break;
+                    }
                 }
             }
 
-            return fileContents.Reverse().ToArray();
+            fileContents.Reverse();
+            return fileContents.ToBunch();
         }
 
-        public async Task<bool> PingHostAsync(string nameOrAddress)
+        public async Task<IPStatus> PingHostAsync(string nameOrAddress)
         {
-            bool pingable = false;
-            Ping pinger = null;
-
-            try
+            using (Ping pinger = new Ping())
             {
-                pinger = new Ping();
-                //PingReply reply = pinger.SendAsync(IPAddress.Parse(nameOrAddress));
-                //pingable = reply.Status == IPStatus.Success;
-            }
-            catch (PingException)
-            {
-                // Discard PingExceptions and return false;
-            }
-            finally
-            {
-                if (pinger != null)
+                try
                 {
-                    pinger.Dispose();
+                    int timeout = 5000;
+
+                    IPAddress.TryParse(nameOrAddress, out IPAddress address);
+                    Uri.TryCreate(nameOrAddress, UriKind.RelativeOrAbsolute, out Uri uri);
+
+                    PingReply reply = null;
+
+                    if (address != null)
+                    {
+                        reply = await pinger.SendPingAsync(address, timeout);
+                    }
+                    else if (uri != null)
+                    {
+                        reply = await pinger.SendPingAsync(uri.Host, timeout);
+                    }
+
+                    return reply?.Status ?? IPStatus.Unknown;
+                    
+                }
+                catch (PingException e)
+                {
+                    // Discard PingExceptions and return false;
+                    return IPStatus.Unknown;
                 }
             }
-
-            return pingable;
         }
 
         public async Task<string> GetLanguageFullName(string origin)
         {
-            var languages = await apiBL.GetLanguagesAsync();
+            Bunch<LanguageTranslationRoot> languages = await apiBL.GetLanguagesAsync();
 
             return languages.FirstOrDefault().Languages.SelectMany(x => x.LanguageDetails).Where(y => y.dir == origin).FirstOrDefault().name;
         }
 
         public async Task<IMessage> GetRandomQuoteAsync(ulong id)
         {
-            IList<IMessage> quoteRoom = await GetAllMessagesAsync(id); 
-            return quoteRoom.RandomItemFromList();
+            Bunch<IMessage> quoteRoom = await GetAllMessagesAsync(id);
+            return quoteRoom.RandomOrDefault();
         }
 
         public async Task BackupServerAsync(ulong id, bool server)
@@ -611,20 +691,22 @@ namespace Prawnbot.Core.BusinessLayer
 
                 await Context.Channel.SendMessageAsync($"Started {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)} {(server ? "(" + Context.Guild.TextChannels.Count() + " channels)" : "")} at {DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
 
+                Bunch<IMessage> messagesToAdd = new Bunch<IMessage>();
+
                 if (server)
                 {
                     foreach (SocketTextChannel textChannel in Context.Guild.TextChannels)
                     {
-                        IList<IMessage> messagesToAdd = await GetAllMessagesAsync(textChannel.Id);
-                        List<CSVColumns> records = fileBL.CreateCSVList(messagesToAdd);
+                        messagesToAdd = await GetUserMessagesAsync(textChannel.Id);
+                        Bunch<CSVColumns> records = fileBL.CreateCSVList(messagesToAdd);
                         fileBL.WriteToCSV(records, textChannel.Id, fileName);
                     }
                 }
                 else
                 {
-                    IList<IMessage> messagesToAdd = await GetAllMessagesAsync(id);
+                    messagesToAdd = await GetUserMessagesAsync(id);
 
-                    var records = fileBL.CreateCSVList(messagesToAdd);
+                    Bunch<CSVColumns> records = fileBL.CreateCSVList(messagesToAdd);
                     fileBL.WriteToCSV(records, id, fileName);
                 }
 
@@ -634,11 +716,79 @@ namespace Prawnbot.Core.BusinessLayer
             });
         }
 
-        public async Task<GuildEmote> GetEmoteFromGuildAsync(ulong id, SocketGuild guild) 
+        public async Task<GuildEmote> GetEmoteFromGuildAsync(ulong id, SocketGuild guild)
         {
             GuildEmote emote = await guild.GetEmoteAsync(id);
 
             return emote;
+        }
+
+        public async Task GetBotInfoAsync() 
+        { 
+            RestApplication botInfo = await Context.Client.GetApplicationInfoAsync();
+
+            EmbedBuilder builder = new EmbedBuilder();
+
+            builder.WithTitle(botInfo.Name)
+                .WithColor(Color.Blue)
+                .WithDescription(
+                $"Bot owner: {botInfo.Owner.Username} \n" +
+                $"Created at: {botInfo.CreatedAt}\n" +
+                $"Description: {botInfo.Description}"
+                );
+
+            await Context.Channel.SendMessageAsync("", UseTTS, builder.Build());
+        }
+
+        public async Task CommandsAsync(bool includeNotImplemented)
+        {
+            EmbedBuilder builder = new EmbedBuilder();
+
+            List<MethodInfo> methods = typeof(Modules.Modules).Assembly.GetTypes()
+                      .SelectMany(t => t.GetMethods())
+                      .Where(m => (m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0) && (!m.CustomAttributes.Any(y => y.AttributeType == typeof(NotImplementedAttribute)) && !includeNotImplemented))
+                      .OrderBy(x => x.Name)
+                      .ToList();
+
+            StringBuilder sb = new StringBuilder();
+
+            foreach (MethodInfo method in methods)
+            {
+                IEnumerable<CustomAttributeData> discordAttributes = method.CustomAttributes.Where(x => x.AttributeType == typeof(SummaryAttribute) || x.AttributeType == typeof(CommandAttribute));
+                string commandAttribute = discordAttributes.First(x => x.AttributeType == typeof(CommandAttribute)).ConstructorArguments.First().Value.ToString();
+                string summaryAttribute = discordAttributes.FirstOrDefault(x => x.AttributeType == typeof(SummaryAttribute))?.ConstructorArguments.First().Value.ToString() ?? "No summary available";
+
+                sb.AppendLine($"{ConfigUtility.CommandDelimiter}{commandAttribute}: {summaryAttribute}");
+            }
+
+            builder.WithTitle($"Commands | All commands follow the structure {ConfigUtility.CommandDelimiter}(command)")
+                .WithColor(Color.Blue)
+                .WithDescription(sb.ToString());
+
+            if (Context.Channel.GetType() != typeof(SocketDMChannel))
+            {
+                await Context.Channel.SendMessageAsync($"{Context.User.Mention}: pm'd with command details!");
+            }
+                
+            await Context.User.SendMessageAsync(string.Empty, UseTTS, builder.Build());
+        }
+
+        public async Task StatusAsync()
+        {
+            EmbedBuilder builder = new EmbedBuilder();
+
+            builder.WithTitle($"Status: {Context.Guild.Name}")
+                .WithColor(Color.Blue)
+                .WithDescription(
+                $"The default channel is: \"{Context.Guild.DefaultChannel}\" \n" +
+                $"The server was created on {Context.Guild.CreatedAt.LocalDateTime.ToString("dd/MM/yyyy")} \n" +
+                $"The server currently has {Context.Guild.Users.Where(x => !x.IsBot).Count()} users and {Context.Guild.Users.Where(x => x.IsBot).Count()} bots ({Context.Guild.MemberCount} total) \n" +
+                $"The current AFK Channel is \"{Context.Guild.AFKChannel.Name}\"\n " +
+                $"There are currently {Context.Guild.TextChannels.Count} text channels and {Context.Guild.VoiceChannels.Count} voice channels in the server\n " +
+                $"The server owner is {Context.Guild.Owner}")
+                .WithCurrentTimestamp();
+
+            await Context.Channel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
         }
     }
 }

@@ -1,10 +1,10 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Prawnbot.Common.Enums;
+using Prawnbot.Core.Collections;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
@@ -45,7 +45,7 @@ namespace Prawnbot.Core.BusinessLayer
         public async Task<bool> HandleConsoleCommand(string command)
         {
             command = command.Remove(0, 1);
-            List<string> commandComponents = command.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+            Bunch<string> commandComponents = command.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToBunch();
 
             CommandsEnum commands = (CommandsEnum)Enum.Parse(typeof(CommandsEnum), commandComponents[0].ToLower());
 

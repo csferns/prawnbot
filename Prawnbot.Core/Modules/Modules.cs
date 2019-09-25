@@ -4,6 +4,8 @@ using Discord.Rest;
 using Discord.WebSocket;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Attributes;
+using Prawnbot.Core.Collections;
+using Prawnbot.Core.Exceptions;
 using Prawnbot.Core.Model.DTOs;
 using Prawnbot.Core.ServiceLayer;
 using Prawnbot.Core.Utility;
@@ -11,7 +13,10 @@ using Prawnbot.Infrastructure;
 using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -34,11 +39,22 @@ namespace Prawnbot.Core.Modules
             this.speechRecognitionService = speechRecognitionService;
         }
 
+        #if DEBUG
+        [Command("exception-test")]
+        [NotImplemented]
+        public async Task ExceptionTester()
+        {
+            await Task.Delay(100);
+            throw new UnexpectedBananaException();
+        }
+        #endif
+
+
         [Command("random-user")]
         [Summary("Gets a random user from the guild and posts them")]
         public async Task RandomUserAsync()
         {
-            SocketGuildUser randomUser = coreService.GetAllUsers().Entities.RandomItemFromList();
+            SocketGuildUser randomUser = coreService.GetAllUsers().Entities.ToBunch().RandomOrDefault();
 
             await Context.Channel.SendMessageAsync(randomUser.Nickname ?? randomUser.Username);
         }
@@ -65,78 +81,21 @@ namespace Prawnbot.Core.Modules
         [Summary("PM's a list of commands to the user")]
         public async Task CommandsAsync(bool includeNotImplemented = false)
         {
-            EmbedBuilder builder = new EmbedBuilder();
-
-            var methods = typeof(Modules).Assembly.GetTypes()
-                      .SelectMany(t => t.GetMethods())
-                      .Where(m => m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0)
-                      .ToArray();
-
-            StringBuilder sb = new StringBuilder();
-
-            foreach (var method in methods.OrderBy(x => x.Name))
-            {
-                if (method.CustomAttributes.Any(x => x.AttributeType == typeof(NotImplementedAttribute)) && !includeNotImplemented)
-                {
-                    continue;
-                }
-
-                var discordAttributes = method.CustomAttributes.Where(x => x.AttributeType == typeof(SummaryAttribute) || x.AttributeType == typeof(CommandAttribute));
-                string commandAttribute = discordAttributes.First(x => x.AttributeType == typeof(CommandAttribute)).ConstructorArguments.First().Value.ToString();
-                string summaryAttribute = discordAttributes.FirstOrDefault(x => x.AttributeType == typeof(SummaryAttribute))?.ConstructorArguments.First().Value.ToString() ?? "No summary available";
-
-                sb.AppendLine($"{ConfigUtility.CommandDelimiter}{commandAttribute}: {summaryAttribute}");
-            }
-
-            builder.WithTitle($"Commands | All commands follow the structure {ConfigUtility.CommandDelimiter}(command)")
-                .WithColor(Color.Blue)
-                .WithDescription(sb.ToString());
-
-            await Context.User.SendMessageAsync("", false, builder.Build());
-
-            if (Context.Channel.GetType() != typeof(SocketDMChannel))
-            {
-                await Context.Channel.SendMessageAsync($"{Context.User.Mention}: pm'd with command details!");
-            }
+            await coreService.CommandsAsync(includeNotImplemented);
         }
 
         [Command("bot-info")]
         [Summary("Gets the bot's information")]
         public async Task GetBotInfoAsync()
         {
-            RestApplication botInfo = await Context.Client.GetApplicationInfoAsync();
-
-            EmbedBuilder builder = new EmbedBuilder();
-
-            builder.WithTitle(botInfo.Name)
-                .WithColor(Color.Blue)
-                .WithDescription(
-                $"Bot owner: {botInfo.Owner.Username} \n" +
-                $"Created at: {botInfo.CreatedAt}\n" +
-                $"Description: {botInfo.Description}"
-                );
-
-            await Context.Channel.SendMessageAsync("", false, builder.Build());
+            await coreService.GetBotInfoAsync();
         }
 
         [Command("server-status")]
         [Summary("Gives the status of the server")]
         public async Task StatusAsync()
         {
-            EmbedBuilder builder = new EmbedBuilder();
-
-            builder.WithTitle($"Status: {Context.Guild.Name}")
-                .WithColor(Color.Blue)
-                .WithDescription(
-                $"The default channel is: \"{Context.Guild.DefaultChannel}\" \n" +
-                $"The server was created on {Context.Guild.CreatedAt.LocalDateTime.ToString("dd/MM/yyyy")} \n" +
-                $"The server currently has {Context.Guild.Users.Where(x => !x.IsBot).Count()} users and {Context.Guild.Users.Where(x => x.IsBot).Count()} bots ({Context.Guild.MemberCount} total) \n" +
-                $"The current AFK Channel is \"{Context.Guild.AFKChannel.Name}\"\n " +
-                $"There are currently {Context.Guild.TextChannels.Count} text channels and {Context.Guild.VoiceChannels.Count} voice channels in the server\n " +
-                $"The server owner is {Context.Guild.Owner}")
-                .WithCurrentTimestamp();
-
-            await Context.Channel.SendMessageAsync("", false, builder.Build());
+            await coreService.StatusAsync();
         }
 
         [Command("copypasta")]
@@ -145,6 +104,7 @@ namespace Prawnbot.Core.Modules
         {
             if (copypastaName != "")
             {
+                // TODO: Put this in the database or a text file
                 string copypasta = copypastaName.ToLower() switch
                 {
                     "owo" => "Rawr x3 nuzzlez how tha fuck is yo dirty ass pounces on you you so warm o3o notices you gotz a funky-ass bulge o: one of mah thugss aiiight :wink: nuzzlez yo' necky wecky~ murr~ hehehe rubbies yo' bulgy wolgy you so big-ass :oooo rubbies mo' on yo' bulgy wolgy it don't stop growin .///. kisses you n' lickies yo' necky daddy likies (; nuzzlez wuzzlez I hope daddy straight-up likes $: wigglez booty n' squirms I wanna peep yo' big-ass daddy meat~ wigglez booty I gots a lil itch o3o wags tail can you please git mah itch~ puts paws on yo' chest nyea~ its a seven inch itch rubs yo' chest can you help me pwease squirms pwetty pwease fucked up grill I need ta be punished runs paws down yo' chest n' bites lip like I need ta be punished straight-up good~ paws on yo' bulge as I lick mah lips I be gettin thirsty. I can go fo' some gin n juice unbuttons yo' baggy-ass pants as mah eyes glow you smell so musky :v licks shaft mmmm~ so musky drools all over yo' ding-a-ling yo' daddy meat I wanna bust a nut on fondlez Mista Muthafuckin Fuzzy Balls hehe puts snout on balls n' inhalez deeply oh god im so hard~ licks balls punish me daddy~ nyea~ squirms mo' n' wigglez booty I gots a straight-up boner fo' yo' musky goodnizz bites lip please punish me licks lips nyea~ sucklez on yo' tip so phat licks pre of yo' ding-a-ling salty goodness~ eyes role back n' goes balls deep mmmm~ moans n' suckles",
@@ -155,38 +115,49 @@ namespace Prawnbot.Core.Modules
                 await Context.Channel.SendMessageAsync($"{Context.User.Mention} {copypasta}");
             }
             else
+            {
                 await Context.Channel.SendMessageAsync($"{Context.User.Mention} no argument passed in");
+            }
         }
 
         [Command("user-joined")]
         [Summary("Gets when the user joined the server")]
-        public async Task GetUserJoinedAsync(SocketGuildUser user) => await Context.Channel.SendMessageAsync($"User {user.Mention} joined at {user.JoinedAt}");
+        public async Task GetUserJoinedAsync(SocketGuildUser user)
+        {
+            await Context.Channel.SendMessageAsync($"User {user.Mention} joined at {user.JoinedAt}");
+        }
 
         [Command("user-created")]
         [Summary("Gets when the user joined discord")]
-        public async Task GetUserCreatedAsync(SocketGuildUser user) => await Context.Channel.SendMessageAsync($"User {user.Mention} was created on {user.CreatedAt.ToLocalTime()}");
+        public async Task GetUserCreatedAsync(SocketGuildUser user)
+        {
+            await Context.Channel.SendMessageAsync($"User {user.Mention} was created on {user.CreatedAt.ToLocalTime()}");
+        }
 
         [Command("current-region")]
         [Summary("Gets the server's current region")]
-        public async Task CurrentRegionAsync() => await Context.Channel.SendMessageAsync($"The server is currently located in: {Format.Bold(Context.Client.VoiceRegions.FirstOrDefault(x => x.Id == Context.Guild.VoiceRegionId).Name)}");
+        public async Task CurrentRegionAsync()
+        {
+            await Context.Channel.SendMessageAsync($"The server is currently located in: {Format.Bold(Context.Client.VoiceRegions.FirstOrDefault(x => x.Id == Context.Guild.VoiceRegionId).Name)}");
+        }
 
         [Command("all-regions")]
         [Summary("Gets all the server regions")]
         public async Task GetAllRegionsAsync()
         {
-            IReadOnlyCollection<IVoiceRegion> allRegions = Context.Client.VoiceRegions;
+            IEnumerable<IVoiceRegion> allRegions = Context.Client.VoiceRegions.Where(x => !x.IsDeprecated && !x.IsVip);
             string currentRegion = Context.Guild.VoiceRegionId;
 
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine("__Active regions:__ \n");
-            foreach (IVoiceRegion region in allRegions.Where(x => !x.IsDeprecated && !x.IsVip))
+            sb.AppendLine(Format.Underline("Active regions:"));
+            foreach (IVoiceRegion region in allRegions)
             {
                 sb.AppendLine($"{(region.IsOptimal || region.Id == currentRegion ? Format.Bold(region.Name) : region.Name)} {(region.IsOptimal ? "(Optimal)" : "")} {(region.Id == currentRegion ? "(Current)" : "")}");
             }
 
-            sb.AppendLine("__Deprecated regions:__ \n");
-            foreach (IVoiceRegion region in allRegions.Where(x => x.IsDeprecated && !x.IsVip))
+            sb.AppendLine(Format.Underline("Deprecated regions:"));
+            foreach (IVoiceRegion region in allRegions)
             {
                 sb.AppendLine($"{(region.IsOptimal || region.Id == currentRegion ? Format.Bold(region.Name) : region.Name)} {(region.Id == currentRegion ? "(Current)" : "")}");
             }
@@ -198,36 +169,7 @@ namespace Prawnbot.Core.Modules
         [Summary("Sets the current region of the server")]
         public async Task SetRegionAsync([Remainder]string regionName = null)
         {
-            if (regionName == null)
-            {
-                await Context.Channel.SendMessageAsync("Region cannot be empty");
-                return;
-            }
-
-            IReadOnlyCollection<IVoiceRegion> regions = await Context.Guild.GetVoiceRegionsAsync();
-            RestVoiceRegion region = Context.Guild.GetVoiceRegionsAsync().ToAsyncEnumerable().FlattenAsync().Result.FirstOrDefault(x => x.Name == regionName);
-
-            bool validRegion = false;
-
-            foreach (IVoiceRegion item in regions)
-            {
-                if (item.Id == region.Id)
-                {
-                    validRegion = true;
-                    break;
-                }
-            }
-
-            if (!validRegion)
-            {
-                await Context.Channel.SendMessageAsync($"\"{regionName}\" is not a valid region, or the server cannot access this region.");
-                return;
-            }
-
-            await Context.Channel.SendMessageAsync($"Setting server {Format.Bold(Context.Guild.Name)}'s region to {region}");
-
-            Optional<IVoiceRegion> optionalRegion = new Optional<IVoiceRegion>(region);
-            await Context.Guild.ModifyAsync(x => x.Region = optionalRegion);
+            await botService.SetBotRegionAsync(regionName);
         }
 
         [Command("set-alarm")]
@@ -283,7 +225,7 @@ namespace Prawnbot.Core.Modules
 
             string fileName = $"{Context.Guild.Name}-{Context.Guild.GetChannel(id).Name}-backup.csv";
 
-            List<CSVColumns> columns = new List<CSVColumns>()
+            Bunch<CSVColumns> columns = new Bunch<CSVColumns>()
             {
                 new CSVColumns
                 {
@@ -296,7 +238,10 @@ namespace Prawnbot.Core.Modules
 
             fileService.WriteToCSV(columns, id, fileName);
 
-            if (Context.Message.Channel.Id == id) await Context.Message.DeleteAsync();
+            if (Context.Message.Channel.Id == id)
+            {
+                await Context.Message.DeleteAsync();
+            }
         }
 
         [Command("random-quote")]
@@ -327,11 +272,11 @@ namespace Prawnbot.Core.Modules
         [Summary("Gets a count of the items in the Yotta file")]
         public async Task YottaCountAsync()
         {
-            Response<string[]> response = await fileService.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
-            string[] yotta = response.Entity;
+            ListResponse<string> response = await fileService.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
+            Bunch<string> yotta = response.Entities.ToBunch();
 
             Array enumValues = Enum.GetValues(typeof(PrependEnum));
-            var valueCount = new List<YottaDTO>(yotta.Count());
+            Bunch<YottaDTO> valueCount = new Bunch<YottaDTO>(yotta.Count());
 
             foreach (object item in enumValues)
             {
@@ -341,7 +286,7 @@ namespace Prawnbot.Core.Modules
             }
 
             StringBuilder sb = new StringBuilder();
-            foreach (var item in valueCount)
+            foreach (YottaDTO item in valueCount)
             {
                 sb.Append($"{item.PrependValue}: {item.Count}\n");
             }
@@ -353,8 +298,8 @@ namespace Prawnbot.Core.Modules
         [Summary("Reads the Yotta count and gives an ordered representation of it")]
         public async Task YottaOrderedAsync()
         {
-            Response<string[]> response = await fileService.ReadFromFileAsync("Yotta.txt");
-            string[] yotta = response.Entity;
+            ListResponse<string> response = await fileService.ReadFromFileAsync("Yotta.txt");
+            Bunch<string> yotta = response.Entities.ToBunch();
 
             IOrderedEnumerable<string> orderedYotta = yotta.OrderBy(x => x);
             await Context.Channel.SendMessageAsync(string.Join(", ", orderedYotta));
@@ -362,13 +307,31 @@ namespace Prawnbot.Core.Modules
 
         [Command("emoji-usage")]
         [Summary("Gets the usage of a given emoji in the guild")]
-        [NotImplemented]
+        public async Task EmojiUsageAsync(string emoteName)
+        {
+            Emote.TryParse($":{emoteName}:", out Emote emote);
+            await EmoteUsage(emote);
+        }
+
+        [Command("emoji-usage")]
+        [Summary("Gets the usage of a given emoji in the guild")]
         public async Task EmojiUsageAsync(ulong emojiId)
         {
-            await coreService.GetEmoteFromGuild(emojiId, Context.Guild);
+            Response<GuildEmote> emote = await coreService.GetEmoteFromGuild(emojiId, Context.Guild);
+            await EmoteUsage(emote.Entity);
+        }
 
-            await Task.Delay(2);
-            throw new NotImplementedException();
+        private async Task EmoteUsage(Emote emote)
+        {
+            if (emote != null)
+            {
+                ListResponse<IMessage> messages = await coreService.GetAllMessagesAsync(Context.Channel.Id);
+                Regex emoteRegex = new Regex(@"\<(\:.*?(\b" + emote.Name.ToLowerInvariant() + @"\b)\:)(.*?\d)\>", RegexOptions.IgnoreCase);
+
+                Bunch<IMessage> filteredMessages = messages.Entities.Where(m => emoteRegex.Match(m.Content).Success).ToBunch();
+
+                await Context.Channel.SendMessageAsync($":{emote.Name}: has been used {filteredMessages.Count()} times in {messages.Entities.Count()} messages ({Context.Channel.Name})");
+            }
         }
 
         [Command("shutdown")]
@@ -377,7 +340,10 @@ namespace Prawnbot.Core.Modules
         {
             await Context.Channel.SendMessageAsync("Shutting down...");
 
-            await botService.DisconnectAsync(false);
+            await botService.DisconnectAsync();
+
+            Process currentProcess = Process.GetCurrentProcess();
+            currentProcess.Kill();
         }
 
         [Command("change-boticon")]
@@ -393,7 +359,8 @@ namespace Prawnbot.Core.Modules
         [NotImplemented]
         public async Task PingServer(string ipAddress)
         {
-            await coreService.PingHostAsync(ipAddress);
+            Response<IPStatus> status = await coreService.PingHostAsync(ipAddress);
+            await Context.Channel.SendMessageAsync($"{ipAddress} responded with status {status.Entity}");
         }
     }
 }

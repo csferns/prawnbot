@@ -1,6 +1,8 @@
 ﻿using Google.Apis.Calendar.v3.Data;
 using Prawnbot.Core.BusinessLayer;
 using Prawnbot.Core.Model.API.Giphy;
+using Prawnbot.Core.Model.API.Overwatch;
+using Prawnbot.Core.Model.API.Reddit;
 using Prawnbot.Core.Model.API.Rule34;
 using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Infrastructure;
@@ -15,6 +17,8 @@ namespace Prawnbot.Core.ServiceLayer
         Task<ListResponse<LanguageTranslationRoot>> GetLanguagesAsync();
         Task<ListResponse<Event>> GetCalendarEntries(string calendarId);
         Task<ListResponse<Rule34Types>> Rule34TagsAsync();
+        Task<Response<OverwatchStats>> OverwatchStatsAsync(string battletag, string region, string platform);
+        Task<Response<RedditRoot>> GetTopPostsBySubreddit(string subredditName, int count);
     }
 
     public class APIService : BaseService, IAPIService
@@ -49,7 +53,16 @@ namespace Prawnbot.Core.ServiceLayer
         public async Task<ListResponse<Rule34Types>> Rule34TagsAsync()
         {
             return LoadListResponse(await apiBL.Rule34TagsAsync());
+        }
 
+        public async Task<Response<OverwatchStats>> OverwatchStatsAsync(string battletag, string region, string platform)
+        {
+            return LoadResponse(await apiBL.OverwatchStatsAsync(battletag, region, platform));
+        }
+
+        public async Task<Response<RedditRoot>> GetTopPostsBySubreddit(string subredditName, int count)
+        {
+            return LoadResponse(await apiBL.GetTopPostsBySubreddit(subredditName, count));
         }
     }
 }

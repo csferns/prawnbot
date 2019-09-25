@@ -15,7 +15,7 @@ namespace Prawnbot.Core.ServiceLayer
         Task<Response<Stream>> GetStreamFromBlobStoreAsync(string fileName, string containerName);
         Task<Response<Stream>> DownloadFileFromBlobStoreAsync(string fileName, string containerName);
         Task<ResponseBase> UploadFileToBlobStoreAsync(string fileName, string containerName);
-        Task<Response<string[]>> ReadFromFileAsync(string fileName);
+        Task<ListResponse<string>> ReadFromFileAsync(string fileName);
         ResponseBase WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName);
         Task<ResponseBase> WriteToFileAsync(string valueToWrite, string fileName);
         ListResponse<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
@@ -51,9 +51,9 @@ namespace Prawnbot.Core.ServiceLayer
             return new ResponseBase();
         }
 
-        public async Task<Response<string[]>> ReadFromFileAsync(string fileName)
+        public async Task<ListResponse<string>> ReadFromFileAsync(string fileName)
         {
-            return LoadResponse(await fileBL.ReadFromFileAsync(fileName));
+            return LoadListResponse(await fileBL.ReadFromFileAsync(fileName));
         }
 
         public ResponseBase WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName)

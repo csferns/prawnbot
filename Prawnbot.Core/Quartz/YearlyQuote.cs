@@ -1,21 +1,25 @@
 ﻿using Discord;
-using Prawnbot.Core.BusinessLayer;
+using Discord.WebSocket;
+using Prawnbot.Core.Collections;
 using Prawnbot.Core.Log;
+using Prawnbot.Core.ServiceLayer;
+using Prawnbot.Infrastructure;
 using Quartz;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.Quartz
 {
-    public class YearlyQuote : BaseBL, IJob
+    public class YearlyQuote : IJob
     {
         private readonly ILogging logging;
-        public YearlyQuote(ILogging logging)
+        private readonly ICoreService coreService;
+        public YearlyQuote(ILogging logging, ICoreService coreService)
         {
             this.logging = logging;
+            this.coreService = coreService;
         }
 
         public async Task Execute(IJobExecutionContext context)
@@ -24,16 +28,24 @@ namespace Prawnbot.Core.Quartz
             {
                 await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Quartz", "YearlyQuote Triggered."));
 
-                IEnumerable<IMessage> messages = new List<IMessage>(); //await botBL.GetAllMessages(453899130486521859);
-                List<IMessage> filteredMessages = messages.Where(x => x.Timestamp == DateTime.Now.AddYears(-1)).ToList();
+                ListResponse<IMessage> response = await coreService.GetAllMessagesByTimestampAsync(guildId: 453899130486521859, timestamp: DateTime.Now.AddYears(-1));
+                Bunch<IMessage> filteredMessages = response.Entities.ToBunch();
 
                 StringBuilder sb = new StringBuilder();
 
-                if (filteredMessages != null)
+                if (filteredMessages != null || filteredMessages.Any())
                 {
                     foreach (IMessage message in filteredMessages)
                     {
-                        sb.AppendLine(message.Content);
+                        string content = message.Content;
+
+                        if (content.Length > 250)
+                        {
+                            content = content.Substring(0, 247);
+                            content += "...";
+                        }
+                        
+                        sb.AppendLine(content);
                     }
                 }
                 else
@@ -41,7 +53,8 @@ namespace Prawnbot.Core.Quartz
                     sb.AppendLine("No quotes on this day last year");
                 }
 
-                await Client.Guilds.FirstOrDefault(x => x.Id == 266719671171022868).DefaultChannel.SendMessageAsync(sb.ToString());
+                SocketTextChannel defaultChannel = coreService.GetGuildById(guildId: 453899130486521859).Entity.DefaultChannel;
+                await defaultChannel.SendMessageAsync(sb.ToString());
             }
             catch (Exception e)
             {

@@ -18,21 +18,12 @@ namespace Prawnbot.Core.Utility
         {
             string[] splitMessage = message.ToLowerInvariant().Split(' ');
 
-            return splitMessage.Where(x => x.Equals(textToFind.ToLowerInvariant())).Count() > 0;
+            return splitMessage.Any(x => x.Equals(textToFind.ToLowerInvariant()));
         }
 
         public static bool ContainsManyLower(this string message, string[] lookupValues)
         {
-            string[] splitMessage = message.ToLowerInvariant().Split(' ');
-
-            int foundWords = 0;
-
-            foreach (string item in lookupValues)
-            {
-                if (splitMessage.Equals(item)) foundWords++;
-            }
-
-            return foundWords == lookupValues.Count();
+            return !lookupValues.Except(message.ToLowerInvariant().Split(' ')).Any();
         }
 
         public static bool IsUserTagged(this SocketUserMessage message, ulong id)
@@ -57,35 +48,11 @@ namespace Prawnbot.Core.Utility
             return sb.ToString().ToLowerInvariant();
         }
 
-        public static T RandomItemFromList<T>(this ICollection<T> collection)
-        {
-            Random random = new Random();
-            List<T> newList = new List<T>();
-
-            foreach (T value in collection)
-            {
-                newList.AddRange(Enumerable.Repeat(value, 5));
-            }
-
-            return newList[random.Next(newList.Count())];
-        }
-
-        public static T RandomOrDefault<T>(this ICollection<T> list)
-        {
-            if (list.Count() > 0)
-            {
-                Random random = new Random();
-                return list.ElementAtOrDefault<T>(random.Next(list.Count()));
-            }
-
-            return default(T);
-        }
-
         public static bool ContainsEmote(this SocketUserMessage message)
         {
             try
             {
-                var emoteRegex = new Regex(@"(\<(\:.*?\:)(.*?\d)\>)", RegexOptions.IgnoreCase);
+                Regex emoteRegex = new Regex(@"(\<(\:.*?\:)(.*?\d)\>)", RegexOptions.IgnoreCase);
                 return emoteRegex.Match(message.Content).Success;
             }
             catch (Exception)
@@ -98,7 +65,7 @@ namespace Prawnbot.Core.Utility
         {
             try
             {
-                var emojiRegex = new Regex(@"\<(\:.*?\:)(.*\d)\>", RegexOptions.IgnoreCase);
+                Regex emojiRegex = new Regex(@"\<(\:.*?\:)(.*\d)\>", RegexOptions.IgnoreCase);
                 return emojiRegex.Match(message.Content).Success;
             }
             catch (Exception)

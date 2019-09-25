@@ -16,17 +16,17 @@ namespace Prawnbot.Data
 
         public Repository(IUnitOfWork unitOfWork)
         {
-            this.context = unitOfWork.CurrentContext();
+            context = unitOfWork.CurrentContext();
         }
 
         public IEnumerable<T> GetAll()
         {
-            return this.context.Set<T>().AsEnumerable();
+            return context.Set<T>().AsEnumerable();
         }
 
         public IQueryable<T> GetQuery()
         {
-            return this.context.Set<T>().AsQueryable();
+            return context.Set<T>().AsQueryable();
         }
 
         public T GetById(int id)

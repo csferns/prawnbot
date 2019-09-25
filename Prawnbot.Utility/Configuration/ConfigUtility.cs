@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 
 namespace Prawnbot.Utility.Configuration
 {
     public static class ConfigUtility
     {
-        #region Methods
         private static IConfigurationRoot GetConfigFile()
         {
             IConfigurationBuilder builder = new ConfigurationBuilder()
@@ -16,108 +16,56 @@ namespace Prawnbot.Utility.Configuration
             return builder.Build();
         }
 
-        private static string GetConfig(string configurationName)
+        private static string GetConfig(string parent, [CallerMemberName]string memberName = "")
         {
-            IConfigurationRoot configuration = GetConfigFile();
-            return configuration.GetSection("ConfigValues").GetSection(configurationName).Value ?? string.Empty;
-
-            // return CloudConfigurationManager.GetSetting(configurationName) ?? string.Empty;
+            string value = GetConfigFile().GetSection(parent).GetSection(memberName).Value;
+            return string.IsNullOrWhiteSpace(value) ? null : value;
         }
 
-        public static string GetConnectionString(string connectionString)
-        {
-            IConfigurationRoot configuration = GetConfigFile();
-            return configuration.GetSection("ConnectionStrings").GetSection(connectionString).Value ?? string.Empty;
-        }
+        public static string TextFileDirectory => GetConfig("Generic") ?? Environment.CurrentDirectory + "\\Text Files";
 
-        public static string GetLocalEnvSetting(string configName)
-        {
-            IConfigurationRoot configuration = GetConfigFile();
-            return configuration.GetSection("LocalEnvSettings").GetSection(configName).Value ?? string.Empty;
-        }
-        #endregion
+        public static string CommandDelimiter => GetConfig("Generic") ?? "p!";
 
-        #region Generic App Config
-        public static string TextFileDirectory
-        {
-            get
-            {
-                string configValue = GetLocalEnvSetting("TextFileDirectory");
-                return string.IsNullOrEmpty(configValue) ? Environment.CurrentDirectory + "/Text Files" : configValue;
-            }
-        }
+        public static bool AllowEventListeners => bool.Parse(GetConfig("Generic"));
 
-        public static string CommandDelimiter
-        {
-            get { return GetLocalEnvSetting("CommandDelimiter"); }
-        }
+        public static bool ProfanityFilter => bool.Parse(GetConfig("Generic"));
 
-        public static bool AllowEventListeners
-        {
-            get { return bool.Parse(GetConfig("AllowEventListeners")); }
-        }
+        public static bool DadMode => bool.Parse(GetConfig("Generic"));
 
-        public static bool ProfanityFilter
-        {
-            get { return bool.Parse(GetConfig("ProfanityFilter")); }
-        }
+        public static bool YottaMode => bool.Parse(GetConfig("Generic"));
 
-        public static bool DadMode
-        {
-            get { return bool.Parse(GetConfig("DadMode")); }
-        }
+        public static bool EmojiRepeat => bool.Parse(GetConfig("Generic"));
 
-        public static bool YottaMode
-        {
-            get { return bool.Parse(GetConfig("YottaMode")); }
-        }
+        public static bool AllowNonEssentialListeners => bool.Parse(GetConfig("Generic"));
 
-        public static bool EmojiRepeat
-        {
-            get { return bool.Parse(GetConfig("EmojiRepeat")); }
-        }
-        #endregion
+        public static string MicrosoftSpeechServicesEndpoint => GetConfig("Endpoints");
 
-        #region Connection Strings
-        public static string DatabaseConnectionString
-        {
-            get { return GetConnectionString("DatabaseConnectionString"); }
-        }
+        public static string GiphyEndpoint => GetConfig("Endpoints");
 
-        public static string BotToken
-        {
-            get { return GetConnectionString("BotToken"); }
-        }
+        public static string MicrosoftTranslateEndpoint => GetConfig("Endpoints");
 
-        public static string BlobStoreConnectionString
-        {
-            get { return GetConnectionString("BlobStoreConnectionString"); }
-        }
+        public static string R34Endpoint => GetConfig("Endpoints");
 
-        public static string GiphyAPIKey
-        {
-            get { return GetConnectionString("GiphyAPIKey"); }
-        }
+        public static string OverwatchStatsEndpoint => GetConfig("Endpoints");
 
-        public static string TranslateAPIKey
-        {
-            get { return GetConnectionString("TranslateAPIKey"); }
-        }
+        public static string ProfanityFilterEndpoint => GetConfig("Endpoints");
 
-        public static string SpeechServicesKey
-        {
-            get { return GetConnectionString("SpeechServicesKey"); }
-        }
+        public static string DatabaseConnectionString => GetConfig("ConnectionStrings");
 
-        public static string GoogleAPIKey
-        {
-            get { return GetConnectionString("GoogleAPIKey"); }
-        }
+        public static string BotToken => GetConfig("Keys");
 
-        public static string GoogleApplicationName
-        {
-            get { return GetConnectionString("GoogleApplicationName"); }
-        }
-        #endregion
+        public static string BlobStoreConnectionString => GetConfig("ConnectionStrings");
+
+        public static string GiphyAPIKey => GetConfig("Keys");
+
+        public static string TranslateAPIKey => GetConfig("Keys");
+
+        public static string SpeechServicesKey => GetConfig("Keys");
+
+        public static string GoogleAPIKey => GetConfig("Keys");
+
+        public static string GoogleApplicationName => GetConfig("Keys");
+
+        public static string GoogleClientSecret => GetConfig("Keys");
     }
 }
