@@ -3,7 +3,7 @@ using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-namespace Prawnbot.Utility.Configuration
+namespace Prawnbot.Common.Configuration
 {
     public static class ConfigUtility
     {
@@ -39,6 +39,8 @@ namespace Prawnbot.Utility.Configuration
         public static bool AllowNonEssentialListeners => bool.Parse(GetConfig("Generic"));
 
         public static string MicrosoftSpeechServicesEndpoint => GetConfig("Endpoints");
+
+        public static string MicrosoftSpeechServicesRegion => GetConfig("Keys");
 
         public static string GiphyEndpoint => GetConfig("Endpoints");
 

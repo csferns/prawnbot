@@ -15,7 +15,7 @@ namespace Prawnbot.Core.ServiceLayer
             return response;
         }
 
-        protected ListResponse<TEntity> LoadListResponse<TEntity>(IList<TEntity> list)
+        protected ListResponse<TEntity> LoadListResponse<TEntity>(IEnumerable<TEntity> list)
         {
             ListResponse<TEntity> response = new ListResponse<TEntity>
             {

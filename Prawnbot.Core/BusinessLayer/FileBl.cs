@@ -2,10 +2,11 @@
 using Discord;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Prawnbot.Common;
+using Prawnbot.Common.Configuration;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Core.Model.DTOs;
-using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;

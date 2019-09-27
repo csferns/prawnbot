@@ -1,17 +1,11 @@
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using Autofac.Integration.WebApi;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Prawnbot.API.Controllers;
 using Prawnbot.Core.BusinessLayer;
 using Prawnbot.Core.Log;
 using Prawnbot.Core.ServiceLayer;
-using System.Reflection;
-using System.Web.Http;
 
 namespace Prawnbot.API
 {

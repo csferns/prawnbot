@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Prawnbot.Common.Configuration;
 using Prawnbot.Data.Entities;
-using Prawnbot.Utility.Configuration;
 
 namespace Prawnbot.Data
 {

@@ -4,17 +4,17 @@ using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
+using Prawnbot.Common;
+using Prawnbot.Common.Configuration;
 using Prawnbot.Core.Log;
 using Prawnbot.Core.Quartz;
 using Prawnbot.Core.ServiceLayer;
-using Prawnbot.Core.Utility;
-using Prawnbot.Utility.Configuration;
 using Quartz;
 using Quartz.Impl;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -95,12 +95,15 @@ namespace Prawnbot.Core.BusinessLayer
             };
         }
 
-        public async Task ConnectAsync(string token, IContainer autofacContainer = null)
+        public async Task ConnectAsync(string token = "", IContainer autofacContainer = null)
         {
             try
             {
-                Token = token;
-                this.AutofacContainer = autofacContainer;
+                Process currentProcess = Process.GetCurrentProcess();
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "ConnectAsync", $"Process {currentProcess.ProcessName} ({currentProcess.Id}) started on {Environment.MachineName} "));
+
+                Token ??= token;
+                AutofacContainer ??= autofacContainer;
 
                 Client = new DiscordSocketClient(new DiscordSocketConfig
                 {
@@ -144,10 +147,14 @@ namespace Prawnbot.Core.BusinessLayer
                 {
                     await QuartzSetupAsync();
                 }
+
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Debug, "ConnectAsync", $"Memory used before collection: {GC.GetTotalMemory(false)}"));
+                GC.Collect();
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Debug, "ConnectAsync", $"Memory used after collection: {GC.GetTotalMemory(true)}"));
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "ConnectAsync()", "Error connecting the bot", e));
+                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "ConnectAsync", "Error connecting the bot", e));
             }
         }
 
@@ -299,7 +306,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             try
             {
-                if (!(arg is SocketUserMessage message) || message.Author.IsBot || string.IsNullOrEmpty(message.Content))
+                if (!(arg is SocketUserMessage message) || message.Author.IsBot || string.IsNullOrWhiteSpace(message.Content))
                 {
                     return;
                 }
@@ -352,7 +359,7 @@ namespace Prawnbot.Core.BusinessLayer
             Client = null;
             ShutdownQuartz();
 
-            await ConnectAsync(Token, AutofacContainer);
+            await ConnectAsync();
         }
 
         private async Task Client_UserJoined(SocketGuildUser user)

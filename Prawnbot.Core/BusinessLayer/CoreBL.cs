@@ -3,17 +3,15 @@ using Discord.Audio;
 using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
+using Prawnbot.Common;
+using Prawnbot.Common.Configuration;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Attributes;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Log;
 using Prawnbot.Core.Model.API.Giphy;
-using Prawnbot.Core.Model.API.Reddit;
-using Prawnbot.Core.Model.API.Rule34;
 using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Core.Model.DTOs;
-using Prawnbot.Core.Utility;
-using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -295,8 +293,8 @@ namespace Prawnbot.Core.BusinessLayer
         public async Task ReactToTaggedUserWithGifAsync(SocketUserMessage message, ulong userId, string replyMessage, string gifSearchText)
         {
             Bunch<GiphyDatum> gifs = gifSearchText != null
-                ? await apiBL.GetGifsAsync(gifSearchText)
-                : new Bunch<GiphyDatum>();
+            ? await apiBL.GetGifsAsync(gifSearchText)
+            : new Bunch<GiphyDatum>();
 
             replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
 
@@ -305,7 +303,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task ReactToTaggedUserAsync(SocketUserMessage message, ulong userId, string replyMessage)
         {
-            if (message.IsUserTagged(userId))
+            if (message.IsUserTagged(userId) && message.Content != null)
             {
                 if (!MessageSent)
                 {
@@ -659,6 +657,8 @@ namespace Prawnbot.Core.BusinessLayer
                 }
                 catch (PingException e)
                 {
+                    await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "PingHostAsync", $"Error occured pinging machine with name or address: {nameOrAddress}", e));
+
                     // Discard PingExceptions and return false;
                     return IPStatus.Unknown;
                 }

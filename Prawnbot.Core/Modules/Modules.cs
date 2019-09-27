@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.Commands;
-using Discord.Rest;
 using Discord.WebSocket;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Attributes;
@@ -8,15 +7,12 @@ using Prawnbot.Core.Collections;
 using Prawnbot.Core.Exceptions;
 using Prawnbot.Core.Model.DTOs;
 using Prawnbot.Core.ServiceLayer;
-using Prawnbot.Core.Utility;
 using Prawnbot.Infrastructure;
-using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.NetworkInformation;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -48,6 +44,15 @@ namespace Prawnbot.Core.Modules
             throw new UnexpectedBananaException();
         }
         #endif
+
+        [Command("order-message")]
+        public async Task OrderMessageAsync()
+        {
+            SocketMessage message = Context.Channel.CachedMessages.OrderBy(x => x.Id).Last();
+            string orderedMessage = message.Content.OrderBy(x => x).ToString();
+
+            await Context.Channel.SendMessageAsync(orderedMessage);
+        }
 
 
         [Command("random-user")]

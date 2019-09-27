@@ -2,20 +2,19 @@
 using Autofac.Extensions.DependencyInjection;
 using Discord;
 using Microsoft.Extensions.DependencyInjection;
+using Prawnbot.Common.Configuration;
 using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Exceptions;
 using Prawnbot.Core.Log;
 using Prawnbot.Core.ServiceLayer;
-using Prawnbot.Utility.Configuration;
+using Prawnbot.Infrastructure;
 using System;
-using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Application
 {
-    public class Program
+    public static class Program
     {
         public static void Main(string[] args)
         {
@@ -24,7 +23,8 @@ namespace Prawnbot.Application
             {
                 IBotService botService = scope.Resolve<IBotService>();
                 ILogging logging = scope.Resolve<ILogging>();
-                BaseApplication adminApplication = new BaseApplication(botService, logging);
+                IConsoleService consoleService = scope.Resolve<IConsoleService>();
+                BaseApplication adminApplication = new BaseApplication(botService, logging, consoleService);
 
                 adminApplication.Main(container);
             };
@@ -51,12 +51,14 @@ namespace Prawnbot.Application
 
     public class BaseApplication
     {
+        private readonly IConsoleService consoleService;
         private readonly IBotService botService;
         private readonly ILogging logging;
-        public BaseApplication(IBotService botService, ILogging logging)
+        public BaseApplication(IBotService botService, ILogging logging, IConsoleService consoleService)
         {
             this.botService = botService;
             this.logging = logging;
+            this.consoleService = consoleService;
         }
 
         public void Main(IContainer autofacContainer)
@@ -77,6 +79,7 @@ namespace Prawnbot.Application
 
                 AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
                 ConnectAsync(token, autofacContainer).GetAwaiter().GetResult();
+                CommandListener().GetAwaiter().GetResult();
             }
             catch (Exception e)
             {
@@ -88,16 +91,7 @@ namespace Prawnbot.Application
         {
             try
             {
-                Process currentProcess = Process.GetCurrentProcess();
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "ConnectAsync", $"Process {currentProcess.ProcessName} ({currentProcess.Id}) started on {Environment.MachineName} "));
-
                 await botService.ConnectAsync(token, autofacContainer);
-
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Debug, "ConnectAsync", $"Memory used before collection: {GC.GetTotalMemory(false)}"));
-                GC.Collect();
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Debug, "ConnectAsync", $"Memory used after collection: {GC.GetTotalMemory(true)}"));
-
-                await Task.Delay(-1);
             }
             catch (Exception e)
             {
@@ -109,6 +103,43 @@ namespace Prawnbot.Application
         {
             await botService.DisconnectAsync();
             botService.ShutdownQuartz();
+        }
+
+        public async Task CommandListener()
+        {
+            bool result = true;
+
+            while (result)
+            {
+                string command = Console.ReadLine();
+
+                if (!string.IsNullOrWhiteSpace(command))
+                {
+                    if (command.StartsWith('/'))
+                    {
+                        if (consoleService.ValidCommand(command).Entity)
+                        {
+                            Response<bool> response = await consoleService.HandleConsoleCommand(command);
+                            result = response.Entity;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"'{command.Split(' ')[0]}' is not recognised as a valid command!");
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("Command needs to start with a '/'");
+                        continue;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No command entered. Please enter a command.");
+                    continue;
+                }
+            }
         }
     }
 }

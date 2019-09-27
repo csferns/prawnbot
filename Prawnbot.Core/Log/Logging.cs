@@ -35,24 +35,36 @@ namespace Prawnbot.Core.Log
 
         public async Task Client_Log(LogMessage message)
         {
-            await PopulateEventLogAsync(message);
+            await Log(message);
         }
 
         public async Task PopulateEventLogAsync(LogMessage message)
         {
-            await fileService.WriteToFileAsync(GetLogMessageString(message), "EventLogs.txt");
-            await Console.Out.WriteLineAsync(GetLogMessageString(message));
+            await Log(message);
         }
 
         public async Task PopulateMessageLogAsync(LogMessage message)
         {
-            await fileService.WriteToFileAsync(GetLogMessageString(message), "MessageLogs.txt");
-            await Console.Out.WriteLineAsync(GetLogMessageString(message));
+            await Log(message);
         }
 
         public async Task LogCommandUseAsync(string username, string guild, string messageContent)
         {
-            await PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Command_Usage", $"Message recieved from {username}: ({guild}) \"{messageContent}\""));
+            LogMessage message = new LogMessage(LogSeverity.Info, "Command_Usage", $"Message recieved from {username}: ({guild}) \"{messageContent}\"");
+            await Log(message);
+        }
+
+        private async Task Log(LogMessage message)
+        {
+            await Task.Run(async () =>
+            {
+                string messageString = GetLogMessageString(message);
+
+                await fileService.WriteToFileAsync(messageString, "EventLogs.txt");
+                Console.WriteLine(messageString);
+
+                return Task.CompletedTask;
+            });
         }
 
         public async Task PopulateTranslationLogAsync(Bunch<TranslateData> translation)
@@ -63,7 +75,8 @@ namespace Prawnbot.Core.Log
                 await fileService.WriteToFileAsync($"{firstTranslation.to} : {firstTranslation.text}", "TranslationLog.txt");
             }
 
-            await PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Translation_Log", "Translations logged"));
+            LogMessage message = new LogMessage(LogSeverity.Info, "Translation_Log", "Translations logged");
+            await Log(message);
         }
     }
 }

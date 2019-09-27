@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Prawnbot.Common\Prawnbot.Common.csproj" />
-    <ProjectReference Include="..\Prawnbot.Utility\Prawnbot.Utility.csproj" />
   </ItemGroup>
 
   <ItemGroup>
