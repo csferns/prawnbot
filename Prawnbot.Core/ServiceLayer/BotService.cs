@@ -1,20 +1,10 @@
 ﻿using Autofac;
-using Prawnbot.Core.BusinessLayer;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.ServiceLayer
 {
-    public interface IBotService
-    {
-        Task<ResponseBase> ConnectAsync(string token, IContainer autofacContainer);
-        Task<ResponseBase> DisconnectAsync(bool switchBot = false);
-        Task<ResponseBase> ReconnectAsync();
-        Task<Response<object>> GetStatusAsync();
-        Task<ResponseBase> SetBotRegionAsync(string regionName);
-        ResponseBase ShutdownQuartz();
-    }
-
     public class BotService : BaseService, IBotService
     {
         private readonly IBotBL botBL;

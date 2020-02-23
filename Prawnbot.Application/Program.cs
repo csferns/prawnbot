@@ -1,11 +1,9 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using Discord;
 using Microsoft.Extensions.DependencyInjection;
 using Prawnbot.Common.Configuration;
-using Prawnbot.Core.BusinessLayer;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Log;
-using Prawnbot.Core.ServiceLayer;
 using Prawnbot.Infrastructure;
 using System;
 using System.Reflection;
@@ -51,14 +49,25 @@ namespace Prawnbot.Application
 
     public class BaseApplication
     {
+        private readonly IContainer container;
         private readonly IConsoleService consoleService;
         private readonly IBotService botService;
         private readonly ILogging logging;
-        public BaseApplication(IBotService botService, ILogging logging, IConsoleService consoleService)
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="BaseApplication"/> class with a container being passed in to populate the required services
+        /// </summary>
+        /// <param name="container"></param>
+        public BaseApplication(IContainer container)
         {
-            this.botService = botService;
-            this.logging = logging;
-            this.consoleService = consoleService;
+            this.container = container;
+
+            using (ILifetimeScope scope = container.BeginLifetimeScope())
+            {
+                this.botService = scope.Resolve<IBotService>();
+                this.logging = scope.Resolve<ILogging>();
+                this.consoleService = scope.Resolve<IConsoleService>();
+            }
         }
 
         public void Main(IContainer autofacContainer)

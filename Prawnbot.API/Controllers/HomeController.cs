@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Prawnbot.Core.ServiceLayer;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
 using System.Threading.Tasks;
 

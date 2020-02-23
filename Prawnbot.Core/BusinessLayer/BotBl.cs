@@ -6,7 +6,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Prawnbot.Common;
 using Prawnbot.Common.Configuration;
-using Prawnbot.Core.Log;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Quartz;
 using Prawnbot.Core.ServiceLayer;
 using Quartz;
@@ -20,39 +20,6 @@ using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface IBotBL
-    {
-        /// <summary>
-        /// Connects the bot using a given token
-        /// </summary>
-        /// <param name="token">The token to connect with</param>
-        /// <returns></returns>
-        Task ConnectAsync(string token, IContainer container = null);
-        /// <summary>
-        /// Method to disconnect the bot
-        /// </summary>
-        /// <returns></returns>
-        Task DisconnectAsync(bool switchBot = false);
-        /// <summary>
-        /// Disconnects and Reconnects the bot
-        /// </summary>
-        /// <returns></returns>
-        Task ReconnectAsync();
-        /// <summary>
-        /// Set up the Quartz scheduler for the scheduled jobs
-        /// </summary>
-        /// <returns></returns>
-        Task QuartzSetupAsync();
-        /// <summary>
-        /// Event that is fired when the client disconnects
-        /// </summary>
-        /// <param name="arg"></param>
-        /// <returns>Task.CompletedTask</returns>
-        Task<object> GetStatusAsync();
-        Task SetBotRegionAsync(string regionName);
-        void ShutdownQuartz();
-    }
-
     public class BotBL : BaseBL, IBotBL
     {
         private readonly ICoreBL coreBL;

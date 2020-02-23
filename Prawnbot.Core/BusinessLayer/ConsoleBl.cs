@@ -2,6 +2,7 @@
 using Discord.WebSocket;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Collections;
+using Prawnbot.Core.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,20 +10,16 @@ using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface IConsoleBL
-    {
-        bool ValidCommand(string command);
-        Task<bool> HandleConsoleCommand(string command);
-    }
-
     public class ConsoleBL : BaseBL, IConsoleBL
     {
         private readonly IBotBL botBL;
         private readonly ICoreBL coreBL;
-        public ConsoleBL(IBotBL botBL, ICoreBL coreBL)
+        private readonly ILogging logging;
+        public ConsoleBL(IBotBL botBL, ICoreBL coreBL, ILogging logging)
         {
             this.botBL = botBL;
             this.coreBL = coreBL;
+            this.logging = logging;
         }
 
         public bool ValidCommand(string command)

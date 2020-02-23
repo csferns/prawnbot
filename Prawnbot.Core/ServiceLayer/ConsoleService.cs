@@ -1,15 +1,10 @@
 ﻿using Prawnbot.Core.BusinessLayer;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.ServiceLayer
 {
-    public interface IConsoleService
-    {
-        Response<bool> ValidCommand(string command);
-        Task<Response<bool>> HandleConsoleCommand(string command);
-    }
-
     public class ConsoleService : BaseService, IConsoleService
     {
         public IConsoleBL consoleBL;

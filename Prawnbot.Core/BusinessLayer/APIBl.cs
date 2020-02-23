@@ -8,12 +8,13 @@ using Newtonsoft.Json;
 using Prawnbot.Common;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Core.Collections;
-using Prawnbot.Core.Log;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.API.Giphy;
 using Prawnbot.Core.Model.API.Overwatch;
 using Prawnbot.Core.Model.API.Reddit;
 using Prawnbot.Core.Model.API.Rule34;
 using Prawnbot.Core.Model.API.Translation;
+using Prawnbot.Core.Model.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -26,20 +27,6 @@ using System.Web;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface IAPIBL
-    {
-        Task<Bunch<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25);
-        Task<Bunch<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate);
-        Task<Bunch<LanguageTranslationRoot>> GetLanguagesAsync();
-        Task<bool> GetProfanityFilterAsync(string message);
-        Task<Bunch<Rule34Model>> Rule34PostsAsync(string[] tags);
-        Task<Bunch<Rule34Types>> Rule34TagsAsync(); 
-        Task<Bunch<Event>> GetCalendarEntries(string calendarId);
-        Task<OverwatchStats> OverwatchStatsAsync(string battletag, string region, string platform);
-        Task<RedditRoot> GetTopPostsBySubreddit(string subredditName, int count);
-
-    }
-
     public class APIBL : BaseBL, IAPIBL
     {
         private readonly IFileBL fileBL;

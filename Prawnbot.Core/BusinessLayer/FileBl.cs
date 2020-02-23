@@ -2,9 +2,9 @@
 using Discord;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
-using Prawnbot.Common;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Core.Collections;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Core.Model.DTOs;
 using System;
@@ -15,22 +15,6 @@ using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface IFileBL
-    {
-        Task<CloudBlobContainer> GetBlobContainer(string containerName);
-        Task<Uri> GetUriFromBlobStoreAsync(string fileName, string containerName);
-        Task<Stream> GetStreamFromBlobStoreAsync(string fileName, string containerName);
-        Task<Stream> DownloadFileFromBlobStoreAsync(string fileName, string containerName);
-        Task UploadFileToBlobStoreAsync(string fileName, string containerName);
-        FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
-        Task<Bunch<string>> ReadFromFileAsync(string fileName);
-        void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName);
-        Task WriteToFileAsync(string valueToWrite, string fileName);
-        Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
-        bool CheckIfTranslationExists();
-        Bunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
-    }
-
     public class FileBL : BaseBL, IFileBL
     {
         public async Task<CloudBlobContainer> GetBlobContainer(string containerName)
