@@ -33,6 +33,8 @@ namespace Prawnbot.Application
             ServiceCollection serviceCollection = new ServiceCollection();
             serviceCollection.AddLogging();
 
+            // Set up database connection
+            serviceCollection.AddDbContext<BotDatabaseContext>();
             ContainerBuilder containerBuilder = new ContainerBuilder();
             containerBuilder.Populate(serviceCollection);
 

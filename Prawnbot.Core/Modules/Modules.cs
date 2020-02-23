@@ -193,12 +193,19 @@ namespace Prawnbot.Core.Modules
 
         [Command("display-alarms")]
         [Summary("Display set alarms")]
-        [NotImplemented]
         public async Task GetAlarmAsync()
         {
-            // TODO: Create a service for the Alarm entity and do get / creation / update / delete there
-            await Task.Delay(2);
-            throw new NotImplementedException();
+            ListResponse<AlarmDTO> response = alarmService.GetAll();
+            if (response.HasData)
+            {
+                Bunch<AlarmDTO> alarms = response.Entities.ToBunch();
+                IEnumerable<string> alarmDataToReturn = alarms.Select(x => $"{x.User}'s alarm {x.AlarmName}: {x.AlarmName}");
+                await Context.Channel.SendMessageAsync(string.Join(',', alarmDataToReturn));
+            }
+            else
+            {
+                await Context.Channel.SendMessageAsync("No alarms set");
+            }
         }
 
         [Command("remove-alarm")]

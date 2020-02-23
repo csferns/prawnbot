@@ -52,6 +52,10 @@ namespace Prawnbot.Common.Configuration
 
         public static string ProfanityFilterEndpoint => GetConfig("Endpoints");
 
+        /// <summary>
+        /// Connection string for local database storage
+        /// If UseDatabaseConnection is true, this is required.
+        /// </summary>
         public static string DatabaseConnectionString => GetConfig("ConnectionStrings");
 
         public static string BotToken => GetConfig("Keys");
