@@ -42,11 +42,5 @@ namespace Prawnbot.Core.ServiceLayer
             await botBL.SetBotRegionAsync(regionName);
             return new ResponseBase();
         }
-
-        public ResponseBase ShutdownQuartz()
-        {
-            botBL.ShutdownQuartz();
-            return new ResponseBase();
-        }
     }
 }

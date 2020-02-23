@@ -41,7 +41,7 @@ namespace Prawnbot.Core.BusinessLayer
         { 
             get
             {
-                return Scheduler != null && !Scheduler.IsShutdown && Scheduler.IsStarted && !Scheduler.InStandbyMode;
+                return Scheduler != null && !(Scheduler?.IsShutdown ?? true) && (Scheduler?.IsStarted ?? false) && !(Scheduler?.InStandbyMode ?? true);
             }
         }
 
@@ -140,17 +140,37 @@ namespace Prawnbot.Core.BusinessLayer
                 if (Client != null)
                 {
                     await Client.LogoutAsync();
-                    await Client.StopAsync();
 
-                    Token = switchBot
-                        ? null
-                        : Token;
-                    //workerCancellationTokenSource.Cancel();
+                    if (shutdown)
+                    {
+                    await Client.StopAsync();
+                        Token = null;
+                        Client.Dispose();
+
+                        ShutdownQuartz();
+                    }
+
+                    if (switchBot)
+                    {
+                        Token = null;
+                    }
                 }
             }
             catch (Exception e)
             {
                 await logging.Log_Exception(e);
+            }
+        }
+
+        /// <summary>
+        /// Shuts down the Quartz setup
+        /// </summary>
+        public void ShutdownQuartz()
+        {
+            if (IsQuartzInitialized)
+            {
+                Scheduler.Shutdown();
+                Scheduler = null;
             }
         }
 
@@ -168,10 +188,15 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
+        /// <summary>
+        /// Sets up all the Quartz jobs
+        /// </summary>
+        /// <returns>awaitable Task</returns>
         public async Task QuartzSetupAsync()
         {
             try
             {
+                // Initialise the things Quartz needs to work properly
                 NameValueCollection props = new NameValueCollection
                 {
                     { "quartz.serializer.type", "binary" }
@@ -179,40 +204,20 @@ namespace Prawnbot.Core.BusinessLayer
                 StdSchedulerFactory factory = new StdSchedulerFactory(props);
                 Scheduler = await factory.GetScheduler();
 
-                // and start it off
+                // Start the scheduler 
                 await Scheduler.Start();
 
-                IJobDetail mocJob = JobBuilder.Create<MOC>()
-                    .WithIdentity("MOC")
-                    .Build();
+                // Custom job factory to allow for injecting dependencies into Quartz jobs
+                Scheduler.JobFactory = new QuartzJobFactory(AutofacContainer);
 
-                ITrigger mocTrigger = TriggerBuilder.Create()
-                    .WithIdentity("MOCTrigger")
-                    .StartAt(DateBuilder.DateOf(9, 11, 0))
-                    .WithSimpleSchedule(x => x
-                                            .WithIntervalInHours(12)
-                                            .RepeatForever())
-                    .ForJob("MOC")
-                    .Build();
+                // TODO: Add a job in here to change the channel names to include seasonal emojis
+                // Create / Schedule Quartz jobs
+                int TWELVE_HOUR = 12;
+                int TWENTYFOUR_HOUR = 24;
 
-                await Scheduler.ScheduleJob(mocJob, mocTrigger);
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "QuartzSetup", $"Job {typeof(MOC).FullName} scheduled"));
-
-                IJobDetail yearlyQuoteJob = JobBuilder.Create<YearlyQuote>()
-                    .WithIdentity("YearlyQuote")
-                    .Build();
-
-                ITrigger yearlyQuoteTrigger = TriggerBuilder.Create()
-                    .WithIdentity("YearlyQuoteTrigger")
-                    .StartAt(DateBuilder.DateOf(8, 0, 0))
-                    .WithSimpleSchedule(x => x
-                                            .WithIntervalInHours(24)
-                                            .RepeatForever())
-                    .ForJob("YearlyQuote")
-                    .Build();
-
-                await Scheduler.ScheduleJob(yearlyQuoteJob, yearlyQuoteTrigger);
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "QuartzSetup", $"Job {typeof(YearlyQuote).FullName} scheduled"));
+                await ScheduleQuartzJob<MOCJob>(DateBuilder.DateOf(9, 11, 0), interval: TWELVE_HOUR);
+                await ScheduleQuartzJob<YearlyQuoteJob>(DateBuilder.DateOf(8, 0, 0), interval: TWENTYFOUR_HOUR);
+                await ScheduleQuartzJob<BirthdayJob>(DateBuilder.DateOf(8, 0, 0), interval: TWENTYFOUR_HOUR);
             }
             catch (SchedulerException sc)
             {
@@ -224,11 +229,37 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        public void ShutdownQuartz()
+        /// <summary>
+        /// Schedule a Quartz job to be run
+        /// </summary>
+        /// <typeparam name="T">Class that implements IJob</typeparam>
+        /// <param name="startDate">Start date of the Job</param>
+        /// <param name="interval">Interval in which the job runs</param>
+        /// <returns>awaitable Task</returns>
+        public async Task ScheduleQuartzJob<T>(DateTimeOffset startDate, int interval) where T : IJob
         {
-            if (IsQuartzInitialized)
+            string jobName = typeof(T).Name;  
+
+            IJobDetail job = JobBuilder.Create<T>()
+                .WithIdentity(jobName)
+                .Build();
+
+            ITrigger trigger = TriggerBuilder.Create()
+                .WithIdentity(jobName + "Trigger")
+                .StartAt(startDate)
+                .WithSimpleSchedule(x => x
+                                        .WithIntervalInHours(interval)
+                                        .RepeatForever())
+                .ForJob(jobName)
+                .Build();
+
+            await Scheduler.ScheduleJob(job, trigger);
+
+            bool jobExists = await Scheduler.CheckExists(trigger.Key);
+
+            if (jobExists)
             {
-                Scheduler.Shutdown();
+                await logging.Log_Info($"Job {jobName} scheduled for {trigger.StartTimeUtc.ToString("dd/MM/yyyy HH:mm:ss")} with interval {interval} hours");
             }
         }
 

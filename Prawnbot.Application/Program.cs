@@ -108,10 +108,14 @@ namespace Prawnbot.Application
             }
         }
 
+        /// <summary>
+        /// Event listener to watch for the console being closed and dispose of the Discord Client correctly
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public async void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
             await botService.DisconnectAsync();
-            botService.ShutdownQuartz();
         }
 
         public async Task CommandListener()

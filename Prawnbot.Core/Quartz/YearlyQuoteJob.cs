@@ -1,8 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Prawnbot.Core.Collections;
-using Prawnbot.Core.Log;
-using Prawnbot.Core.ServiceLayer;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
 using Quartz;
 using System;
@@ -12,11 +11,11 @@ using System.Threading.Tasks;
 
 namespace Prawnbot.Core.Quartz
 {
-    public class YearlyQuote : IJob
+    public class YearlyQuoteJob : IJob
     {
         private readonly ILogging logging;
         private readonly ICoreService coreService;
-        public YearlyQuote(ILogging logging, ICoreService coreService)
+        public YearlyQuoteJob(ILogging logging, ICoreService coreService)
         {
             this.logging = logging;
             this.coreService = coreService;
@@ -26,8 +25,6 @@ namespace Prawnbot.Core.Quartz
         {
             try
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Quartz", "YearlyQuote Triggered."));
-
                 ListResponse<IMessage> response = await coreService.GetAllMessagesByTimestampAsync(guildId: 453899130486521859, timestamp: DateTime.Now.AddYears(-1));
                 Bunch<IMessage> filteredMessages = response.Entities.ToBunch();
 
@@ -58,7 +55,7 @@ namespace Prawnbot.Core.Quartz
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Quartz", "An error occured during YearlyQuote", e));
+                await logging.Log_Exception(e, optionalMessage: "An error occured during YearlyQuote");
             }
         }
     }
