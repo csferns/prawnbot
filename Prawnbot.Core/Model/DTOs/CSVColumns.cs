@@ -1,17 +1,18 @@
-﻿using Discord;
-using System;
-using System.Collections.Generic;
+﻿using System;
 
 namespace Prawnbot.Core.Model.DTOs
 {
     public class CSVColumns
     {
         public ulong MessageID { get; set; }
+        public string MessageSource { get; set; }
         public string Author { get; set; }
-        public bool AuthorIsBot { get; set; }
         public string MessageContent { get; set; }
         public DateTimeOffset Timestamp { get; set; }
+        public int AttachmentCount { get; set; }
         public string Attachments { get; set; }
-        public KeyValuePair<IEmote, ReactionMetadata> Reactions { get; set; }
+        public int ReactionCount { get; set; }
+        public bool IsPinned { get; set; }
+        public bool WasSentByBot { get; set; }
     }
 }

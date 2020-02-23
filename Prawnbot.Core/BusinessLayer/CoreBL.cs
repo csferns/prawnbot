@@ -85,17 +85,19 @@ namespace Prawnbot.Core.BusinessLayer
                 await ReactToSingleWordAsync(StrippedMessage, lookupValue: "dad", replyMessage: "404 dad not found");
             }
 
-            if (ConfigUtility.DadMode && StrippedMessage.StartsWith("im"))
+            if (ConfigUtility.DadMode && StrippedMessage.Contains("im"))
             {
-                List<string> messageArray = message.Content.ToLowerInvariant().Split(' ').ToList();
+                List<string> splitMessage = message.Content.ToLowerInvariant().Split(' ').ToList();
 
-                if (messageArray[0].RemoveSpecialCharacters() == "im" && messageArray.Count() != 1)
+                string imString = splitMessage.Find(x => x == "im" || x == "i'm");
+                int pos = splitMessage.IndexOf(imString);
+
+                for (int i = 0; i < pos; i++)
                 {
-                    messageArray.RemoveAt(0);
-
-                    await Context.Channel.SendMessageAsync($"Hi {string.Join(' ', messageArray.ToList())}, i'm dad");
-                    EventsTriggered++;
+                    splitMessage.RemoveAt(i);
                 }
+
+                await Context.Channel.SendMessageAsync($"hello {string.Join(' ', splitMessage)}, i'm dad!");
             }
 
             if (ConfigUtility.ProfanityFilter)
@@ -247,7 +249,7 @@ namespace Prawnbot.Core.BusinessLayer
             await Context.Channel.SendFileAsync(stream, fileName);
         }
 
-        public async Task SetBotStatusAsync(UserStatus status)
+        public async Task SetBotStatusAsync(UserStatus status = UserStatus.Online)
         {
             try
             {
@@ -375,9 +377,9 @@ namespace Prawnbot.Core.BusinessLayer
             return guild.TextChannels.Where(x => x.Name == channelName).FirstOrDefault();
         }
 
-        public List<SocketTextChannel> FindGuildTextChannels(SocketGuild guild)
+        public Bunch<SocketTextChannel> FindGuildTextChannels(SocketGuild guild)
         {
-            return Client.Guilds.FirstOrDefault(x => x == guild).TextChannels.ToList();
+            return Client.Guilds.FirstOrDefault(x => x == guild).TextChannels.ToBunch();
         }
 
         public SocketTextChannel FindTextChannel(SocketGuild guild, SocketTextChannel channel)
@@ -557,33 +559,39 @@ namespace Prawnbot.Core.BusinessLayer
                 stopwatch.Start();
 
                 string fileName = server
-                    ? $"{FindTextChannel(id).Name}-backup.csv"
-                    : $"{Context.Guild.Name}-backup.csv";
+                    ? $"{Context.Guild.Name}-backup.csv"
+                    : $"{FindTextChannel(id).Name}-backup.csv";
 
-                await Context.Channel.SendMessageAsync($"Started {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)} {(server ? "(" + Context.Guild.TextChannels.Count() + " channels)" : "")} at {DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
+                await Context.Channel.SendMessageAsync($"Started {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)}{(server ? " (" + Context.Guild.TextChannels.Count() + " channels)" : "")} at {DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
 
-                Bunch<IMessage> messagesToAdd = new Bunch<IMessage>();
+                Bunch<CSVColumns> records = new Bunch<CSVColumns>();
 
                 if (server)
                 {
+                    records = new Bunch<CSVColumns>();
                     foreach (SocketTextChannel textChannel in Context.Guild.TextChannels)
                     {
-                        messagesToAdd = await GetUserMessagesAsync(textChannel.Id);
-                        Bunch<CSVColumns> records = fileBL.CreateCSVList(messagesToAdd);
-                        fileBL.WriteToCSV(records, textChannel.Id, fileName);
+                        Bunch<IMessage> messagesToAdd = await GetAllMessagesAsync(textChannel.Id);
+
+                        Bunch<CSVColumns> channelMessages = fileBL.CreateCSVList(messagesToAdd);
+                        records.AddRange(channelMessages);
                     }
                 }
                 else
                 {
-                    messagesToAdd = await GetUserMessagesAsync(id);
+                    Bunch<IMessage> messagesToAdd = await GetAllMessagesAsync(id);
 
-                    Bunch<CSVColumns> records = fileBL.CreateCSVList(messagesToAdd);
-                    fileBL.WriteToCSV(records, id, fileName);
+                    records = fileBL.CreateCSVList(messagesToAdd);
                 }
+
+                FileStream fileStream = fileBL.WriteToCSV(records, fileName);
 
                 stopwatch.Stop();
 
-                await Context.Channel.SendMessageAsync($"Finished {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)} to {fileName}. \nThe operation took {stopwatch.Elapsed.Hours}h:{stopwatch.Elapsed.Minutes}m:{stopwatch.Elapsed.Seconds}s:{stopwatch.Elapsed.Milliseconds}ms");
+                await Context.Channel.SendFileAsync(fileStream, fileName, $"Finished {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)}. \nThe operation took {stopwatch.Elapsed.Hours}h:{stopwatch.Elapsed.Minutes}m:{stopwatch.Elapsed.Seconds}s:{stopwatch.Elapsed.Milliseconds}ms");
+
+                fileStream.Close();
+                fileStream.Dispose();
             });
         }
 
@@ -660,6 +668,30 @@ namespace Prawnbot.Core.BusinessLayer
                 .WithCurrentTimestamp();
 
             await Context.Channel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
+        }
+        public async Task ChangeNicknameAsync(string guildName, string nickname)
+        {
+            SocketGuild guild = GetGuild(guildName);
+
+            await guild.CurrentUser.ModifyAsync(x => x.Nickname = nickname);
+        }
+
+        public async Task ChangeIconAsync(Uri imageUri = null)
+        {
+            if (imageUri != null)
+            {
+                WebRequest request = WebRequest.Create(imageUri);
+
+                using (Stream stream = request.GetResponse().GetResponseStream())
+                {
+                    Image image = new Image(stream);
+                    await Client.CurrentUser.ModifyAsync(x => x.Avatar = image);
+                }
+            }
+            else
+            {
+                await Client.CurrentUser.ModifyAsync(x => x.Avatar = null);
+            }
         }
     }
 }

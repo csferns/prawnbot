@@ -38,7 +38,7 @@ namespace Prawnbot.Core.BusinessLayer
             this.logging = logging;
         }
 
-        private async Task<T> GetRequestAsync<T>(string url, Dictionary<string, string> parameters = null)
+        private async Task<T> GetRequestAsync<T>(string url, IDictionary<string, string> parameters = null)
         {
             try
             {
@@ -70,7 +70,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        private async Task<T> PostRequestAsync<T>(string url, object postData, Dictionary<string, string> headers)
+        private async Task<T> PostRequestAsync<T>(string url, object postData, IDictionary<string, string> headers)
         {
             try
             {
@@ -99,7 +99,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<Bunch<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
         {
-            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "api_key", ConfigUtility.GiphyAPIKey },
                 { "q", HttpUtility.UrlEncode(searchTerm) },
@@ -128,7 +128,7 @@ namespace Prawnbot.Core.BusinessLayer
                     url += $"&from={fromLanguage}";
                 }
 
-                Dictionary<string, string> headers = new Dictionary<string, string>()
+                IDictionary<string, string> headers = new Dictionary<string, string>()
                 {
                     { "Ocp-Apim-Subscription-Key", ConfigUtility.TranslateAPIKey }
                 };
@@ -139,7 +139,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<Bunch<LanguageTranslationRoot>> GetLanguagesAsync()
         {
-            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "api-version", "3.0" }
             };
@@ -149,7 +149,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<bool> GetProfanityFilterAsync(string message)
         {
-            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "text", message }
             };
@@ -159,7 +159,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<Bunch<Rule34Model>> Rule34PostsAsync(string[] tags)
         {
-            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "tags", string.Join('+', tags) }
             };
@@ -226,7 +226,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<RedditRoot> GetTopPostsBySubreddit(string subredditName, int count)
         {
-            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "count", count.ToString() }
             };

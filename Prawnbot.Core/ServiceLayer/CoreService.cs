@@ -6,6 +6,7 @@ using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 
@@ -75,9 +76,9 @@ namespace Prawnbot.Core.ServiceLayer
             return LoadListResponse(coreBL.GetAllGuilds());
         }
 
-        public async Task<ListResponse<IMessage>> GetAllMessagesAsync(ulong id)
+        public async Task<ListResponse<IMessage>> GetAllMessagesAsync(ulong id, int limit = 50000)
         {
-            return LoadListResponse(await coreBL.GetAllMessagesAsync(id));
+            return LoadListResponse(await coreBL.GetAllMessagesAsync(id, limit));
         }
 
         public ListResponse<SocketGuildUser> GetAllUsers()
@@ -189,6 +190,13 @@ namespace Prawnbot.Core.ServiceLayer
         {
             await coreBL.StatusAsync();
             return new ResponseBase();
+        }
+
+        public ListResponse<SocketGuildUser> GetUsersByGuildId(ulong guildId)
+        {
+            var guild = GetGuildById(guildId);
+
+            return LoadListResponse(guild.Entity.Users);
         }
     }
 }

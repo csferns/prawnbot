@@ -77,7 +77,9 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (!File.Exists(filePath))
             {
-                using (FileStream file = File.Create(fileName)) { };
+                using (FileStream fs = File.Create(filePath))
+                {
+                }
             }
 
             return new FileStream(filePath, fileMode, fileAccess, fileShare);
@@ -99,7 +101,7 @@ namespace Prawnbot.Core.BusinessLayer
             };
         }
 
-        public void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName)
+        public FileStream WriteToCSV(IList<CSVColumns> columns, string fileName)
         {
             using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Truncate, FileAccess.Write, FileShare.Write))
             using (StreamWriter writer = new StreamWriter(fileStream))
@@ -128,15 +130,19 @@ namespace Prawnbot.Core.BusinessLayer
                 CSVColumns recordToAdd = new CSVColumns
                 {
                     MessageID = messagesToAdd[message].Id,
+                    MessageSource = messagesToAdd[message].Source.ToString(),
                     Author = messagesToAdd[message].Author.Username,
-                    AuthorIsBot = messagesToAdd[message].Author.IsBot,
+                    WasSentByBot = messagesToAdd[message].Author.IsBot,
+                    IsPinned = messagesToAdd[message].IsPinned,
                     MessageContent = messagesToAdd[message].Content,
                     Timestamp = messagesToAdd[message].Timestamp
                 };
 
-                if (messagesToAdd[message].Attachments.Count() > 0)
+                recordToAdd.AttachmentCount = messagesToAdd[message].Attachments.Count();
+
+                if (messagesToAdd[message].Attachments.Any())
                 {
-                    recordToAdd.Attachments = string.Join(", ", messagesToAdd[message].Attachments);
+                    recordToAdd.Attachments = messagesToAdd[message].Attachments.FirstOrDefault().Url;
                 }
 
                 records.Add(recordToAdd);

@@ -44,10 +44,9 @@ namespace Prawnbot.Core.ServiceLayer
             return LoadListResponse(await fileBL.ReadFromFileAsync(fileName));
         }
 
-        public ResponseBase WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName)
+        public Response<FileStream> WriteToCSV(IList<CSVColumns> columns, string fileName)
         {
-            fileBL.WriteToCSV(columns, id, fileName);
-            return new ResponseBase();
+            return LoadResponse(fileBL.WriteToCSV(columns, fileName));
         }
 
         public async Task<ResponseBase> WriteToFileAsync(string valueToWrite, string fileName)

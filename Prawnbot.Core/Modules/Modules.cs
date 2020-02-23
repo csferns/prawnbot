@@ -1,12 +1,13 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Prawnbot.Common;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Attributes;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Exceptions;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.DTOs;
-using Prawnbot.Core.ServiceLayer;
 using Prawnbot.Infrastructure;
 using System;
 using System.Collections.Generic;
@@ -50,14 +51,44 @@ namespace Prawnbot.Core.Modules
         #endif
 
         [Command("order-message")]
-        public async Task OrderMessageAsync()
+        public async Task OrderMessageAsync(bool includeSpaces = true)
         {
-            SocketMessage message = Context.Channel.CachedMessages.OrderBy(x => x.Id).Last();
-            string orderedMessage = message.Content.OrderBy(x => x).ToString();
+            ListResponse<IMessage> messages = await coreService.GetAllMessagesAsync(Context.Channel.Id, 100);
+            IMessage message = messages.Entities.ToList()[messages.Entities.Count() - 2];
 
-            await Context.Channel.SendMessageAsync(orderedMessage);
+            StringBuilder sb = new StringBuilder();
+
+            if (includeSpaces)
+            {
+                string[] splitMessage = message.Content.Split(' ');
+
+                for (int item = 0; item < splitMessage.Count(); item++)
+                {
+                    Bunch<char> orderedMessage = splitMessage[item].OrderBy(x => x).ToBunch();
+
+                    for (int character = 0; character < orderedMessage.Count(); character++)
+                    {
+                        sb.Append(orderedMessage[character]);
+                    }
+
+                    if (item != splitMessage.Count())
+                    {
+                        sb.Append(' ');
+                    }
+                }
+            }
+            else
+            {
+                IEnumerable<char> orderedMessage = message.Content.RemoveSpecialCharacters().ToLowerInvariant().Where(x => x != ' ').OrderBy(x => x);
+
+                foreach (char character in orderedMessage)
+                {
+                    sb.Append(character);
+                }
+            }
+
+            await Context.Channel.SendMessageAsync(sb.ToString());
         }
-
 
         [Command("random-user")]
         [Summary("Gets a random user from the guild and posts them")]
@@ -186,7 +217,6 @@ namespace Prawnbot.Core.Modules
         [NotImplemented]
         public async Task SetAlarmAsync(int timePassed, [Remainder]string alarmName = null)
         {
-            // TODO: Create a service for the Alarm entity and do get / creation / update / delete there
             await Task.Delay(2);
             throw new NotImplementedException();
         }
@@ -213,7 +243,6 @@ namespace Prawnbot.Core.Modules
         [NotImplemented]
         public async Task RemoveAlarmAsync()
         {
-            // TODO: Create a service for the Alarm entity and do creation / update / delete there
             await Task.Delay(200);
             throw new NotImplementedException();
         }
@@ -252,7 +281,7 @@ namespace Prawnbot.Core.Modules
                 }
             };
 
-            fileService.WriteToCSV(columns, id, fileName);
+            fileService.WriteToCSV(columns, fileName);
 
             if (Context.Message.Channel.Id == id)
             {

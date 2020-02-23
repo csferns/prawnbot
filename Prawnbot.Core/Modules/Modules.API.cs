@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Prawnbot.Core.Collections;
 using Prawnbot.Core.Model.API.Overwatch;
 using Prawnbot.Core.Model.API.Reddit;
 using Prawnbot.Core.Model.API.Rule34;
@@ -74,9 +75,14 @@ namespace Prawnbot.Core.Modules
                 LowerLevelData post = response.Entity.data.children.FirstOrDefault().data;
                 EmbedBuilder builder = new EmbedBuilder();
 
-                if (post.thumbnail != null)
+                if (post.thumbnail != null && post.thumbnail_height != null && post.thumbnail_width != null)
                 {
+                    builder.WithTitle("Image post");
                     builder.WithThumbnailUrl(post.thumbnail);
+                }
+                else
+                {
+                    builder.WithTitle("Text post");
                 }
 
                 builder.WithDescription($"Title: {post.title}\n" +

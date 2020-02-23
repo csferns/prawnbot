@@ -30,8 +30,8 @@ namespace Prawnbot.Core.BusinessLayer
             this.logging = logging;
         }
 
-        private string Token { get; set; }
-        private IContainer AutofacContainer { get; set; }
+        private static string Token { get; set; }
+        private static IContainer AutofacContainer { get; set; }
         private CommandService Commands { get; set; }
         private IServiceProvider BotServices { get; set; }
 
@@ -62,7 +62,7 @@ namespace Prawnbot.Core.BusinessLayer
             };
         }
 
-        public async Task ConnectAsync(string token = "", IContainer autofacContainer = null)
+        public async Task ConnectAsync(string token = null, IContainer autofacContainer = null)
         {
             try
             {
@@ -92,6 +92,7 @@ namespace Prawnbot.Core.BusinessLayer
                     .AddSingleton(autofacContainer.Resolve<IAPIService>())
                     .AddSingleton(autofacContainer.Resolve<IFileService>())
                     .AddSingleton(autofacContainer.Resolve<ILogging>())
+                    .AddSingleton(autofacContainer.Resolve<IAlarmService>())
                     .AddSingleton(autofacContainer.Resolve<ISpeechRecognitionService>())
                     .BuildServiceProvider();
 
@@ -100,20 +101,20 @@ namespace Prawnbot.Core.BusinessLayer
                 Client.Disconnected += Client_Disconnected;
                 Client.Connected += Client_Connected;
 
-                if (ConfigUtility.AllowNonEssentialListeners)
-                {                
-                    Client.UserJoined += Client_UserJoined;
-                    Client.UserBanned += Client_UserBanned;
-                    Client.UserUnbanned += Client_UserUnbanned;
-                    Client.JoinedGuild += Client_JoinedGuild;
-                    Client.MessageDeleted += Client_MessageDeleted;
+                if (ConfigUtility.AllowEventListeners)
+                {
+                    if (ConfigUtility.UserJoined) { Client.UserJoined += Client_UserJoined; }
+                    if (ConfigUtility.UserBanned) { Client.UserBanned += Client_UserBanned; }
+                    if (ConfigUtility.UserUnbanned) { Client.UserUnbanned += Client_UserUnbanned; }
+                    if (ConfigUtility.JoinedGuild) { Client.JoinedGuild += Client_JoinedGuild; }
+                    if (ConfigUtility.MessageDeleted) { Client.MessageDeleted += Client_MessageDeleted; }
                 }
 
                 await Commands.AddModulesAsync(typeof(Modules.Modules).Assembly, BotServices);
 
                 await Client.LoginAsync(TokenType.Bot, Token);
                 await Client.StartAsync();
-                await coreBL.SetBotStatusAsync(UserStatus.Online);
+                await coreBL.SetBotStatusAsync();
 
                 if (!IsQuartzInitialized)
                 {
@@ -134,17 +135,26 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        public async Task DisconnectAsync(bool switchBot = false)
+        public async Task DisconnectAsync(bool shutdown = false, bool switchBot = false)
         {
             try
             {
+                if (shutdown && switchBot)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(switchBot));
+                }
+
+                Process currentProcess = Process.GetCurrentProcess();
+
+                await logging.Log_Info($"Process {currentProcess.ProcessName} ({currentProcess.Id}) closed on {Environment.MachineName}");
+
                 if (Client != null)
                 {
                     await Client.LogoutAsync();
 
                     if (shutdown)
                     {
-                    await Client.StopAsync();
+                        await Client.StopAsync();
                         Token = null;
                         Client.Dispose();
 
@@ -180,7 +190,7 @@ namespace Prawnbot.Core.BusinessLayer
             try
             {
                 await DisconnectAsync();
-                await ConnectAsync(Token, AutofacContainer);
+                await ConnectAsync();
             }
             catch (Exception e)
             {
@@ -202,7 +212,7 @@ namespace Prawnbot.Core.BusinessLayer
                 {
                     { "quartz.serializer.type", "binary" }
                 };
-                StdSchedulerFactory factory = new StdSchedulerFactory(props);
+                StdSchedulerFactory factory = new StdSchedulerFactory(props); 
                 Scheduler = await factory.GetScheduler();
 
                 // Start the scheduler 
@@ -266,22 +276,22 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task SetBotRegionAsync(string regionName)
         {
-            if (regionName == null)
+            if (string.IsNullOrEmpty(regionName))
             {
                 await Context.Channel.SendMessageAsync("Region cannot be empty");
                 return;
             }
 
             IEnumerable<RestVoiceRegion> regions = await Context.Guild.GetVoiceRegionsAsync().ToAsyncEnumerable().FlattenAsync();
-            RestVoiceRegion region = regions.FirstOrDefault(x => x.Name == regionName);
-
-            bool validRegion = regions.Any(x => x.Id == region.Id);
+            bool validRegion = regions.Any(x => x.Name == regionName);
 
             if (!validRegion)
             {
                 await Context.Channel.SendMessageAsync($"\"{regionName}\" is not a valid region, or the server cannot access this region.");
                 return;
             }
+
+            RestVoiceRegion region = regions.FirstOrDefault(x => x.Name == regionName);
 
             await Context.Channel.SendMessageAsync($"Setting server {Format.Bold(Context.Guild.Name)}'s region to {region}");
 
@@ -303,7 +313,7 @@ namespace Prawnbot.Core.BusinessLayer
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.WithAuthor(Client.CurrentUser)
                 .WithColor(Color.Green)
-                .WithDescription($"Hello, my name is Big Succ! To find out commands, please use {ConfigUtility.CommandDelimiter}commands")
+                .WithDescription($"Hello, my name is {arg.CurrentUser.Nickname} To find out commands, please use {ConfigUtility.CommandDelimiter}commands")
                 .WithCurrentTimestamp();
 
             await arg.DefaultChannel.SendMessageAsync(string.Empty, UseTTS, embedBuilder.Build());
@@ -370,18 +380,19 @@ namespace Prawnbot.Core.BusinessLayer
         }
 
         private async Task Client_UserJoined(SocketGuildUser user)
-        { 
+        {
             SocketGuild guild = user.Guild;
-            SocketTextChannel channel = guild.DefaultChannel;
+
             await logging.Log_Info($"User {user.Username} joined {guild.Name}");
 
             EmbedBuilder builder = new EmbedBuilder();
 
             builder.WithTitle("Welcome!")
                 .WithColor(Color.Green)
-                .WithDescription($"Welcome to {guild.Name}, {user.Username}! The server now has {guild.MemberCount} members");
+                .WithDescription($"Welcome to {guild.Name}, {user.Username}! The server now has {guild.MemberCount} members")
+                .WithCurrentTimestamp();
 
-            await channel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
+            await guild.DefaultChannel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
         }
 
         private async Task Client_UserBanned(SocketUser user, SocketGuild guild)
@@ -412,7 +423,7 @@ namespace Prawnbot.Core.BusinessLayer
                 .WithDescription(message)
                 .WithCurrentTimestamp();
 
-            await guild.DefaultChannel.SendMessageAsync("", UseTTS, builder.Build());
+            await guild.DefaultChannel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
         }
         #endregion Event Listeners
     }
