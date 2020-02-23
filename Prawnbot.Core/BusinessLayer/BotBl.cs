@@ -91,6 +91,7 @@ namespace Prawnbot.Core.BusinessLayer
                     .AddSingleton(autofacContainer.Resolve<ICoreService>())
                     .AddSingleton(autofacContainer.Resolve<IAPIService>())
                     .AddSingleton(autofacContainer.Resolve<IFileService>())
+                    .AddSingleton(autofacContainer.Resolve<ILogging>())
                     .AddSingleton(autofacContainer.Resolve<ISpeechRecognitionService>())
                     .BuildServiceProvider();
 

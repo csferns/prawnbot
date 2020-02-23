@@ -154,7 +154,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (EventsTriggered > 0)
             {
-                await logging.LogCommandUseAsync(Context.Message.Author.Username, Context.Guild.Name, Context.Message.Content);
+                await logging.Log_Info($"Message recieved from {Context.Message.Author.Username} ({Context.Guild.Name}): \"{Context.Message.Content}\"");
             }
 
             EventsTriggered = 0;
@@ -255,7 +255,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "BotStatus", "Error setting bot status", e));
+                await logging.Log_Exception(e, optionalMessage: "Error setting bot status");
                 return;
             }
         }
@@ -268,7 +268,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "RichPresence", "Error occured while updating rich presence", e));
+                await logging.Log_Exception(e, optionalMessage: "Error occured while updating rich presence");
             }
         }
 
