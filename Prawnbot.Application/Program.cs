@@ -83,7 +83,7 @@ namespace Prawnbot.Application
             }
             catch (Exception e)
             {
-                logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Main", $"Don't be a dingbat: \n{e.Message}", e)).Wait();
+                await logging.Log_Exception(e);
             }
         }
 
@@ -95,7 +95,7 @@ namespace Prawnbot.Application
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Main", $"Don't be a dingbat: \n{e.Message}", e));
+                await logging.Log_Exception(e);
             }
         }
 

@@ -657,7 +657,7 @@ namespace Prawnbot.Core.BusinessLayer
                 }
                 catch (PingException e)
                 {
-                    await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "PingHostAsync", $"Error occured pinging machine with name or address: {nameOrAddress}", e));
+                    await logging.Log_Exception(e, optionalMessage: $"Error occured pinging machine with name or address: {nameOrAddress}");
 
                     // Discard PingExceptions and return false;
                     return IPStatus.Unknown;

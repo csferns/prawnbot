@@ -22,7 +22,7 @@ namespace Prawnbot.Core.Modules
             Translation translation = translatedText.Entities.FirstOrDefault().translations.FirstOrDefault();
 
             await Context.Channel.SendMessageAsync($"{translation.text}");
-            //await logging.PopulateEventLog(new LogMessage(LogSeverity.Info, "Translation", translation.text));
+            await logging.PopulateTranslationLogAsync(translatedText.Entities.ToBunch());
         }
 
         [Command("r34-tags")]

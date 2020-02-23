@@ -99,8 +99,12 @@ namespace Prawnbot.Core.BusinessLayer
         {
             try
             {
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+
                 Process currentProcess = Process.GetCurrentProcess();
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "ConnectAsync", $"Process {currentProcess.ProcessName} ({currentProcess.Id}) started on {Environment.MachineName} "));
+
+                await logging.Log_Info($"Process {currentProcess.ProcessName} ({currentProcess.Id}) started on {Environment.MachineName} at {currentProcess.StartTime}");
 
                 Token ??= token;
                 AutofacContainer ??= autofacContainer;
@@ -148,13 +152,17 @@ namespace Prawnbot.Core.BusinessLayer
                     await QuartzSetupAsync();
                 }
 
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Debug, "ConnectAsync", $"Memory used before collection: {GC.GetTotalMemory(false)}"));
+                stopwatch.Stop();
+
+                await logging.Log_Debug($"Bot started in {stopwatch.Elapsed}");
+
+                await logging.Log_Debug($"Memory used before collection: {(GC.GetTotalMemory(false) / 1024) / 1024} MB");
                 GC.Collect();
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Debug, "ConnectAsync", $"Memory used after collection: {GC.GetTotalMemory(true)}"));
+                await logging.Log_Debug($"Memory used after collection: {(GC.GetTotalMemory(true) / 1024) / 1024} MB");
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "ConnectAsync", "Error connecting the bot", e));
+                await logging.Log_Exception(e);
             }
         }
 
@@ -175,8 +183,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Disconnect", "Error disconnecting the bot", e));
-                return;
+                await logging.Log_Exception(e);
             }
         }
 
@@ -189,7 +196,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Reconnect", "Error reconnecting the bot", e));
+                await logging.Log_Exception(e);
                 return;
             }
         }
@@ -242,11 +249,11 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (SchedulerException sc)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "QuartzSetup", $"A SchedulerExeption occured while scheduling Quartz jobs", sc));
+                await logging.Log_Exception(sc, optionalMessage: "A SchedulerExeption occured while scheduling Quartz jobs");
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "QuartzSetup", $"An error occured while scheduling Quartz jobs", e));
+                await logging.Log_Exception(e);
             }
         }
 
@@ -286,13 +293,14 @@ namespace Prawnbot.Core.BusinessLayer
         #region Event Listeners
         private async Task Client_MessageDeleted(Cacheable<IMessage, ulong> arg1, ISocketMessageChannel channel)
         {
-            await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Client_MessageDeleted", $"Message deleted {arg1.Id} from {channel.Name}"));
-            await channel.SendMessageAsync("Big nerd alert", UseTTS);
+            await logging.Log_Info($"Message deleted {arg1.Id} from {channel.Name}");
+            await channel.SendMessageAsync("Oooh, he's deletin'", UseTTS);
         }
 
         private async Task Client_JoinedGuild(SocketGuild arg)
         {
-            await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Client_JoinedGuild", $"Joined guild {arg.Id} ({arg.Name})"));
+            await logging.Log_Info($"Joined guild {arg.Id} ({arg.Name})");
+
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.WithAuthor(Client.CurrentUser)
                 .WithColor(Color.Green)
@@ -321,16 +329,16 @@ namespace Prawnbot.Core.BusinessLayer
 
                     if (message.Channel.GetType() == typeof(SocketDMChannel))
                     {
-                        await logging.PopulateMessageLogAsync(new LogMessage(LogSeverity.Info, "Message", $"{message.Author.Username}: {message.Content}"));
+                        await logging.Log_Info($"{message.Author.Username}: {message.Content}");
                     }
 
                     if (!result.IsSuccess && result.ErrorReason != null)
                     {
-                        await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Commands", result.ErrorReason));
+                        await logging.Log_Warning(result.ErrorReason);
                         await Context.Channel.SendMessageAsync(result.ErrorReason);
                     }
 
-                    await logging.LogCommandUseAsync(Context.Message.Author.Username, Context.Guild.Name, Context.Message.Content);
+                    await logging.Log_Info($"Message recieved from {Context.Message.Author.Username} ({Context.Guild.Name}): \"{Context.Message.Content}\"");
                 }
                 else
                 {
@@ -342,19 +350,19 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "HandleCommand", "Error handling the command", e));
+                await logging.Log_Exception(e, optionalMessage: "Error handling the command");
                 return;
             }
         }
 
         private async Task Client_Connected()
         {
-            await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Client_Connected", $"Connected as {Client.CurrentUser.Username}"));
+            await logging.Log_Info($"Connected as {Client.CurrentUser.Username}");
         }
 
         private async Task Client_Disconnected(Exception arg)
         {
-            await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Client_Disconnected", "Client disconnected", arg));
+            await logging.Log_Exception(arg, optionalMessage: "Client disconnected");
             await Client.LogoutAsync();
             Client = null;
             ShutdownQuartz();
@@ -366,6 +374,7 @@ namespace Prawnbot.Core.BusinessLayer
         { 
             SocketGuild guild = user.Guild;
             SocketTextChannel channel = guild.DefaultChannel;
+            await logging.Log_Info($"User {user.Username} joined {guild.Name}");
 
             EmbedBuilder builder = new EmbedBuilder();
 
@@ -378,11 +387,15 @@ namespace Prawnbot.Core.BusinessLayer
 
         private async Task Client_UserBanned(SocketUser user, SocketGuild guild)
         {
+            string message = $"{user.Username} was banned from {guild.Name}.";
+
+            await logging.Log_Info(message);
+
             EmbedBuilder builder = new EmbedBuilder();
 
             builder.WithTitle("Banned.")
                 .WithColor(Color.Red)
-                .WithDescription($"{user.Username} was banned from {guild.Name}.")
+                .WithDescription(message)
                 .WithCurrentTimestamp();
 
             await guild.DefaultChannel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
@@ -390,10 +403,14 @@ namespace Prawnbot.Core.BusinessLayer
 
         private async Task Client_UserUnbanned(SocketUser user, SocketGuild guild)
         {
+            string message = $"{user.Username} was unbanned from {guild.Name}.";
+
+            await logging.Log_Info(message);
+
             EmbedBuilder builder = new EmbedBuilder();
             builder.WithTitle("Unbanned.")
                 .WithColor(Color.Green)
-                .WithDescription($"{user.Username} was unbanned from {guild.Name}.")
+                .WithDescription(message)
                 .WithCurrentTimestamp();
 
             await guild.DefaultChannel.SendMessageAsync("", UseTTS, builder.Build());

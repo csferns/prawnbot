@@ -78,7 +78,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "GetRequestAsync", $"Error in GET request for type {typeof(T).FullName}", e));
+                await logging.Log_Exception(e);
                 return default(T);
             }
         }
@@ -105,7 +105,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "PostRequestAsync", $"Error in POST request for type {typeof(T).FullName}", e));
+                await logging.Log_Exception(e, optionalMessage: $"Error in POST request for type {typeof(T).FullName}");
                 return default(T);
             }
         }
@@ -227,7 +227,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Calendar", "Error in GetCalendarEntries", e));
+                await logging.Log_Exception(e);
                 return new Bunch<Event>();
             }
         }
