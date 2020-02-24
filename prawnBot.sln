@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.Common", "Prawnbot
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.API", "Prawnbot.API\Prawnbot.API.csproj", "{6A5DA6E5-15D0-4BC5-A322-82D9A7618AD1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prawnbot.CommandEngine", "Prawnbot.CommandEngine\Prawnbot.CommandEngine.csproj", "{AE3353C2-3FFC-40F4-8617-E973DFC5821C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -67,6 +69,14 @@ Global
 		{6A5DA6E5-15D0-4BC5-A322-82D9A7618AD1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6A5DA6E5-15D0-4BC5-A322-82D9A7618AD1}.Release|x64.ActiveCfg = Release|x64
 		{6A5DA6E5-15D0-4BC5-A322-82D9A7618AD1}.Release|x64.Build.0 = Release|x64
+		{AE3353C2-3FFC-40F4-8617-E973DFC5821C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE3353C2-3FFC-40F4-8617-E973DFC5821C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE3353C2-3FFC-40F4-8617-E973DFC5821C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AE3353C2-3FFC-40F4-8617-E973DFC5821C}.Debug|x64.Build.0 = Debug|Any CPU
+		{AE3353C2-3FFC-40F4-8617-E973DFC5821C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE3353C2-3FFC-40F4-8617-E973DFC5821C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE3353C2-3FFC-40F4-8617-E973DFC5821C}.Release|x64.ActiveCfg = Release|Any CPU
+		{AE3353C2-3FFC-40F4-8617-E973DFC5821C}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -77,6 +87,7 @@ Global
 		{0C5F6176-B8EA-47BA-BBF3-4D6E04D16131} = {C2C3C8A2-B8C6-4D27-A18F-0568447F6BCC}
 		{3737073D-054F-4C8A-BC23-0125B5982635} = {5D52E507-C5BB-4F43-9590-25A3A96270CA}
 		{6A5DA6E5-15D0-4BC5-A322-82D9A7618AD1} = {FC2E0CC0-C023-41B8-8C62-09E93B32EB11}
+		{AE3353C2-3FFC-40F4-8617-E973DFC5821C} = {5D52E507-C5BB-4F43-9590-25A3A96270CA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C01FE66B-85AE-4AE1-AFD0-82025C9913E5}

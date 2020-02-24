@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Prawnbot.Common\Prawnbot.Common.csproj" />
+    <ProjectReference Include="..\Prawnbot.Core\Prawnbot.Core.csproj" />
+  </ItemGroup>
+
+</Project>

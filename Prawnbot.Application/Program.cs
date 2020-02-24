@@ -1,12 +1,12 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
+using Prawnbot.CommandEngine.Interfaces;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Log;
 using Prawnbot.Data;
 using Prawnbot.Data.Interfaces;
-using Prawnbot.Infrastructure;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -57,6 +57,10 @@ namespace Prawnbot.Application
                 .AsImplementedInterfaces()
                 .InstancePerDependency();
 
+            containerBuilder.RegisterAssemblyTypes(Assembly.Load("Prawnbot.CommandEngine"))
+                .AsImplementedInterfaces()
+                .InstancePerLifetimeScope();
+
             // The logging dependency won't be picked up in the above condition so set it here
             containerBuilder.RegisterType<Logging>().As<ILogging>().InstancePerLifetimeScope();
 
@@ -74,7 +78,7 @@ namespace Prawnbot.Application
     public class BaseApplication
     {
         private readonly IContainer container;
-        private readonly IConsoleService consoleService;
+        private readonly ICommandEngine commandEngine;
         private readonly IBotService botService;
         private readonly ILogging logging;
 
@@ -90,7 +94,7 @@ namespace Prawnbot.Application
             {
                 this.botService = scope.Resolve<IBotService>();
                 this.logging = scope.Resolve<ILogging>();
-                this.consoleService = scope.Resolve<IConsoleService>();
+                this.commandEngine = scope.Resolve<ICommandEngine>();
             }
         }
 
@@ -116,7 +120,8 @@ namespace Prawnbot.Application
 
                 AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
                 await ConnectAsync(token, container);
-                await CommandListener();
+
+                await commandEngine.BeginListen(() => Console.ReadLine());
             }
             catch (Exception e)
             {
@@ -153,47 +158,6 @@ namespace Prawnbot.Application
         public async void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
             await botService.DisconnectAsync();
-        }
-
-        /// <summary>
-        /// Process to watch the console for commands that can be executed
-        /// </summary>
-        /// <returns></returns>
-        public async Task CommandListener()
-        {
-            bool result = true;
-
-            while (result)
-            {
-                string command = Console.ReadLine();
-                await logging.Log_Info($"Command recieved through console: '{command}'", updateConsole: false);
-
-                if (!string.IsNullOrWhiteSpace(command))
-                {
-                    if (command.StartsWith('/'))
-                    {
-                        bool valid = consoleService.ValidCommand(command).Entity;
-
-                        if (valid)
-                        {
-                            Response<bool> response = await consoleService.HandleConsoleCommand(command);
-                            result = response.Entity;
-                        }
-                        else
-                        {
-                            await logging.Log_Debug($"'{command.Split(' ')[0]}' is not recognised as a valid command!");
-                        }
-                    }
-                    else
-                    {
-                        await logging.Log_Debug("Command needs to start with a '/'");
-                    }
-                }
-                else
-                {
-                    await logging.Log_Debug("No command entered. Please enter a command.");
-                }
-            }
         }
     }
 }
