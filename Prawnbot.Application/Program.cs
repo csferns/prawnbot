@@ -157,7 +157,7 @@ namespace Prawnbot.Application
         /// <param name="e"></param>
         public async void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
-            await botService.DisconnectAsync();
+            await botService.DisconnectAsync(shutdown: true);
         }
     }
 }

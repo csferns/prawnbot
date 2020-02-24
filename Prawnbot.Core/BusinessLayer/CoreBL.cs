@@ -302,30 +302,27 @@ namespace Prawnbot.Core.BusinessLayer
             return users.ToBunch();
         }
 
-        public async Task<Bunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 5000)
+        public async Task<Bunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 100000)
         {
-            IEnumerable<IMessage> messages = new Bunch<IMessage>();
-
-            await Task.Run(async () =>
+            RequestOptions options = new RequestOptions
             {
-                RequestOptions options = new RequestOptions
-                {
-                    Timeout = 2000,
-                    RetryMode = RetryMode.RetryTimeouts,
-                    CancelToken = CancellationToken.None
-                };
+                Timeout = 5000,
+                RetryMode = RetryMode.RetryTimeouts,
+                CancelToken = CancellationToken.None
+            };
 
-                messages = await FindTextChannel(id).GetMessagesAsync(limit: limit, options: options).FlattenAsync();
-            });
+            SocketTextChannel channel = FindTextChannel(id);
+
+            IEnumerable<IMessage> messages = await channel.GetMessagesAsync(limit: limit, options: options).FlattenAsync();
 
             return messages.Reverse().ToBunch();
         }
 
-        public async Task<Bunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 5000)
+        public async Task<Bunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 100000)
         {
             Bunch<IMessage> messages = await GetAllMessagesAsync(id, limit);
 
-            return messages.Where(x => x.Type == MessageType.Default).ToBunch();
+            return messages.Where(x => x.Type == MessageType.Default && !x.Author.IsBot && !x.Author.IsWebhook).ToBunch();
         }
 
         public async Task<Bunch<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp)
@@ -669,6 +666,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             await Context.Channel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
         }
+
         public async Task ChangeNicknameAsync(string guildName, string nickname)
         {
             SocketGuild guild = GetGuild(guildName);

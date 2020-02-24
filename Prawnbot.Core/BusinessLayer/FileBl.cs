@@ -107,14 +107,27 @@ namespace Prawnbot.Core.BusinessLayer
             using (StreamWriter writer = new StreamWriter(fileStream))
             using (CsvWriter csv = new CsvWriter(writer))
             {
-                fileStream.Position = fileStream.Length;
+                csv.WriteHeader(typeof(CSVColumns));
                 csv.WriteRecords(columns);
             }
+
+            return File.OpenRead(ConfigUtility.TextFileDirectory + "\\" + fileName);
         }
 
         public async Task WriteToFileAsync(string valueToWrite, string fileName)
         {
             using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
+            using (StreamWriter writer = new StreamWriter(fileStream))
+            {
+                await writer.WriteLineAsync(valueToWrite);
+            }
+        }
+
+        public static async Task FailoverWriteToFileAsync(string valueToWrite, string fileName)
+        {
+            FileBL fileBL = new FileBL();
+
+            using (FileStream fileStream = fileBL.CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
             using (StreamWriter writer = new StreamWriter(fileStream))
             {
                 await writer.WriteLineAsync(valueToWrite);

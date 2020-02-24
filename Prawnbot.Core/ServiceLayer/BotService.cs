@@ -25,9 +25,9 @@ namespace Prawnbot.Core.ServiceLayer
             return new ResponseBase();
         }
 
-        public async Task<ResponseBase> DisconnectAsync(bool switchBot = false)
+        public async Task<ResponseBase> DisconnectAsync(bool shutdown = false, bool switchBot = false)
         {
-            await botBL.DisconnectAsync(switchBot);
+            await botBL.DisconnectAsync(shutdown, switchBot);
             return new ResponseBase();
         }
 
