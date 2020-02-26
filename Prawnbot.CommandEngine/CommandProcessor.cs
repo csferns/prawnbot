@@ -36,13 +36,13 @@ namespace Prawnbot.CommandEngine
 
                     return false;
                 case CommandsEnum.SendMessageUser:
-                    await Command_SendMessage_DM(command);
+                    await Command_SendMessageUser(command);
                     break;
                 case CommandsEnum.SendMessageGuild:
-                    await Command_SendMessage_Guild(command);
+                    await Command_SendMessageGuild(command);
                     break;
                 case CommandsEnum.RichPresence:
-                    await Command_UpdateRichPresence(command);
+                    await Command_RichPresence(command);
                     break;
                 case CommandsEnum.Help:
                     await Command_Help();
@@ -66,7 +66,7 @@ namespace Prawnbot.CommandEngine
             return true;
         }
 
-        private async Task Command_SendMessage_DM(Command command)
+        private async Task Command_SendMessageUser(Command command)
         {
             if (command.HasCorrectParameterCount)
             {
@@ -89,7 +89,7 @@ namespace Prawnbot.CommandEngine
             }
         }
 
-        private async Task Command_SendMessage_Guild(Command command)
+        private async Task Command_SendMessageGuild(Command command)
         {
             if (command.HasCorrectParameterCount)
             {
@@ -122,7 +122,7 @@ namespace Prawnbot.CommandEngine
             }
         }
 
-        private async Task Command_UpdateRichPresence(Command command)
+        private async Task Command_RichPresence(Command command)
         {
             if (command.HasCorrectParameterCount)
             {

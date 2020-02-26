@@ -34,7 +34,7 @@ namespace Prawnbot.CommandEngine
                 return false;
             }
 
-            Bunch<string> split = Regex.Split(command.CommandText, REGEXSPLITPATTERN, RegexOptions.IgnorePatternWhitespace).Select(x => x.Replace("\"", "")).ToBunch();
+            Bunch<string> split = Regex.Split(command.CommandText, REGEXSPLITPATTERN, RegexOptions.Singleline).Select(x => x.Replace("\"", "")).ToBunch();
             split.RemoveAll(x => string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x));
 
             string firstWord = split[0].Replace("/", "");
