@@ -3,10 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Interfaces;
-using Prawnbot.Core.Log;
-using Prawnbot.Core.ServiceLayer;
+using Prawnbot.Core;
 
 namespace Prawnbot.API
 {
@@ -22,15 +19,9 @@ namespace Prawnbot.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddLogging();
+            Services.DependencyInjectionSetup(services);
 
-            services.AddSingleton<IBotService, BotService>();
-            services.AddSingleton<IBotBL, BotBL>();
-            services.AddSingleton<ICoreBL, CoreBL>();
-            services.AddSingleton<IFileBL, FileBL>();
-            services.AddSingleton<IFileService, FileService>();
-            services.AddSingleton<IAPIBL, APIBL>();
-            services.AddSingleton<ILogging, Logging>();
+            services.AddLogging();
 
             services.AddControllers();
         }
