@@ -18,7 +18,7 @@ namespace Prawnbot.Core.Interfaces
         /// Method to disconnect the bot
         /// </summary>
         /// <returns></returns>
-        Task DisconnectAsync(bool shutdown = false, bool switchBot = false);
+        Task DisconnectAsync(bool shutdown = false);
         /// <summary>
         /// Disconnects and Reconnects the bot
         /// </summary>

@@ -135,19 +135,10 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        public async Task DisconnectAsync(bool shutdown = false, bool switchBot = false)
+        public async Task DisconnectAsync(bool shutdown = false)
         {
             try
             {
-                if (shutdown && switchBot)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(switchBot));
-                }
-
-                Process currentProcess = Process.GetCurrentProcess();
-
-                await logging.Log_Info($"Process {currentProcess.ProcessName} ({currentProcess.Id}) closed on {Environment.MachineName}");
-
                 if (Client != null)
                 {
                     await Client.LogoutAsync();
@@ -155,15 +146,11 @@ namespace Prawnbot.Core.BusinessLayer
                     if (shutdown)
                     {
                         await Client.StopAsync();
-                        Token = null;
+
                         Client.Dispose();
+                        AutofacContainer.Dispose();
 
                         ShutdownQuartz();
-                    }
-
-                    if (switchBot)
-                    {
-                        Token = null;
                     }
                 }
             }
@@ -372,8 +359,12 @@ namespace Prawnbot.Core.BusinessLayer
         private async Task Client_Disconnected(Exception arg)
         {
             await logging.Log_Exception(arg, optionalMessage: "Client disconnected");
+
             await Client.LogoutAsync();
-            Client = null;
+            await Client.StopAsync();
+
+            Client.Dispose();
+
             ShutdownQuartz();
 
             await ConnectAsync();
