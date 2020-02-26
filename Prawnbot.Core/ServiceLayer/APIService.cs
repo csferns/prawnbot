@@ -1,5 +1,5 @@
 ﻿using Google.Apis.Calendar.v3.Data;
-using Prawnbot.Core.BusinessLayer;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.API.Giphy;
 using Prawnbot.Core.Model.API.Overwatch;
 using Prawnbot.Core.Model.API.Reddit;
@@ -10,17 +10,6 @@ using System.Threading.Tasks;
 
 namespace Prawnbot.Core.ServiceLayer
 {
-    public interface IAPIService
-    {
-        Task<ListResponse<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25);
-        Task<ListResponse<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate);
-        Task<ListResponse<LanguageTranslationRoot>> GetLanguagesAsync();
-        Task<ListResponse<Event>> GetCalendarEntries(string calendarId);
-        Task<ListResponse<Rule34Types>> Rule34TagsAsync();
-        Task<Response<OverwatchStats>> OverwatchStatsAsync(string battletag, string region, string platform);
-        Task<Response<RedditRoot>> GetTopPostsBySubreddit(string subredditName, int count);
-    }
-
     public class APIService : BaseService, IAPIService
     {
         private readonly IAPIBL apiBL;

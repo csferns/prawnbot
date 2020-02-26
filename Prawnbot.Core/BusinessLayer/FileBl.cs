@@ -2,10 +2,11 @@
 using Discord;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Prawnbot.Common.Configuration;
 using Prawnbot.Core.Collections;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Core.Model.DTOs;
-using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,22 +15,6 @@ using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface IFileBL
-    {
-        Task<CloudBlobContainer> GetBlobContainer(string containerName);
-        Task<Uri> GetUriFromBlobStoreAsync(string fileName, string containerName);
-        Task<Stream> GetStreamFromBlobStoreAsync(string fileName, string containerName);
-        Task<Stream> DownloadFileFromBlobStoreAsync(string fileName, string containerName);
-        Task UploadFileToBlobStoreAsync(string fileName, string containerName);
-        FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
-        Task<Bunch<string>> ReadFromFileAsync(string fileName);
-        void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName);
-        Task WriteToFileAsync(string valueToWrite, string fileName);
-        Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
-        bool CheckIfTranslationExists();
-        Bunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
-    }
-
     public class FileBL : BaseBL, IFileBL
     {
         public async Task<CloudBlobContainer> GetBlobContainer(string containerName)
@@ -92,7 +77,9 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (!File.Exists(filePath))
             {
-                using (FileStream file = File.Create(fileName)) { };
+                using (FileStream fs = File.Create(filePath))
+                {
+                }
             }
 
             return new FileStream(filePath, fileMode, fileAccess, fileShare);
@@ -114,20 +101,33 @@ namespace Prawnbot.Core.BusinessLayer
             };
         }
 
-        public void WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName)
+        public FileStream WriteToCSV(IList<CSVColumns> columns, string fileName)
         {
             using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Truncate, FileAccess.Write, FileShare.Write))
             using (StreamWriter writer = new StreamWriter(fileStream))
             using (CsvWriter csv = new CsvWriter(writer))
             {
-                fileStream.Position = fileStream.Length;
+                csv.WriteHeader(typeof(CSVColumns));
                 csv.WriteRecords(columns);
             }
+
+            return File.OpenRead(ConfigUtility.TextFileDirectory + "\\" + fileName);
         }
 
         public async Task WriteToFileAsync(string valueToWrite, string fileName)
         {
             using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
+            using (StreamWriter writer = new StreamWriter(fileStream))
+            {
+                await writer.WriteLineAsync(valueToWrite);
+            }
+        }
+
+        public static async Task FailoverWriteToFileAsync(string valueToWrite, string fileName)
+        {
+            FileBL fileBL = new FileBL();
+
+            using (FileStream fileStream = fileBL.CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
             using (StreamWriter writer = new StreamWriter(fileStream))
             {
                 await writer.WriteLineAsync(valueToWrite);
@@ -143,15 +143,19 @@ namespace Prawnbot.Core.BusinessLayer
                 CSVColumns recordToAdd = new CSVColumns
                 {
                     MessageID = messagesToAdd[message].Id,
+                    MessageSource = messagesToAdd[message].Source.ToString(),
                     Author = messagesToAdd[message].Author.Username,
-                    AuthorIsBot = messagesToAdd[message].Author.IsBot,
+                    WasSentByBot = messagesToAdd[message].Author.IsBot,
+                    IsPinned = messagesToAdd[message].IsPinned,
                     MessageContent = messagesToAdd[message].Content,
                     Timestamp = messagesToAdd[message].Timestamp
                 };
 
-                if (messagesToAdd[message].Attachments.Count() > 0)
+                recordToAdd.AttachmentCount = messagesToAdd[message].Attachments.Count();
+
+                if (messagesToAdd[message].Attachments.Any())
                 {
-                    recordToAdd.Attachments = string.Join(", ", messagesToAdd[message].Attachments);
+                    recordToAdd.Attachments = messagesToAdd[message].Attachments.FirstOrDefault().Url;
                 }
 
                 records.Add(recordToAdd);

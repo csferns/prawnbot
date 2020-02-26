@@ -3,7 +3,7 @@
 namespace Prawnbot.Core.Attributes
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    internal class NotImplementedAttribute : Attribute
+    internal sealed class NotImplementedAttribute : Attribute
     {
         public NotImplementedAttribute()
         {

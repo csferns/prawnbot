@@ -3,17 +3,15 @@ using Discord.Audio;
 using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
+using Prawnbot.Common;
+using Prawnbot.Common.Configuration;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Attributes;
 using Prawnbot.Core.Collections;
-using Prawnbot.Core.Log;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.API.Giphy;
-using Prawnbot.Core.Model.API.Reddit;
-using Prawnbot.Core.Model.API.Rule34;
 using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Core.Model.DTOs;
-using Prawnbot.Core.Utility;
-using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -31,135 +29,6 @@ using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface ICoreBL
-    {
-        Task SendImageFromBlobStoreAsync(string fileName);
-        Task MessageEventListeners(SocketUserMessage message);
-        string FlipACoin(string headsValue, string tailsValue);
-        Task<Bunch<string>> YottaPrependAsync();
-        /// <summary>
-        /// Method to set the status of the bot
-        /// </summary>
-        /// <param name="status">UserStatus to change to</param>
-        /// <returns>Task</returns>
-        Task SetBotStatusAsync(UserStatus status);
-        /// <summary>
-        /// Updates the bot's rich presence
-        /// </summary>
-        /// <param name="name">Name of the game</param>
-        /// <param name="activityType">Activity type of the game</param>
-        /// <param name="streamUrl">(Optional) stream url</param>
-        /// <returns></returns>
-        Task UpdateRichPresenceAsync(string name, ActivityType activityType, string streamUrl);
-        /// <summary>
-        /// Get a user by username
-        /// </summary>
-        /// <param name="username"></param>
-        /// <returns></returns>
-        SocketGuildUser GetUser(string username);
-        /// <summary>
-        /// Get all the current users in the servers the bot is connected to
-        /// </summary>
-        /// <returns></returns>
-        Bunch<SocketGuildUser> GetAllUsers();
-        /// <summary>
-        /// Gets all messages from a guild text channel
-        /// </summary>
-        /// <param name="id">Text channel ID</param>
-        /// <returns></returns>
-        Task<Bunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 5000);
-        Task<Bunch<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp);
-        Task<Bunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 5000);
-        /// <summary>
-        /// Get a guild by name
-        /// </summary>
-        /// <param name="guildName">Name of the guild</param>
-        /// <returns></returns>
-        SocketGuild GetGuild(string guildName);
-        SocketGuild GetGuildById(ulong guildId);
-        /// <summary>
-        /// Get all the current guilds the bot is connected to
-        /// </summary>
-        /// <returns>List of IGuilds</returns>
-        Bunch<SocketGuild> GetAllGuilds();
-        /// <summary>
-        /// Gets the default channel of the given guild
-        /// </summary>
-        /// <param name="guild">Server</param>
-        /// <returns>SocketTextChannel</returns>
-        SocketTextChannel FindDefaultChannel(SocketGuild guild);
-        /// <summary>
-        /// Gets a text channel with the supplied ID
-        /// </summary>
-        /// <param name="id">Channel ID</param>
-        /// <returns></returns>
-        SocketTextChannel FindTextChannel(ulong id);
-        /// <summary>
-        /// Gets a text channel with the supplied guild and id
-        /// </summary>
-        /// <param name="guild"></param>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        SocketTextChannel FindTextChannel(SocketGuild guild, ulong id);
-        /// <summary>
-        /// Gets a text channel with a supplied guild and name
-        /// </summary>
-        /// <param name="guild"></param>
-        /// <param name="channelName"></param>
-        /// <returns></returns>
-        SocketTextChannel FindTextChannel(SocketGuild guild, string channelName);
-        /// <summary>
-        /// Gets a channel of the given guild
-        /// </summary>
-        /// <param name="guild">Server</param>
-        /// <param name="channel">Channel</param>
-        /// <returns>SocketTextChannel</returns>
-        SocketTextChannel FindTextChannel(SocketGuild guild, SocketTextChannel channel);
-        /// <summary>
-        /// Gets all the channels of the given guild
-        /// </summary>
-        /// <param name="guild">Server</param>
-        /// <returns>IReadOnlyCollection of SocketTextChannels</returns>
-        List<SocketTextChannel> FindGuildTextChannels(SocketGuild guild);
-        /// <summary>
-        /// Create an FFMPEG process for the audio commands
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        Process CreateFfmpegProcess(string path);
-        /// <summary>
-        /// Leaves the current audio channel
-        /// </summary>
-        /// <param name="guild">Guild</param>
-        /// <returns></returns>
-        Task LeaveAudioAsync(IGuild guild);
-        /// <summary>
-        /// Sends a message to a channel
-        /// </summary>
-        /// <param name="guild">Guild to send it to</param>
-        /// <param name="channel">Channel to send it to</param>
-        /// <param name="messageText">Text of the message</param>
-        /// <returns></returns>
-        Task SendChannelMessageAsync(SocketGuild guild, SocketTextChannel channel, string messageText);
-        string FindEmojis(SocketUserMessage message);
-        /// <summary>
-        /// Send a message through a DM
-        /// </summary>
-        /// <param name="user">User to DM</param>
-        /// <param name="messageText">Text of the message</param>
-        /// <returns></returns>
-        Task SendDMAsync(SocketGuildUser user, string messageText);
-        string TagUser(ulong id);
-        Task<IPStatus> PingHostAsync(string nameOrAddress);
-        Task<IMessage> GetRandomQuoteAsync(ulong id);
-        Task BackupServerAsync(ulong id, bool server);
-        Task<GuildEmote> GetEmoteFromGuildAsync(ulong id, SocketGuild guild);
-
-        Task CommandsAsync(bool includeNotImplemented);
-        Task GetBotInfoAsync();
-        Task StatusAsync();
-    }
-
     public class CoreBL : BaseBL, ICoreBL
     {
         private readonly IFileBL fileBL;
@@ -216,17 +85,19 @@ namespace Prawnbot.Core.BusinessLayer
                 await ReactToSingleWordAsync(StrippedMessage, lookupValue: "dad", replyMessage: "404 dad not found");
             }
 
-            if (ConfigUtility.DadMode && StrippedMessage.StartsWith("im"))
+            if (ConfigUtility.DadMode && StrippedMessage.Contains("im"))
             {
-                List<string> messageArray = message.Content.ToLowerInvariant().Split(' ').ToList();
+                List<string> splitMessage = message.Content.ToLowerInvariant().Split(' ').ToList();
 
-                if (messageArray[0].RemoveSpecialCharacters() == "im" && messageArray.Count() != 1)
+                string imString = splitMessage.Find(x => x == "im" || x == "i'm");
+                int pos = splitMessage.IndexOf(imString);
+
+                for (int i = 0; i < pos; i++)
                 {
-                    messageArray.RemoveAt(0);
-
-                    await Context.Channel.SendMessageAsync($"Hi {string.Join(' ', messageArray.ToList())}, i'm dad");
-                    EventsTriggered++;
+                    splitMessage.RemoveAt(i);
                 }
+
+                await Context.Channel.SendMessageAsync($"hello {string.Join(' ', splitMessage)}, i'm dad!");
             }
 
             if (ConfigUtility.ProfanityFilter)
@@ -285,7 +156,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (EventsTriggered > 0)
             {
-                await logging.LogCommandUseAsync(Context.Message.Author.Username, Context.Guild.Name, Context.Message.Content);
+                await logging.Log_Info($"Message recieved from {Context.Message.Author.Username} ({Context.Guild.Name}): \"{Context.Message.Content}\"");
             }
 
             EventsTriggered = 0;
@@ -295,8 +166,8 @@ namespace Prawnbot.Core.BusinessLayer
         public async Task ReactToTaggedUserWithGifAsync(SocketUserMessage message, ulong userId, string replyMessage, string gifSearchText)
         {
             Bunch<GiphyDatum> gifs = gifSearchText != null
-                ? await apiBL.GetGifsAsync(gifSearchText)
-                : new Bunch<GiphyDatum>();
+            ? await apiBL.GetGifsAsync(gifSearchText)
+            : new Bunch<GiphyDatum>();
 
             replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
 
@@ -305,7 +176,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task ReactToTaggedUserAsync(SocketUserMessage message, ulong userId, string replyMessage)
         {
-            if (message.IsUserTagged(userId))
+            if (message.IsUserTagged(userId) && message.Content != null)
             {
                 if (!MessageSent)
                 {
@@ -378,7 +249,7 @@ namespace Prawnbot.Core.BusinessLayer
             await Context.Channel.SendFileAsync(stream, fileName);
         }
 
-        public async Task SetBotStatusAsync(UserStatus status)
+        public async Task SetBotStatusAsync(UserStatus status = UserStatus.Online)
         {
             try
             {
@@ -386,7 +257,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "BotStatus", "Error setting bot status", e));
+                await logging.Log_Exception(e, optionalMessage: "Error setting bot status");
                 return;
             }
         }
@@ -399,7 +270,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "RichPresence", "Error occured while updating rich presence", e));
+                await logging.Log_Exception(e, optionalMessage: "Error occured while updating rich presence");
             }
         }
 
@@ -431,30 +302,27 @@ namespace Prawnbot.Core.BusinessLayer
             return users.ToBunch();
         }
 
-        public async Task<Bunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 5000)
+        public async Task<Bunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 100000)
         {
-            IEnumerable<IMessage> messages = new Bunch<IMessage>();
-
-            await Task.Run(async () =>
+            RequestOptions options = new RequestOptions
             {
-                RequestOptions options = new RequestOptions
-                {
-                    Timeout = 2000,
-                    RetryMode = RetryMode.RetryTimeouts,
-                    CancelToken = CancellationToken.None
-                };
+                Timeout = 5000,
+                RetryMode = RetryMode.RetryTimeouts,
+                CancelToken = CancellationToken.None
+            };
 
-                messages = await FindTextChannel(id).GetMessagesAsync(limit: limit, options: options).FlattenAsync();
-            });
+            SocketTextChannel channel = FindTextChannel(id);
+
+            IEnumerable<IMessage> messages = await channel.GetMessagesAsync(limit: limit, options: options).FlattenAsync();
 
             return messages.Reverse().ToBunch();
         }
 
-        public async Task<Bunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 5000)
+        public async Task<Bunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 100000)
         {
             Bunch<IMessage> messages = await GetAllMessagesAsync(id, limit);
 
-            return messages.Where(x => x.Type == MessageType.Default).ToBunch();
+            return messages.Where(x => x.Type == MessageType.Default && !x.Author.IsBot && !x.Author.IsWebhook).ToBunch();
         }
 
         public async Task<Bunch<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp)
@@ -506,9 +374,9 @@ namespace Prawnbot.Core.BusinessLayer
             return guild.TextChannels.Where(x => x.Name == channelName).FirstOrDefault();
         }
 
-        public List<SocketTextChannel> FindGuildTextChannels(SocketGuild guild)
+        public Bunch<SocketTextChannel> FindGuildTextChannels(SocketGuild guild)
         {
-            return Client.Guilds.FirstOrDefault(x => x == guild).TextChannels.ToList();
+            return Client.Guilds.FirstOrDefault(x => x == guild).TextChannels.ToBunch();
         }
 
         public SocketTextChannel FindTextChannel(SocketGuild guild, SocketTextChannel channel)
@@ -659,6 +527,8 @@ namespace Prawnbot.Core.BusinessLayer
                 }
                 catch (PingException e)
                 {
+                    await logging.Log_Exception(e, optionalMessage: $"Error occured pinging machine with name or address: {nameOrAddress}");
+
                     // Discard PingExceptions and return false;
                     return IPStatus.Unknown;
                 }
@@ -686,33 +556,39 @@ namespace Prawnbot.Core.BusinessLayer
                 stopwatch.Start();
 
                 string fileName = server
-                    ? $"{FindTextChannel(id).Name}-backup.csv"
-                    : $"{Context.Guild.Name}-backup.csv";
+                    ? $"{Context.Guild.Name}-backup.csv"
+                    : $"{FindTextChannel(id).Name}-backup.csv";
 
-                await Context.Channel.SendMessageAsync($"Started {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)} {(server ? "(" + Context.Guild.TextChannels.Count() + " channels)" : "")} at {DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
+                await Context.Channel.SendMessageAsync($"Started {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)}{(server ? " (" + Context.Guild.TextChannels.Count() + " channels)" : "")} at {DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
 
-                Bunch<IMessage> messagesToAdd = new Bunch<IMessage>();
+                Bunch<CSVColumns> records = new Bunch<CSVColumns>();
 
                 if (server)
                 {
+                    records = new Bunch<CSVColumns>();
                     foreach (SocketTextChannel textChannel in Context.Guild.TextChannels)
                     {
-                        messagesToAdd = await GetUserMessagesAsync(textChannel.Id);
-                        Bunch<CSVColumns> records = fileBL.CreateCSVList(messagesToAdd);
-                        fileBL.WriteToCSV(records, textChannel.Id, fileName);
+                        Bunch<IMessage> messagesToAdd = await GetAllMessagesAsync(textChannel.Id);
+
+                        Bunch<CSVColumns> channelMessages = fileBL.CreateCSVList(messagesToAdd);
+                        records.AddRange(channelMessages);
                     }
                 }
                 else
                 {
-                    messagesToAdd = await GetUserMessagesAsync(id);
+                    Bunch<IMessage> messagesToAdd = await GetAllMessagesAsync(id);
 
-                    Bunch<CSVColumns> records = fileBL.CreateCSVList(messagesToAdd);
-                    fileBL.WriteToCSV(records, id, fileName);
+                    records = fileBL.CreateCSVList(messagesToAdd);
                 }
+
+                FileStream fileStream = fileBL.WriteToCSV(records, fileName);
 
                 stopwatch.Stop();
 
-                await Context.Channel.SendMessageAsync($"Finished {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)} to {fileName}. \nThe operation took {stopwatch.Elapsed.Hours}h:{stopwatch.Elapsed.Minutes}m:{stopwatch.Elapsed.Seconds}s:{stopwatch.Elapsed.Milliseconds}ms");
+                await Context.Channel.SendFileAsync(fileStream, fileName, $"Finished {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)}. \nThe operation took {stopwatch.Elapsed.Hours}h:{stopwatch.Elapsed.Minutes}m:{stopwatch.Elapsed.Seconds}s:{stopwatch.Elapsed.Milliseconds}ms");
+
+                fileStream.Close();
+                fileStream.Dispose();
             });
         }
 
@@ -789,6 +665,31 @@ namespace Prawnbot.Core.BusinessLayer
                 .WithCurrentTimestamp();
 
             await Context.Channel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
+        }
+
+        public async Task ChangeNicknameAsync(string guildName, string nickname)
+        {
+            SocketGuild guild = GetGuild(guildName);
+
+            await guild.CurrentUser.ModifyAsync(x => x.Nickname = nickname);
+        }
+
+        public async Task ChangeIconAsync(Uri imageUri = null)
+        {
+            if (imageUri != null)
+            {
+                WebRequest request = WebRequest.Create(imageUri);
+
+                using (Stream stream = request.GetResponse().GetResponseStream())
+                {
+                    Image image = new Image(stream);
+                    await Client.CurrentUser.ModifyAsync(x => x.Avatar = image);
+                }
+            }
+            else
+            {
+                await Client.CurrentUser.ModifyAsync(x => x.Avatar = null);
+            }
         }
     }
 }

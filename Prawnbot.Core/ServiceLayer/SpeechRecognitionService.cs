@@ -1,13 +1,9 @@
 ﻿using Prawnbot.Core.BusinessLayer;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
 
 namespace Prawnbot.Core.ServiceLayer
 {
-    public interface ISpeechRecognitionService
-    {
-        ResponseBase Setup();
-    }
-
     public class SpeechRecognitionService : BaseService, ISpeechRecognitionService
     {
         private readonly ISpeechRecognitionBL speechRecognitionBL;

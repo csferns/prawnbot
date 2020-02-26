@@ -1,114 +1,94 @@
 ﻿using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using Discord;
 using Microsoft.Extensions.DependencyInjection;
-using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Exceptions;
+using Prawnbot.CommandEngine.Interfaces;
+using Prawnbot.Common.Configuration;
+using Prawnbot.Core;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Log;
-using Prawnbot.Core.ServiceLayer;
-using Prawnbot.Utility.Configuration;
+using Prawnbot.Data;
+using Prawnbot.Data.Interfaces;
 using System;
-using System.Diagnostics;
 using System.Reflection;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace Prawnbot.Application
+namespace Prawnbot.Application 
 {
+    /// <summary>
+    /// Console Application entry point
+    /// </summary>
     public class Program
     {
-        public static void Main(string[] args)
-        {
-            using (IContainer container = AutofacSetup())
-            using (ILifetimeScope scope = container.BeginLifetimeScope())
-            {
-                IBotService botService = scope.Resolve<IBotService>();
-                ILogging logging = scope.Resolve<ILogging>();
-                BaseApplication adminApplication = new BaseApplication(botService, logging);
+        protected IBotService botService;
 
-                adminApplication.Main(container);
-            };
+        public Program()
+        {
+
         }
 
-        private static IContainer AutofacSetup()
+        public static async Task Main(string[] args)
         {
-            ServiceCollection serviceCollection = new ServiceCollection();
-            serviceCollection.AddLogging();
+            Program program = new Program();
+            ILogging logging = null;
 
-            ContainerBuilder containerBuilder = new ContainerBuilder();
-            containerBuilder.Populate(serviceCollection);
-
-            containerBuilder.RegisterAssemblyTypes(Assembly.GetAssembly(typeof(CoreBL)))
-                .Where(assembly => assembly.Name.EndsWith("BL") || assembly.Name.EndsWith("Service"))
-                .AsImplementedInterfaces()
-                .InstancePerLifetimeScope();
-
-            containerBuilder.RegisterType<Logging>().As<ILogging>().InstancePerLifetimeScope();
-
-            return containerBuilder.Build();
-        }
-    }
-
-    public class BaseApplication
-    {
-        private readonly IBotService botService;
-        private readonly ILogging logging;
-        public BaseApplication(IBotService botService, ILogging logging)
-        {
-            this.botService = botService;
-            this.logging = logging;
-        }
-
-        public void Main(IContainer autofacContainer)
-        {
             try
             {
-                Console.Title = "Prawnbot.Application";
-                Console.BackgroundColor = ConsoleColor.White;
-                Console.ForegroundColor = ConsoleColor.Blue;
-                Console.Clear();
-                Console.OutputEncoding = Encoding.Unicode;
+                // Get the Dependency Injection container and use it to make a new instance
+                // of the non static BaseApplication class so work can be done
+                using (IContainer container = Services.DependencyInjectionSetup())
+                using (ILifetimeScope scope = container.BeginLifetimeScope())
+                {
+                    IBotService botService = scope.Resolve<IBotService>();
+                    program.botService = botService;
 
-                string token = string.IsNullOrEmpty(ConfigUtility.BotToken) || string.IsNullOrWhiteSpace(ConfigUtility.BotToken) 
-                    ? Console.ReadLine() 
-                    : ConfigUtility.BotToken;
+                    logging = scope.Resolve<ILogging>();
 
-                Console.Clear();
+                    ICommandEngine commandEngine = scope.Resolve<ICommandEngine>();
 
-                AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
-                ConnectAsync(token, autofacContainer).GetAwaiter().GetResult();
+                    program.SetupEnvironmentConfig();
+
+                    string token = string.IsNullOrEmpty(ConfigUtility.BotToken)
+                        ? Console.ReadLine() 
+                        : ConfigUtility.BotToken;
+
+                    Console.Clear();
+
+                    await botService.ConnectAsync(token, container);
+                    await commandEngine.BeginListen(() => Console.ReadLine()); 
+
+                    Thread.Sleep(Timeout.Infinite);
+                };
             }
             catch (Exception e)
             {
-                logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Main", $"Don't be a dingbat: \n{e.Message}", e)).Wait();
+                logging?.Log_Exception(e);
+
+                Console.WriteLine("Press any key to continue...");
+                Console.ReadKey();
             }
         }
 
-        public async Task ConnectAsync(string token, IContainer autofacContainer)
+        /// <summary>
+        /// Event listener to watch for the console being closed and dispose of the Discord Client correctly
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void CurrentDomain_ProcessExit(object sender, EventArgs e)
         {
-            try
-            {
-                Process currentProcess = Process.GetCurrentProcess();
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "ConnectAsync", $"Process {currentProcess.ProcessName} ({currentProcess.Id}) started on {Environment.MachineName} "));
-
-                await botService.ConnectAsync(token, autofacContainer);
-
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Debug, "ConnectAsync", $"Memory used before collection: {GC.GetTotalMemory(false)}"));
-                GC.Collect();
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Debug, "ConnectAsync", $"Memory used after collection: {GC.GetTotalMemory(true)}"));
-
-                await Task.Delay(-1);
-            }
-            catch (Exception e)
-            {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Main", $"Don't be a dingbat: \n{e.Message}", e));
-            }
+            await botService.DisconnectAsync(shutdown: true).ConfigureAwait(false);
         }
 
-        public async void CurrentDomain_ProcessExit(object sender, EventArgs e)
+        private void SetupEnvironmentConfig()
         {
-            await botService.DisconnectAsync();
-            botService.ShutdownQuartz();
+            Console.Title = ConfigUtility.ConsoleTitle;
+            Console.BackgroundColor = ConfigUtility.ConsoleBackground;
+            Console.ForegroundColor = ConfigUtility.ConsoleForeground;
+            Console.OutputEncoding = ConfigUtility.ConsoleEncoding;
+
+            Console.Clear();
+
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
         }
     }
 }

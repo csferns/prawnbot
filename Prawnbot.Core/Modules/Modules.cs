@@ -1,22 +1,19 @@
 ﻿using Discord;
 using Discord.Commands;
-using Discord.Rest;
 using Discord.WebSocket;
+using Prawnbot.Common;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Attributes;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Exceptions;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.DTOs;
-using Prawnbot.Core.ServiceLayer;
-using Prawnbot.Core.Utility;
 using Prawnbot.Infrastructure;
-using Prawnbot.Utility.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.NetworkInformation;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -29,14 +26,18 @@ namespace Prawnbot.Core.Modules
         private readonly ICoreService coreService;
         private readonly IFileService fileService;
         private readonly IAPIService apiService;
+        private readonly IAlarmService alarmService;
         private readonly ISpeechRecognitionService speechRecognitionService;
-        public Modules(IBotService botService, ICoreService coreService, IFileService fileService, IAPIService apiService, ISpeechRecognitionService speechRecognitionService)
+        private readonly ILogging logging;
+        public Modules(IBotService botService, ICoreService coreService, IFileService fileService, IAPIService apiService, ISpeechRecognitionService speechRecognitionService, ILogging logging, IAlarmService alarmService)
         {
             this.botService = botService;
             this.coreService = coreService;
             this.fileService = fileService;
             this.apiService = apiService;
+            this.alarmService = alarmService;
             this.speechRecognitionService = speechRecognitionService;
+            this.logging = logging;
         }
 
         #if DEBUG
@@ -49,6 +50,45 @@ namespace Prawnbot.Core.Modules
         }
         #endif
 
+        [Command("order-message")]
+        public async Task OrderMessageAsync(bool includeSpaces = true)
+        {
+            ListResponse<IMessage> messages = await coreService.GetAllMessagesAsync(Context.Channel.Id, 100);
+            IMessage message = messages.Entities.ToList()[messages.Entities.Count() - 2];
+
+            StringBuilder sb = new StringBuilder();
+
+            if (includeSpaces)
+            {
+                string[] splitMessage = message.Content.Split(' ');
+
+                for (int item = 0; item < splitMessage.Count(); item++)
+                {
+                    Bunch<char> orderedMessage = splitMessage[item].OrderBy(x => x).ToBunch();
+
+                    for (int character = 0; character < orderedMessage.Count(); character++)
+                    {
+                        sb.Append(orderedMessage[character]);
+                    }
+
+                    if (item != splitMessage.Count())
+                    {
+                        sb.Append(' ');
+                    }
+                }
+            }
+            else
+            {
+                IEnumerable<char> orderedMessage = message.Content.RemoveSpecialCharacters().ToLowerInvariant().Where(x => x != ' ').OrderBy(x => x);
+
+                foreach (char character in orderedMessage)
+                {
+                    sb.Append(character);
+                }
+            }
+
+            await Context.Channel.SendMessageAsync(sb.ToString());
+        }
 
         [Command("random-user")]
         [Summary("Gets a random user from the guild and posts them")]
@@ -177,19 +217,25 @@ namespace Prawnbot.Core.Modules
         [NotImplemented]
         public async Task SetAlarmAsync(int timePassed, [Remainder]string alarmName = null)
         {
-            // TODO: Create a service for the Alarm entity and do get / creation / update / delete there
             await Task.Delay(2);
             throw new NotImplementedException();
         }
 
         [Command("display-alarms")]
         [Summary("Display set alarms")]
-        [NotImplemented]
         public async Task GetAlarmAsync()
         {
-            // TODO: Create a service for the Alarm entity and do get / creation / update / delete there
-            await Task.Delay(2);
-            throw new NotImplementedException();
+            ListResponse<AlarmDTO> response = alarmService.GetAll();
+            if (response.HasData)
+            {
+                Bunch<AlarmDTO> alarms = response.Entities.ToBunch();
+                IEnumerable<string> alarmDataToReturn = alarms.Select(x => $"{x.User}'s alarm {x.AlarmName}: {x.AlarmName}");
+                await Context.Channel.SendMessageAsync(string.Join(',', alarmDataToReturn));
+            }
+            else
+            {
+                await Context.Channel.SendMessageAsync("No alarms set");
+            }
         }
 
         [Command("remove-alarm")]
@@ -197,7 +243,6 @@ namespace Prawnbot.Core.Modules
         [NotImplemented]
         public async Task RemoveAlarmAsync()
         {
-            // TODO: Create a service for the Alarm entity and do creation / update / delete there
             await Task.Delay(200);
             throw new NotImplementedException();
         }
@@ -236,7 +281,7 @@ namespace Prawnbot.Core.Modules
                 }
             };
 
-            fileService.WriteToCSV(columns, id, fileName);
+            fileService.WriteToCSV(columns, fileName);
 
             if (Context.Message.Channel.Id == id)
             {

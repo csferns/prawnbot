@@ -5,19 +5,19 @@ using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using Newtonsoft.Json;
+using Prawnbot.Common;
+using Prawnbot.Common.Configuration;
 using Prawnbot.Core.Collections;
-using Prawnbot.Core.Log;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.API.Giphy;
 using Prawnbot.Core.Model.API.Overwatch;
 using Prawnbot.Core.Model.API.Reddit;
 using Prawnbot.Core.Model.API.Rule34;
 using Prawnbot.Core.Model.API.Translation;
-using Prawnbot.Core.Utility;
-using Prawnbot.Utility.Configuration;
+using Prawnbot.Core.Model.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -27,20 +27,6 @@ using System.Web;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface IAPIBL
-    {
-        Task<Bunch<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25);
-        Task<Bunch<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate);
-        Task<Bunch<LanguageTranslationRoot>> GetLanguagesAsync();
-        Task<bool> GetProfanityFilterAsync(string message);
-        Task<Bunch<Rule34Model>> Rule34PostsAsync(string[] tags);
-        Task<Bunch<Rule34Types>> Rule34TagsAsync(); 
-        Task<Bunch<Event>> GetCalendarEntries(string calendarId);
-        Task<OverwatchStats> OverwatchStatsAsync(string battletag, string region, string platform);
-        Task<RedditRoot> GetTopPostsBySubreddit(string subredditName, int count);
-
-    }
-
     public class APIBL : BaseBL, IAPIBL
     {
         private readonly IFileBL fileBL;
@@ -52,7 +38,7 @@ namespace Prawnbot.Core.BusinessLayer
             this.logging = logging;
         }
 
-        private async Task<T> GetRequestAsync<T>(string url, Dictionary<string, string> parameters = null)
+        private async Task<T> GetRequestAsync<T>(string url, IDictionary<string, string> parameters = null)
         {
             try
             {
@@ -79,12 +65,12 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "GetRequestAsync", $"Error in GET request for type {typeof(T).FullName}", e));
+                await logging.Log_Exception(e);
                 return default(T);
             }
         }
 
-        private async Task<T> PostRequestAsync<T>(string url, object postData, Dictionary<string, string> headers)
+        private async Task<T> PostRequestAsync<T>(string url, object postData, IDictionary<string, string> headers)
         {
             try
             {
@@ -106,14 +92,14 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "PostRequestAsync", $"Error in POST request for type {typeof(T).FullName}", e));
+                await logging.Log_Exception(e, optionalMessage: $"Error in POST request for type {typeof(T).FullName}");
                 return default(T);
             }
         }
 
         public async Task<Bunch<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
         {
-            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "api_key", ConfigUtility.GiphyAPIKey },
                 { "q", HttpUtility.UrlEncode(searchTerm) },
@@ -142,7 +128,7 @@ namespace Prawnbot.Core.BusinessLayer
                     url += $"&from={fromLanguage}";
                 }
 
-                Dictionary<string, string> headers = new Dictionary<string, string>()
+                IDictionary<string, string> headers = new Dictionary<string, string>()
                 {
                     { "Ocp-Apim-Subscription-Key", ConfigUtility.TranslateAPIKey }
                 };
@@ -153,7 +139,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<Bunch<LanguageTranslationRoot>> GetLanguagesAsync()
         {
-            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "api-version", "3.0" }
             };
@@ -163,7 +149,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<bool> GetProfanityFilterAsync(string message)
         {
-            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "text", message }
             };
@@ -173,7 +159,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<Bunch<Rule34Model>> Rule34PostsAsync(string[] tags)
         {
-            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "tags", string.Join('+', tags) }
             };
@@ -228,7 +214,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Calendar", "Error in GetCalendarEntries", e));
+                await logging.Log_Exception(e);
                 return new Bunch<Event>();
             }
         }
@@ -240,7 +226,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<RedditRoot> GetTopPostsBySubreddit(string subredditName, int count)
         {
-            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "count", count.ToString() }
             };

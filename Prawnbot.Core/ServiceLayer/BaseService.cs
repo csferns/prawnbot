@@ -1,11 +1,12 @@
-﻿using Prawnbot.Infrastructure;
+﻿using Prawnbot.Core.Interfaces;
+using Prawnbot.Infrastructure;
 using System.Collections.Generic;
 
 namespace Prawnbot.Core.ServiceLayer
 {
-    public class BaseService
+    public class BaseService : IBaseService
     {
-        protected Response<TEntity> LoadResponse<TEntity>(TEntity item)
+        public Response<TEntity> LoadResponse<TEntity>(TEntity item)
         {
             Response<TEntity> response = new Response<TEntity>
             {
@@ -15,7 +16,7 @@ namespace Prawnbot.Core.ServiceLayer
             return response;
         }
 
-        protected ListResponse<TEntity> LoadListResponse<TEntity>(IList<TEntity> list)
+        public ListResponse<TEntity> LoadListResponse<TEntity>(IEnumerable<TEntity> list)
         {
             ListResponse<TEntity> response = new ListResponse<TEntity>
             {

@@ -6,9 +6,9 @@ namespace Prawnbot.Data
 {
     public class UnitOfWork : IUnitOfWork
     {
-        private readonly DbContext context;
+        private readonly BotDatabaseContext context;
 
-        public UnitOfWork(DbContext context)
+        public UnitOfWork(BotDatabaseContext context)
         {
             this.context = context;
         }

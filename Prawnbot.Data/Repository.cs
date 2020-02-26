@@ -19,9 +19,9 @@ namespace Prawnbot.Data
             context = unitOfWork.CurrentContext();
         }
 
-        public IEnumerable<T> GetAll()
+        public IQueryable<T> GetAll()
         {
-            return context.Set<T>().AsEnumerable();
+            return context.Set<T>().AsQueryable();
         }
 
         public IQueryable<T> GetQuery()
@@ -34,9 +34,9 @@ namespace Prawnbot.Data
             return context.Set<T>().Find(id);
         }
 
-        public Task<T> GetByIdAsync(int id, CancellationToken token)
+        public async Task<T> GetByIdAsync(int id, CancellationToken token)
         {
-            return context.Set<T>().FindAsync(token, id);
+            return await context.Set<T>().FindAsync(token, id);
         }
 
         public IQueryable<T> FilterBy(Expression<Func<T, bool>> predicate)

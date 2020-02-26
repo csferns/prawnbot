@@ -4,55 +4,22 @@ using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Prawnbot.Core.Log;
+using Prawnbot.Common;
+using Prawnbot.Common.Configuration;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Quartz;
 using Prawnbot.Core.ServiceLayer;
-using Prawnbot.Core.Utility;
-using Prawnbot.Utility.Configuration;
 using Quartz;
 using Quartz.Impl;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
 {
-    public interface IBotBL
-    {
-        /// <summary>
-        /// Connects the bot using a given token
-        /// </summary>
-        /// <param name="token">The token to connect with</param>
-        /// <returns></returns>
-        Task ConnectAsync(string token, IContainer container = null);
-        /// <summary>
-        /// Method to disconnect the bot
-        /// </summary>
-        /// <returns></returns>
-        Task DisconnectAsync(bool switchBot = false);
-        /// <summary>
-        /// Disconnects and Reconnects the bot
-        /// </summary>
-        /// <returns></returns>
-        Task ReconnectAsync();
-        /// <summary>
-        /// Set up the Quartz scheduler for the scheduled jobs
-        /// </summary>
-        /// <returns></returns>
-        Task QuartzSetupAsync();
-        /// <summary>
-        /// Event that is fired when the client disconnects
-        /// </summary>
-        /// <param name="arg"></param>
-        /// <returns>Task.CompletedTask</returns>
-        Task<object> GetStatusAsync();
-        Task SetBotRegionAsync(string regionName);
-        void ShutdownQuartz();
-    }
-
     public class BotBL : BaseBL, IBotBL
     {
         private readonly ICoreBL coreBL;
@@ -63,8 +30,8 @@ namespace Prawnbot.Core.BusinessLayer
             this.logging = logging;
         }
 
-        private string Token { get; set; }
-        private IContainer AutofacContainer { get; set; }
+        private static string Token { get; set; }
+        private static IContainer AutofacContainer { get; set; }
         private CommandService Commands { get; set; }
         private IServiceProvider BotServices { get; set; }
 
@@ -74,7 +41,7 @@ namespace Prawnbot.Core.BusinessLayer
         { 
             get
             {
-                return Scheduler != null && !Scheduler.IsShutdown && Scheduler.IsStarted && !Scheduler.InStandbyMode;
+                return Scheduler != null && !(Scheduler?.IsShutdown ?? true) && (Scheduler?.IsStarted ?? false) && !(Scheduler?.InStandbyMode ?? true);
             }
         }
 
@@ -95,12 +62,19 @@ namespace Prawnbot.Core.BusinessLayer
             };
         }
 
-        public async Task ConnectAsync(string token, IContainer autofacContainer = null)
+        public async Task ConnectAsync(string token = null, IContainer autofacContainer = null)
         {
             try
             {
-                Token = token;
-                this.AutofacContainer = autofacContainer;
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+
+                Process currentProcess = Process.GetCurrentProcess();
+
+                await logging.Log_Info($"Process {currentProcess.ProcessName} ({currentProcess.Id}) started on {Environment.MachineName} at {currentProcess.StartTime}");
+
+                Token ??= token;
+                AutofacContainer ??= autofacContainer;
 
                 Client = new DiscordSocketClient(new DiscordSocketConfig
                 {
@@ -117,6 +91,8 @@ namespace Prawnbot.Core.BusinessLayer
                     .AddSingleton(autofacContainer.Resolve<ICoreService>())
                     .AddSingleton(autofacContainer.Resolve<IAPIService>())
                     .AddSingleton(autofacContainer.Resolve<IFileService>())
+                    .AddSingleton(autofacContainer.Resolve<ILogging>())
+                    .AddSingleton(autofacContainer.Resolve<IAlarmService>())
                     .AddSingleton(autofacContainer.Resolve<ISpeechRecognitionService>())
                     .BuildServiceProvider();
 
@@ -125,51 +101,74 @@ namespace Prawnbot.Core.BusinessLayer
                 Client.Disconnected += Client_Disconnected;
                 Client.Connected += Client_Connected;
 
-                if (ConfigUtility.AllowNonEssentialListeners)
-                {                
-                    Client.UserJoined += Client_UserJoined;
-                    Client.UserBanned += Client_UserBanned;
-                    Client.UserUnbanned += Client_UserUnbanned;
-                    Client.JoinedGuild += Client_JoinedGuild;
-                    Client.MessageDeleted += Client_MessageDeleted;
+                if (ConfigUtility.AllowEventListeners)
+                {
+                    if (ConfigUtility.UserJoined) { Client.UserJoined += Client_UserJoined; }
+                    if (ConfigUtility.UserBanned) { Client.UserBanned += Client_UserBanned; }
+                    if (ConfigUtility.UserUnbanned) { Client.UserUnbanned += Client_UserUnbanned; }
+                    if (ConfigUtility.JoinedGuild) { Client.JoinedGuild += Client_JoinedGuild; }
+                    if (ConfigUtility.MessageDeleted) { Client.MessageDeleted += Client_MessageDeleted; }
                 }
 
                 await Commands.AddModulesAsync(typeof(Modules.Modules).Assembly, BotServices);
 
                 await Client.LoginAsync(TokenType.Bot, Token);
                 await Client.StartAsync();
-                await coreBL.SetBotStatusAsync(UserStatus.Online);
+                await coreBL.SetBotStatusAsync();
 
                 if (!IsQuartzInitialized)
                 {
                     await QuartzSetupAsync();
                 }
+
+                stopwatch.Stop();
+
+                await logging.Log_Debug($"Bot started in {stopwatch.Elapsed}");
+
+                await logging.Log_Debug($"Memory used before collection: {(GC.GetTotalMemory(false) / 1024) / 1024} MB");
+                GC.Collect();
+                await logging.Log_Debug($"Memory used after collection: {(GC.GetTotalMemory(true) / 1024) / 1024} MB");
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "ConnectAsync()", "Error connecting the bot", e));
+                await logging.Log_Exception(e);
             }
         }
 
-        public async Task DisconnectAsync(bool switchBot = false)
+        public async Task DisconnectAsync(bool shutdown = false)
         {
             try
             {
                 if (Client != null)
                 {
                     await Client.LogoutAsync();
-                    await Client.StopAsync();
 
-                    Token = switchBot
-                        ? null
-                        : Token;
-                    //workerCancellationTokenSource.Cancel();
+                    if (shutdown)
+                    {
+                        await Client.StopAsync();
+
+                        Client.Dispose();
+                        AutofacContainer.Dispose();
+
+                        ShutdownQuartz();
+                    }
                 }
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Disconnect", "Error disconnecting the bot", e));
-                return;
+                await logging.Log_Exception(e);
+            }
+        }
+
+        /// <summary>
+        /// Shuts down the Quartz setup
+        /// </summary>
+        public void ShutdownQuartz()
+        {
+            if (IsQuartzInitialized)
+            {
+                Scheduler.Shutdown();
+                Scheduler = null;
             }
         }
 
@@ -178,97 +177,108 @@ namespace Prawnbot.Core.BusinessLayer
             try
             {
                 await DisconnectAsync();
-                await ConnectAsync(Token, AutofacContainer);
+                await ConnectAsync();
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Reconnect", "Error reconnecting the bot", e));
+                await logging.Log_Exception(e);
                 return;
             }
         }
 
+        /// <summary>
+        /// Sets up all the Quartz jobs
+        /// </summary>
+        /// <returns>awaitable Task</returns>
         public async Task QuartzSetupAsync()
         {
             try
             {
+                // Initialise the things Quartz needs to work properly
                 NameValueCollection props = new NameValueCollection
                 {
                     { "quartz.serializer.type", "binary" }
                 };
-                StdSchedulerFactory factory = new StdSchedulerFactory(props);
+                StdSchedulerFactory factory = new StdSchedulerFactory(props); 
                 Scheduler = await factory.GetScheduler();
 
-                // and start it off
+                // Start the scheduler 
                 await Scheduler.Start();
 
-                IJobDetail mocJob = JobBuilder.Create<MOC>()
-                    .WithIdentity("MOC")
-                    .Build();
+                // Custom job factory to allow for injecting dependencies into Quartz jobs
+                Scheduler.JobFactory = new QuartzJobFactory(AutofacContainer);
 
-                ITrigger mocTrigger = TriggerBuilder.Create()
-                    .WithIdentity("MOCTrigger")
-                    .StartAt(DateBuilder.DateOf(9, 11, 0))
-                    .WithSimpleSchedule(x => x
-                                            .WithIntervalInHours(12)
-                                            .RepeatForever())
-                    .ForJob("MOC")
-                    .Build();
+                // TODO: Add a job in here to change the channel names to include seasonal emojis
+                // Create / Schedule Quartz jobs
+                int TWELVE_HOUR = 12;
+                int TWENTYFOUR_HOUR = 24;
 
-                await Scheduler.ScheduleJob(mocJob, mocTrigger);
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "QuartzSetup", $"Job {typeof(MOC).FullName} scheduled"));
-
-                IJobDetail yearlyQuoteJob = JobBuilder.Create<YearlyQuote>()
-                    .WithIdentity("YearlyQuote")
-                    .Build();
-
-                ITrigger yearlyQuoteTrigger = TriggerBuilder.Create()
-                    .WithIdentity("YearlyQuoteTrigger")
-                    .StartAt(DateBuilder.DateOf(8, 0, 0))
-                    .WithSimpleSchedule(x => x
-                                            .WithIntervalInHours(24)
-                                            .RepeatForever())
-                    .ForJob("YearlyQuote")
-                    .Build();
-
-                await Scheduler.ScheduleJob(yearlyQuoteJob, yearlyQuoteTrigger);
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "QuartzSetup", $"Job {typeof(YearlyQuote).FullName} scheduled"));
+                await ScheduleQuartzJob<MOCJob>(DateBuilder.DateOf(9, 11, 0), interval: TWELVE_HOUR);
+                await ScheduleQuartzJob<YearlyQuoteJob>(DateBuilder.DateOf(8, 0, 0), interval: TWENTYFOUR_HOUR);
+                await ScheduleQuartzJob<BirthdayJob>(DateBuilder.DateOf(8, 0, 0), interval: TWENTYFOUR_HOUR);
             }
             catch (SchedulerException sc)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "QuartzSetup", $"A SchedulerExeption occured while scheduling Quartz jobs", sc));
+                await logging.Log_Exception(sc, optionalMessage: "A SchedulerExeption occured while scheduling Quartz jobs");
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "QuartzSetup", $"An error occured while scheduling Quartz jobs", e));
+                await logging.Log_Exception(e);
             }
         }
 
-        public void ShutdownQuartz()
+        /// <summary>
+        /// Schedule a Quartz job to be run
+        /// </summary>
+        /// <typeparam name="T">Class that implements IJob</typeparam>
+        /// <param name="startDate">Start date of the Job</param>
+        /// <param name="interval">Interval in which the job runs</param>
+        /// <returns>awaitable Task</returns>
+        public async Task ScheduleQuartzJob<T>(DateTimeOffset startDate, int interval) where T : IJob
         {
-            if (IsQuartzInitialized)
+            string jobName = typeof(T).Name;  
+
+            IJobDetail job = JobBuilder.Create<T>()
+                .WithIdentity(jobName)
+                .Build();
+
+            ITrigger trigger = TriggerBuilder.Create()
+                .WithIdentity(jobName + "Trigger")
+                .StartAt(startDate)
+                .WithSimpleSchedule(x => x
+                                        .WithIntervalInHours(interval)
+                                        .RepeatForever())
+                .ForJob(jobName)
+                .Build();
+
+            await Scheduler.ScheduleJob(job, trigger);
+
+            bool jobExists = await Scheduler.CheckExists(trigger.Key);
+
+            if (jobExists)
             {
-                Scheduler.Shutdown();
+                await logging.Log_Info($"Job {jobName} scheduled for {trigger.StartTimeUtc.ToString("dd/MM/yyyy HH:mm:ss")} with interval {interval} hours");
             }
         }
 
         public async Task SetBotRegionAsync(string regionName)
         {
-            if (regionName == null)
+            if (string.IsNullOrEmpty(regionName))
             {
                 await Context.Channel.SendMessageAsync("Region cannot be empty");
                 return;
             }
 
             IEnumerable<RestVoiceRegion> regions = await Context.Guild.GetVoiceRegionsAsync().ToAsyncEnumerable().FlattenAsync();
-            RestVoiceRegion region = regions.FirstOrDefault(x => x.Name == regionName);
-
-            bool validRegion = regions.Any(x => x.Id == region.Id);
+            bool validRegion = regions.Any(x => x.Name == regionName);
 
             if (!validRegion)
             {
                 await Context.Channel.SendMessageAsync($"\"{regionName}\" is not a valid region, or the server cannot access this region.");
                 return;
             }
+
+            RestVoiceRegion region = regions.FirstOrDefault(x => x.Name == regionName);
 
             await Context.Channel.SendMessageAsync($"Setting server {Format.Bold(Context.Guild.Name)}'s region to {region}");
 
@@ -279,17 +289,18 @@ namespace Prawnbot.Core.BusinessLayer
         #region Event Listeners
         private async Task Client_MessageDeleted(Cacheable<IMessage, ulong> arg1, ISocketMessageChannel channel)
         {
-            await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Client_MessageDeleted", $"Message deleted {arg1.Id} from {channel.Name}"));
-            await channel.SendMessageAsync("Big nerd alert", UseTTS);
+            await logging.Log_Info($"Message deleted {arg1.Id} from {channel.Name}");
+            await channel.SendMessageAsync("Oooh, he's deletin'", UseTTS);
         }
 
         private async Task Client_JoinedGuild(SocketGuild arg)
         {
-            await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Client_JoinedGuild", $"Joined guild {arg.Id} ({arg.Name})"));
+            await logging.Log_Info($"Joined guild {arg.Id} ({arg.Name})");
+
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.WithAuthor(Client.CurrentUser)
                 .WithColor(Color.Green)
-                .WithDescription($"Hello, my name is Big Succ! To find out commands, please use {ConfigUtility.CommandDelimiter}commands")
+                .WithDescription($"Hello, my name is {arg.CurrentUser.Nickname} To find out commands, please use {ConfigUtility.CommandDelimiter}commands")
                 .WithCurrentTimestamp();
 
             await arg.DefaultChannel.SendMessageAsync(string.Empty, UseTTS, embedBuilder.Build());
@@ -299,7 +310,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             try
             {
-                if (!(arg is SocketUserMessage message) || message.Author.IsBot || string.IsNullOrEmpty(message.Content))
+                if (!(arg is SocketUserMessage message) || message.Author.IsBot || string.IsNullOrWhiteSpace(message.Content))
                 {
                     return;
                 }
@@ -314,16 +325,16 @@ namespace Prawnbot.Core.BusinessLayer
 
                     if (message.Channel.GetType() == typeof(SocketDMChannel))
                     {
-                        await logging.PopulateMessageLogAsync(new LogMessage(LogSeverity.Info, "Message", $"{message.Author.Username}: {message.Content}"));
+                        await logging.Log_Info($"{message.Author.Username}: {message.Content}");
                     }
 
                     if (!result.IsSuccess && result.ErrorReason != null)
                     {
-                        await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Commands", result.ErrorReason));
+                        await logging.Log_Warning(result.ErrorReason);
                         await Context.Channel.SendMessageAsync(result.ErrorReason);
                     }
 
-                    await logging.LogCommandUseAsync(Context.Message.Author.Username, Context.Guild.Name, Context.Message.Content);
+                    await logging.Log_Info($"Message recieved from {Context.Message.Author.Username} ({Context.Guild.Name}): \"{Context.Message.Content}\"");
                 }
                 else
                 {
@@ -335,47 +346,57 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "HandleCommand", "Error handling the command", e));
+                await logging.Log_Exception(e, optionalMessage: "Error handling the command");
                 return;
             }
         }
 
         private async Task Client_Connected()
         {
-            await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Client_Connected", $"Connected as {Client.CurrentUser.Username}"));
+            await logging.Log_Info($"Connected as {Client.CurrentUser.Username}");
         }
 
         private async Task Client_Disconnected(Exception arg)
         {
-            await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Error, "Client_Disconnected", "Client disconnected", arg));
+            await logging.Log_Exception(arg, optionalMessage: "Client disconnected");
+
             await Client.LogoutAsync();
-            Client = null;
+            await Client.StopAsync();
+
+            Client.Dispose();
+
             ShutdownQuartz();
 
-            await ConnectAsync(Token, AutofacContainer);
+            await ConnectAsync();
         }
 
         private async Task Client_UserJoined(SocketGuildUser user)
-        { 
+        {
             SocketGuild guild = user.Guild;
-            SocketTextChannel channel = guild.DefaultChannel;
+
+            await logging.Log_Info($"User {user.Username} joined {guild.Name}");
 
             EmbedBuilder builder = new EmbedBuilder();
 
             builder.WithTitle("Welcome!")
                 .WithColor(Color.Green)
-                .WithDescription($"Welcome to {guild.Name}, {user.Username}! The server now has {guild.MemberCount} members");
+                .WithDescription($"Welcome to {guild.Name}, {user.Username}! The server now has {guild.MemberCount} members")
+                .WithCurrentTimestamp();
 
-            await channel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
+            await guild.DefaultChannel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
         }
 
         private async Task Client_UserBanned(SocketUser user, SocketGuild guild)
         {
+            string message = $"{user.Username} was banned from {guild.Name}.";
+
+            await logging.Log_Info(message);
+
             EmbedBuilder builder = new EmbedBuilder();
 
             builder.WithTitle("Banned.")
                 .WithColor(Color.Red)
-                .WithDescription($"{user.Username} was banned from {guild.Name}.")
+                .WithDescription(message)
                 .WithCurrentTimestamp();
 
             await guild.DefaultChannel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
@@ -383,13 +404,17 @@ namespace Prawnbot.Core.BusinessLayer
 
         private async Task Client_UserUnbanned(SocketUser user, SocketGuild guild)
         {
+            string message = $"{user.Username} was unbanned from {guild.Name}.";
+
+            await logging.Log_Info(message);
+
             EmbedBuilder builder = new EmbedBuilder();
             builder.WithTitle("Unbanned.")
                 .WithColor(Color.Green)
-                .WithDescription($"{user.Username} was unbanned from {guild.Name}.")
+                .WithDescription(message)
                 .WithCurrentTimestamp();
 
-            await guild.DefaultChannel.SendMessageAsync("", UseTTS, builder.Build());
+            await guild.DefaultChannel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
         }
         #endregion Event Listeners
     }

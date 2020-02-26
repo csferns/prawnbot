@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -10,7 +9,7 @@ namespace Prawnbot.Data.Interfaces
 {
     public interface IRepository<T> : IRepositoryBase where T : class
     {
-        IEnumerable<T> GetAll();
+        IQueryable<T> GetAll();
         IQueryable<T> GetQuery();
         T GetById(int id);
         Task<T> GetByIdAsync(int id, CancellationToken token);

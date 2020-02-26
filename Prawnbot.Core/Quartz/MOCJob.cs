@@ -1,9 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using Prawnbot.Core.BusinessLayer;
 using Prawnbot.Core.Collections;
-using Prawnbot.Core.Log;
-using Prawnbot.Core.ServiceLayer;
+using Prawnbot.Core.Interfaces;
 using Quartz;
 using System;
 using System.Text;
@@ -11,11 +9,11 @@ using System.Threading.Tasks;
 
 namespace Prawnbot.Core.Quartz
 {
-    public class MOC : IJob
+    public class MOCJob : IJob
     {
         private readonly ILogging logging;
         private readonly ICoreService coreService;
-        public MOC(ILogging logging, ICoreService coreService)
+        public MOCJob(ILogging logging, ICoreService coreService)
         {
             this.logging = logging;
             this.coreService = coreService;
@@ -25,8 +23,6 @@ namespace Prawnbot.Core.Quartz
         {
             try
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Quartz", "MOC Triggered."));
-
                 if (DateTime.Now.Date.ToString("dd/MM/yyyy") == $"11/09/{DateTime.Now.Year}")
                 {
                     return;
@@ -34,9 +30,10 @@ namespace Prawnbot.Core.Quartz
 
                 Bunch<SocketGuild> guilds = coreService.GetAllGuilds().Entities.ToBunch();
 
+                Random random = new Random();
+
                 foreach (SocketGuild guild in guilds)
                 {
-                    Random random = new Random();
                     int mocCount = random.Next(1, 10);
 
                     StringBuilder sb = new StringBuilder();
@@ -53,7 +50,7 @@ namespace Prawnbot.Core.Quartz
             }
             catch (Exception e)
             {
-                await logging.PopulateEventLogAsync(new LogMessage(LogSeverity.Info, "Quartz", "An error occured during MOC", e));
+                await logging.Log_Exception(e, optionalMessage: "An error occured during MOC");
             }
         }
     }

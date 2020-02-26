@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Prawnbot.Core.Collections;
 using Prawnbot.Core.Model.API.Overwatch;
 using Prawnbot.Core.Model.API.Reddit;
 using Prawnbot.Core.Model.API.Rule34;
@@ -22,7 +23,7 @@ namespace Prawnbot.Core.Modules
             Translation translation = translatedText.Entities.FirstOrDefault().translations.FirstOrDefault();
 
             await Context.Channel.SendMessageAsync($"{translation.text}");
-            //await logging.PopulateEventLog(new LogMessage(LogSeverity.Info, "Translation", translation.text));
+            await logging.PopulateTranslationLogAsync(translatedText.Entities.ToBunch());
         }
 
         [Command("r34-tags")]
@@ -68,16 +69,32 @@ namespace Prawnbot.Core.Modules
         public async Task TopPostBySubredditAsync([Remainder] string subredditName)
         {
             Response<RedditRoot> response = await apiService.GetTopPostsBySubreddit(subredditName, 1);
-            LowerLevelData post = response.Entity.data.children.FirstOrDefault().data;
+            
+            if (response.HasData)
+            {
+                LowerLevelData post = response.Entity.data.children.FirstOrDefault().data;
+                EmbedBuilder builder = new EmbedBuilder();
 
-            EmbedBuilder builder = new EmbedBuilder();
-            //builder.WithTimestamp(new DateTime(1899, 12, 30).AddDays(post.created_utc));
-            builder.WithThumbnailUrl(post.thumbnail);
-            builder.WithDescription($"Title: {post.title}\n" +
-                                    $"Link: https://www.reddit.com{post.permalink}");
-            builder.WithColor(Color.Green);
+                if (post.thumbnail != null && post.thumbnail_height != null && post.thumbnail_width != null)
+                {
+                    builder.WithTitle("Image post");
+                    builder.WithThumbnailUrl(post.thumbnail);
+                }
+                else
+                {
+                    builder.WithTitle("Text post");
+                }
 
-            await Context.Channel.SendMessageAsync(string.Empty, false, builder.Build());
+                builder.WithDescription($"Title: {post.title}\n" +
+                                        $"Link: https://www.reddit.com{post.permalink}");
+                builder.WithColor(Color.Green);
+
+                await Context.Channel.SendMessageAsync(string.Empty, false, builder.Build());
+            }
+            else
+            {
+                await Context.Channel.SendMessageAsync($"Couldn't find subreddit {subredditName}");
+            }
         }
     }
 }

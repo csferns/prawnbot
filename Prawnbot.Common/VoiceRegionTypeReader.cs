@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Prawnbot.Core.Utility
+namespace Prawnbot.Common
 {
     public class VoiceRegionTypeReader : TypeReader
     {

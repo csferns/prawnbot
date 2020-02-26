@@ -1,5 +1,5 @@
 ﻿using Discord;
-using Prawnbot.Core.BusinessLayer;
+using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.DTOs;
 using Prawnbot.Infrastructure;
 using System;
@@ -9,18 +9,6 @@ using System.Threading.Tasks;
 
 namespace Prawnbot.Core.ServiceLayer
 {
-    public interface IFileService
-    {
-        Task<Response<Uri>> GetUriFromBlobStoreAsync(string fileName, string containerName);
-        Task<Response<Stream>> GetStreamFromBlobStoreAsync(string fileName, string containerName);
-        Task<Response<Stream>> DownloadFileFromBlobStoreAsync(string fileName, string containerName);
-        Task<ResponseBase> UploadFileToBlobStoreAsync(string fileName, string containerName);
-        Task<ListResponse<string>> ReadFromFileAsync(string fileName);
-        ResponseBase WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName);
-        Task<ResponseBase> WriteToFileAsync(string valueToWrite, string fileName);
-        ListResponse<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
-    }
-
     public class FileService : BaseService, IFileService
     {
         private readonly IFileBL fileBL;
@@ -56,10 +44,9 @@ namespace Prawnbot.Core.ServiceLayer
             return LoadListResponse(await fileBL.ReadFromFileAsync(fileName));
         }
 
-        public ResponseBase WriteToCSV(IList<CSVColumns> columns, ulong? id, string fileName)
+        public Response<FileStream> WriteToCSV(IList<CSVColumns> columns, string fileName)
         {
-            fileBL.WriteToCSV(columns, id, fileName);
-            return new ResponseBase();
+            return LoadResponse(fileBL.WriteToCSV(columns, fileName));
         }
 
         public async Task<ResponseBase> WriteToFileAsync(string valueToWrite, string fileName)
