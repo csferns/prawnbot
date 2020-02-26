@@ -26,11 +26,6 @@ namespace Prawnbot.Core.Log
             this.fileService = fileService;
         }
 
-        private static string GetLogMessageString(LogMessage message)
-        {
-            return $"{DateTime.Now.ToString("dd/MM/yyy hh:mm:ss tt", CultureInfo.InvariantCulture)} {message.ToString(prependTimestamp: false, padSource: 20)}";
-        }
-
         public async Task Client_Log(LogMessage message)
         {
             LogEntry logEntry = new LogEntry(message);
@@ -63,7 +58,14 @@ namespace Prawnbot.Core.Log
 
         public async Task Log_Exception(Exception e, bool updateConsole = true, string optionalMessage = null, [CallerMemberName]string codeArea = "")
         {
-            LogEntry logEntry = new LogEntry(e, codeArea, optionalMessage);
+            LogEntry logEntry = new LogEntry()
+            {
+                Area = codeArea,
+                Message = optionalMessage == null
+                    ? string.Format("{0} {1}", e.Message, e.StackTrace)
+                    : string.Format("{2}: {0} {1}", e.Message, e.StackTrace, optionalMessage),
+                LogSeverity = TraceEventType.Error
+            };
 
             await Log(logEntry, updateConsole);
         }

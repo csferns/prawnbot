@@ -2,7 +2,6 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 
 namespace Prawnbot.Core.Model.Logging
 {
@@ -17,18 +16,11 @@ namespace Prawnbot.Core.Model.Logging
         {
             Message = logMessage.Message;
 
-            Enum.TryParse(typeof(TraceEventType), logMessage.Severity.ToString(), out object severity);
-            LogSeverity = (TraceEventType)severity;
-        }
+            bool parseSuccess = Enum.TryParse<TraceEventType>(logMessage.Severity.ToString(), ignoreCase: true, out TraceEventType severity);
 
-        public LogEntry(Exception exception, [CallerMemberName]string codeArea = "", string optionalMessage = null)
-        {
-            Message = optionalMessage == null 
-                ? string.Format("{0} {1}", exception.Message, exception.StackTrace) 
-                : string.Format("{2}: {0} {1}", exception.Message, exception.StackTrace, optionalMessage);
+            LogSeverity = parseSuccess ? severity : TraceEventType.Information;
 
-            Area = codeArea;
-            LogSeverity = TraceEventType.Error;
+            Area = "Discord";
         }
         
         public string Message { get; set; }
@@ -37,7 +29,7 @@ namespace Prawnbot.Core.Model.Logging
 
         public override string ToString()
         {
-            return string.Format("{0} {1} {2}", DateTime.Now.ToString("dd/MM/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture), Area ?? "Discord", Message);
+            return string.Format("{0} {1} {2} {3}", DateTime.Now.ToString("dd/MM/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture), LogSeverity.ToString(), Area, Message);
         }
     }
 }
