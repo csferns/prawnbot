@@ -11,7 +11,7 @@ namespace Prawnbot.CommandEngine
 {
     public class CommandParser : ICommandParser
     {
-        private const string REGEXSPLITPATTERN = @"(?: |\n|^)(""(?:(?: """") *[^""]*)*"" |[^"" \n]*|(?:\n|$))";
+        private readonly static Regex CommandRegex = new Regex(@"(""(.+?)"")|([^\s""]+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
         private readonly ILogging logging;
 
@@ -34,8 +34,13 @@ namespace Prawnbot.CommandEngine
                 return false;
             }
 
-            Bunch<string> split = Regex.Split(command.CommandText, REGEXSPLITPATTERN, RegexOptions.Singleline).Select(x => x.Replace("\"", "")).ToBunch();
+            Bunch<string> split = CommandRegex.Split(command.CommandText).ToBunch();
             split.RemoveAll(x => string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x));
+
+            if (!split.Any())
+            {
+                return false;
+            }
 
             string firstWord = split[0].Replace("/", "");
 
