@@ -12,6 +12,8 @@ using Prawnbot.Common.Enums;
 using Prawnbot.Core.Attributes;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
+using Prawnbot.FileHandling.Interfaces;
+using Prawnbot.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

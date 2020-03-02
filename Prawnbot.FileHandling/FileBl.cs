@@ -1,69 +1,20 @@
 ﻿using CsvHelper;
 using Discord;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Prawnbot.Common.Configuration;
-using Prawnbot.Core.Collections;
-using Prawnbot.Core.Interfaces;
-using Prawnbot.Core.Model.API.Translation;
-using Prawnbot.Core.Model.DTOs;
-using System;
+using Prawnbot.Common.DTOs;
+using Prawnbot.Common.DTOs.API.Translation;
+using Prawnbot.Core.Custom.Collections;
+using Prawnbot.FileHandling.Interfaces;
+using Prawnbot.Infrastructure;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Prawnbot.Core.BusinessLayer
+namespace Prawnbot.FileHandling
 {
     public class FileBL : BaseBL, IFileBL
     {
-        public async Task<CloudBlobContainer> GetBlobContainer(string containerName)
-        {
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(ConfigUtility.BlobStoreConnectionString);
-            CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-            CloudBlobContainer container = blobClient.GetContainerReference(containerName);
-            await container.CreateIfNotExistsAsync();
-
-            return container;
-        }
-
-        public async Task<Uri> GetUriFromBlobStoreAsync(string fileName, string containerName)
-        {
-            CloudBlobContainer container = await GetBlobContainer(containerName);
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
-
-            return blockBlob.Uri;
-        }
-
-        public async Task<Stream> GetStreamFromBlobStoreAsync(string fileName, string containerName)
-        {
-            using MemoryStream stream = new MemoryStream();
-            CloudBlobContainer container = await GetBlobContainer(containerName);
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
-
-            await blockBlob.DownloadToStreamAsync(stream);
-
-            return stream;
-        }
-
-        public async Task<Stream> DownloadFileFromBlobStoreAsync(string fileName, string containerName)
-        {
-            CloudBlobContainer container = await GetBlobContainer(containerName);
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
-
-            MemoryStream stream = new MemoryStream();
-            await blockBlob.DownloadToStreamAsync(stream);
-
-            return stream;
-        }
-
-        public async Task UploadFileToBlobStoreAsync(string fileName, string containerName)
-        {
-            CloudBlobContainer container = await GetBlobContainer(containerName);
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
-            await blockBlob.UploadFromFileAsync(fileName);
-        }
-
         public FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare)
         {
             string TextFileDirectory = ConfigUtility.TextFileDirectory;

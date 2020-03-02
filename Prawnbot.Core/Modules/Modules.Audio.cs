@@ -1,7 +1,7 @@
 ﻿using Discord;
 using Discord.Audio;
 using Discord.Commands;
-using Prawnbot.Core.Attributes;
+using Prawnbot.Core.Custom.Attributes;
 using System.Diagnostics;
 using System.Threading.Tasks;
 

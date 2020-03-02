@@ -8,6 +8,7 @@ using Prawnbot.Core.Attributes;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Exceptions;
 using Prawnbot.Core.Interfaces;
+using Prawnbot.FileHandling.Interfaces;
 using Prawnbot.Infrastructure;
 using Prawnbot.Logging;
 using System;
