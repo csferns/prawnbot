@@ -1,7 +1,7 @@
-﻿using Prawnbot.Core.Model.DTOs;
+﻿using Prawnbot.Common.DTOs;
 using Prawnbot.Infrastructure;
 
-namespace Prawnbot.Core.Interfaces
+namespace Prawnbot.Core.Database.Interfaces
 {
     public interface IAlarmService
     {

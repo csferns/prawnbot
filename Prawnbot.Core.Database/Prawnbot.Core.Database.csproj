@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="7.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Prawnbot.Common\Prawnbot.Common.csproj" />
+    <ProjectReference Include="..\Prawnbot.Data\Prawnbot.Data.csproj" />
+    <ProjectReference Include="..\Prawnbot.Infrastructure\Prawnbot.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

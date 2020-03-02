@@ -1,5 +1,5 @@
-﻿using Prawnbot.Core.Interfaces;
-using Prawnbot.Core.Model.DTOs;
+﻿using Prawnbot.Common.DTOs;
+using Prawnbot.Core.Database.Interfaces;
 using Prawnbot.Infrastructure;
 
 namespace Prawnbot.Core.ServiceLayer

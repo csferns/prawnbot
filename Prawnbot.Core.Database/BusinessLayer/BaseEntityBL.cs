@@ -1,8 +1,8 @@
-﻿using Prawnbot.Core.Interfaces;
+﻿using Prawnbot.Core.Database.Interfaces;
 using Prawnbot.Data.Interfaces;
 using System.Linq;
 
-namespace Prawnbot.Core.BusinessLayer
+namespace Prawnbot.Core.Database.BusinessLayer
 {
     public class BaseEntityBL<T> : IBaseEntityBL<T> where T : class
     {
@@ -37,6 +37,11 @@ namespace Prawnbot.Core.BusinessLayer
         public T GetById(int id)
         {
             return repository.GetById(id);
+        }
+
+        public void SaveChanges()
+        {
+            unitOfWork.Commit();
         }
     }
 }
