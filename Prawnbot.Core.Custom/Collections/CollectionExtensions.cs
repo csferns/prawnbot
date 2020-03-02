@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Prawnbot.Core.Collections
+namespace Prawnbot.Core.Custom.Collections
 {
     public static class CollectionExtensions
     {        

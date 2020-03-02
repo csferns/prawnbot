@@ -2,7 +2,7 @@
 using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
-using Prawnbot.Core.Attributes;
+using Prawnbot.Core.Custom.Attributes;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;

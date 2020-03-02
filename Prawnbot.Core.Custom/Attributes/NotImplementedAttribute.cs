@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace Prawnbot.Core.Attributes
+namespace Prawnbot.Core.Custom.Attributes
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-    internal sealed class NotImplementedAttribute : Attribute
+    public sealed class NotImplementedAttribute : Attribute
     {
         public NotImplementedAttribute()
         {

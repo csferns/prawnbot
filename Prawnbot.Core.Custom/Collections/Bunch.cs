@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Prawnbot.Core.Collections
+namespace Prawnbot.Core.Custom.Collections
 {
     public class Bunch<T> : List<T>, IList<T>
     {

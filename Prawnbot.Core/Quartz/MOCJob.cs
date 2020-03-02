@@ -1,6 +1,5 @@
-﻿using Discord;
-using Discord.WebSocket;
-using Prawnbot.Core.Collections;
+﻿using Discord.WebSocket;
+using Prawnbot.Core.Custom.Collections;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Logging;
 using Quartz;

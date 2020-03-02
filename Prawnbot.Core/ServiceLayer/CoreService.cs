@@ -1,12 +1,9 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Exceptions;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 

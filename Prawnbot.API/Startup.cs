@@ -19,9 +19,8 @@ namespace Prawnbot.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            Services.DependencyInjectionSetup(services);
-
-            services.AddLogging();
+            Services servicesClass = new Services();
+            servicesClass.Get(services);
 
             services.AddControllers();
         }

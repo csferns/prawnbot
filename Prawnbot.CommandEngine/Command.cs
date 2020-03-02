@@ -1,4 +1,4 @@
-﻿using Prawnbot.Core.Collections;
+﻿using Prawnbot.Core.Custom.Collections;
 
 namespace Prawnbot.CommandEngine
 {

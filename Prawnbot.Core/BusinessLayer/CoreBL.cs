@@ -9,8 +9,8 @@ using Prawnbot.Common.DTOs;
 using Prawnbot.Common.DTOs.API.Giphy;
 using Prawnbot.Common.DTOs.API.Translation;
 using Prawnbot.Common.Enums;
-using Prawnbot.Core.Attributes;
-using Prawnbot.Core.Collections;
+using Prawnbot.Core.Custom.Attributes;
+using Prawnbot.Core.Custom.Collections;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.FileHandling.Interfaces;
 using Prawnbot.Infrastructure;
@@ -37,15 +37,17 @@ namespace Prawnbot.Core.BusinessLayer
         private readonly IFileBL fileBL;
         private readonly IAPIBL apiBL;
         private readonly ILogging logging;
+        private readonly IAzureStorageService azureStorageService;
 
         private int EventsTriggered { get; set; }
         private bool MessageSent { get; set; }
 
-        public CoreBL(IFileBL fileBL, IAPIBL apiBL, ILogging logging)
+        public CoreBL(IFileBL fileBL, IAPIBL apiBL, ILogging logging, IAzureStorageService azureStorageService)
         {
             this.fileBL = fileBL;
             this.apiBL = apiBL;
             this.logging = logging;
+            this.azureStorageService = azureStorageService;
         }
 
         private string StrippedMessage { get; set; }
@@ -245,9 +247,9 @@ namespace Prawnbot.Core.BusinessLayer
         {
             await Context.Message.AddReactionAsync(new Emoji("👍"));
 
-            Uri uri = await fileBL.GetUriFromBlobStoreAsync(fileName, "botimages");
+            Response<Uri> uri = await azureStorageService.GetUriFromBlobStoreAsync(fileName, "botimages");
 
-            WebRequest req = WebRequest.Create(uri);
+            WebRequest req = WebRequest.Create(uri.Entity);
             using Stream stream = req.GetResponse().GetResponseStream();
             await Context.Channel.SendFileAsync(stream, fileName);
         }
@@ -269,7 +271,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             try
             {
-                await Client.SetGameAsync(name ?? null, activityType == ActivityType.Streaming ? streamUrl : null, activityType);
+                await Client.SetGameAsync(name, activityType == ActivityType.Streaming ? streamUrl : null, activityType);
             }
             catch (Exception e)
             {
