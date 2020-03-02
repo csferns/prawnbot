@@ -1,6 +1,7 @@
 ﻿using Prawnbot.CommandEngine.Interfaces;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
+using Prawnbot.Logging;
 using System;
 using System.Linq;
 using System.Reflection;

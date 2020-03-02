@@ -2,9 +2,9 @@
 using Autofac.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using Prawnbot.Core.Interfaces;
-using Prawnbot.Core.Log;
 using Prawnbot.Data;
 using Prawnbot.Data.Interfaces;
+using Prawnbot.Logging;
 using System;
 using System.Reflection;
 

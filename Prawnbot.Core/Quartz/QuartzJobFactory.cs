@@ -1,6 +1,7 @@
 ﻿using Autofac;
 using Discord;
 using Prawnbot.Core.Interfaces;
+using Prawnbot.Logging;
 using Quartz;
 using Quartz.Spi;
 using System;

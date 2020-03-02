@@ -1,5 +1,6 @@
 ﻿using Prawnbot.CommandEngine.Interfaces;
 using Prawnbot.Core.Interfaces;
+using Prawnbot.Logging;
 using System;
 using System.Threading.Tasks;
 

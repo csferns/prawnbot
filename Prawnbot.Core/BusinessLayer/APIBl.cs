@@ -14,6 +14,7 @@ using Prawnbot.Common.DTOs.API.Reddit;
 using Prawnbot.Common.DTOs.API.Rule34;
 using Prawnbot.Common.DTOs.API.Translation;
 using Prawnbot.Core.Interfaces;
+using Prawnbot.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;

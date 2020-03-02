@@ -4,6 +4,7 @@ using Prawnbot.CommandEngine.Interfaces;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
+using Prawnbot.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

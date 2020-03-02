@@ -1,19 +1,16 @@
 ﻿using Discord;
-using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Collections;
-using Prawnbot.Core.Interfaces;
-using Prawnbot.Core.Model.API.Translation;
-using Prawnbot.Core.Model.Logging;
+using Prawnbot.Common.DTOs.API.Translation;
+using Prawnbot.Core.Custom.Collections;
 using System;
 using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Linq;
+using Prawnbot.FileHandling.Interfaces;
 
-namespace Prawnbot.Core.Log
+namespace Prawnbot.Logging
 {
-    public class Logging : BaseBL, ILogging
+    public class LogBL : ILogging
     {
         /// <summary>
         /// Constant string used for the file name to target for the event logs file
@@ -21,7 +18,7 @@ namespace Prawnbot.Core.Log
         private const string LogFileName = "EventLogs.txt";
 
         private readonly IFileService fileService;
-        public Logging(IFileService fileService)
+        public LogBL(IFileService fileService)
         {
             this.fileService = fileService;
         }
@@ -96,9 +93,9 @@ namespace Prawnbot.Core.Log
                     }
                 });
             }
-            catch (NullReferenceException)
+            catch (Exception)
             {
-                await FailoverLog(message);
+                throw;
             }
         }
 
@@ -111,11 +108,6 @@ namespace Prawnbot.Core.Log
             }
 
             await Log_Info("Translations logged");
-        }
-
-        public static async Task FailoverLog(LogEntry message)
-        {
-            await FileBL.FailoverWriteToFileAsync(message.ToString(), LogFileName);
         }
     }
 }

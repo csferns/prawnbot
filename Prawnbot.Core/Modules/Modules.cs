@@ -9,6 +9,7 @@ using Prawnbot.Core.Collections;
 using Prawnbot.Core.Exceptions;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
+using Prawnbot.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

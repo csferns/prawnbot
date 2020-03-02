@@ -1,11 +1,11 @@
 ﻿using Discord;
-using Prawnbot.Core.Collections;
-using Prawnbot.Core.Model.API.Translation;
+using Prawnbot.Common.DTOs.API.Translation;
+using Prawnbot.Core.Custom.Collections;
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-namespace Prawnbot.Core.Interfaces
+namespace Prawnbot.Logging 
 {
     /// <summary>
     /// Methods to allow the logging of exceptions and general information to a specified source

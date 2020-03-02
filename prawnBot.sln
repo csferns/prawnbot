@@ -21,6 +21,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.API", "Prawnbot.AP
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prawnbot.CommandEngine", "Prawnbot.CommandEngine\Prawnbot.CommandEngine.csproj", "{AE3353C2-3FFC-40F4-8617-E973DFC5821C}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.Logging", "Prawnbot.Logging\Prawnbot.Logging.csproj", "{521C898F-0CE9-4B64-BF59-EDF87678D3E6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.Core.Database", "Prawnbot.Core.Database\Prawnbot.Core.Database.csproj", "{C39337A6-AA27-444D-9413-517F29EFA602}"
+EndProject
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

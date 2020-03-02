@@ -2,6 +2,7 @@
 using Discord.WebSocket;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
+using Prawnbot.Logging;
 using Quartz;
 using System;
 using System.Text;
