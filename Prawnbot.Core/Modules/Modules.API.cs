@@ -1,12 +1,11 @@
 ﻿using Discord;
 using Discord.Commands;
-using Prawnbot.Core.Collections;
-using Prawnbot.Core.Model.API.Overwatch;
-using Prawnbot.Core.Model.API.Reddit;
-using Prawnbot.Core.Model.API.Rule34;
-using Prawnbot.Core.Model.API.Translation;
+using Prawnbot.Common.DTOs.API.Overwatch;
+using Prawnbot.Common.DTOs.API.Reddit;
+using Prawnbot.Common.DTOs.API.Rule34;
+using Prawnbot.Common.DTOs.API.Translation;
+using Prawnbot.Core.Custom.Collections;
 using Prawnbot.Infrastructure;
-using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;

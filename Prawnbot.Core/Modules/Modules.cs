@@ -2,12 +2,12 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Prawnbot.Common;
+using Prawnbot.Common.DTOs;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Attributes;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Exceptions;
 using Prawnbot.Core.Interfaces;
-using Prawnbot.Core.Model.DTOs;
 using Prawnbot.Infrastructure;
 using System;
 using System.Collections.Generic;

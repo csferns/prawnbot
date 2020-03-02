@@ -1,10 +1,10 @@
 ﻿using Google.Apis.Calendar.v3.Data;
-using Prawnbot.Core.Collections;
-using Prawnbot.Core.Model.API.Giphy;
-using Prawnbot.Core.Model.API.Overwatch;
-using Prawnbot.Core.Model.API.Reddit;
-using Prawnbot.Core.Model.API.Rule34;
-using Prawnbot.Core.Model.API.Translation;
+using Prawnbot.Common.DTOs.API.Giphy;
+using Prawnbot.Common.DTOs.API.Overwatch;
+using Prawnbot.Common.DTOs.API.Reddit;
+using Prawnbot.Common.DTOs.API.Rule34;
+using Prawnbot.Common.DTOs.API.Translation;
+using Prawnbot.Core.Custom.Collections;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.Interfaces
