@@ -1,8 +1,8 @@
 ﻿using Discord.Commands;
 using Discord.WebSocket;
-using Prawnbot.Core.Interfaces;
+using Prawnbot.Infrastructure.Interfaces;
 
-namespace Prawnbot.Core.BusinessLayer
+namespace Prawnbot.Infrastructure
 {
     /// <summary>
     /// Base class for all the Business Layers that includes shared properties needed throughout the Business Layers

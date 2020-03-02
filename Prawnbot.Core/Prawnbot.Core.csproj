@@ -22,6 +22,7 @@
     <ProjectReference Include="..\Prawnbot.Core.Database\Prawnbot.Core.Database.csproj" />
     <ProjectReference Include="..\Prawnbot.Data\Prawnbot.Data.csproj" />
     <ProjectReference Include="..\Prawnbot.FileHandling\Prawnbot.FileHandling.csproj" />
+    <ProjectReference Include="..\Prawnbot.Infrastructure\Prawnbot.Infrastructure.csproj" />
     <ProjectReference Include="..\Prawnbot.Logging\Prawnbot.Logging.csproj" />
   </ItemGroup>
 

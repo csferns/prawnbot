@@ -2,6 +2,7 @@
 using Microsoft.CognitiveServices.Speech;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Core.Interfaces;
+using Prawnbot.Infrastructure;
 using System;
 using System.IO;
 using System.Threading.Tasks;

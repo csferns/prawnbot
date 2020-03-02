@@ -10,6 +10,7 @@ using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Quartz;
 using Prawnbot.Core.ServiceLayer;
 using Prawnbot.FileHandling.Interfaces;
+using Prawnbot.Infrastructure;
 using Prawnbot.Logging;
 using Quartz;
 using Quartz.Impl;

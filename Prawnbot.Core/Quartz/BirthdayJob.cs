@@ -1,4 +1,5 @@
 ﻿using System;
+using Prawnbot.Infrastructure;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,6 @@ using System.Threading.Tasks;
 using Discord.WebSocket;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
-using Prawnbot.Infrastructure;
 using Quartz;
 
 namespace Prawnbot.Core.Quartz

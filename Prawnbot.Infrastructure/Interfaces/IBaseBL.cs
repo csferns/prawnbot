@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Prawnbot.Core.Interfaces
+namespace Prawnbot.Infrastructure.Interfaces
 {
     public interface IBaseBL
     {

@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.Logging", "Prawnbo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.Core.Database", "Prawnbot.Core.Database\Prawnbot.Core.Database.csproj", "{C39337A6-AA27-444D-9413-517F29EFA602}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prawnbot.Infrastructure", "Prawnbot.Infrastructure\Prawnbot.Infrastructure.csproj", "{105F9CBD-9787-4ABB-B756-3C84ED7C6E4B}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prawnbot.FileHandling", "Prawnbot.FileHandling\Prawnbot.FileHandling.csproj", "{52DC8807-F03F-49D3-820A-F274CC60D170}"
 EndProject
 Global
