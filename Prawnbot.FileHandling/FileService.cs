@@ -23,6 +23,12 @@ namespace Prawnbot.FileHandling
             return LoadListResponse(await fileBL.ReadFromFileAsync(fileName));
         }
 
+        public async Task<ResponseBase> WriteToLogFileAsync(string valueToWrite)
+        {
+            var response = await LoadResponseBaseAsync(() => fileBL.WriteToLogFileAsync(valueToWrite));
+            return response;
+        }
+
         public Response<FileStream> WriteToCSV(IList<CSVColumns> columns, string fileName)
         {
             return LoadResponse(fileBL.WriteToCSV(columns, fileName));

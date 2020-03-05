@@ -16,5 +16,6 @@ namespace Prawnbot.FileHandling.Interfaces
         Response<FileStream> WriteToCSV(IList<CSVColumns> columns, string fileName);
         Task<ResponseBase> WriteToFileAsync(string valueToWrite, string fileName);
         ListResponse<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
+        Task<ResponseBase> WriteToLogFileAsync(string valueToWrite);
     }
 }

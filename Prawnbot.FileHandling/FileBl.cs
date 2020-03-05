@@ -9,13 +9,46 @@ using Prawnbot.Infrastructure;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Prawnbot.FileHandling
 {
     public class FileBL : BaseBL, IFileBL
     {
+        private static FileStream LogFile;
+
+        private const string LogFileName = "EventLogs";
+        private const string LogFileExtension = ".txt";
+
+        private static void GetLogFileIfNotExists()
+        {
+            if (LogFile == null)
+            {
+                string directory = ConfigUtility.TextFileDirectory;
+
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                string filePath = directory + "\\" + LogFileName + LogFileExtension;
+
+                LogFile = File.OpenWrite(filePath);
+            }
+
+            // Used to make sure that the line is written at the end of the file
+            LogFile.Position = LogFile.Length;
+        }
+
         public FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare)
+        {
+            string path = CreateLocalFileIfNotExists(fileName);
+
+            return File.Open(path, fileMode, fileAccess, fileShare);
+        }
+
+        public string CreateLocalFileIfNotExists(string fileName)
         {
             string TextFileDirectory = ConfigUtility.TextFileDirectory;
 
@@ -30,26 +63,20 @@ namespace Prawnbot.FileHandling
             {
                 using (FileStream fs = File.Create(filePath))
                 {
+                    fs.Close();
                 }
             }
 
-            return new FileStream(filePath, fileMode, fileAccess, fileShare);
+            return filePath;
         }
 
         public async Task<Bunch<string>> ReadFromFileAsync(string fileName)
         {
-            using (FileStream file = CreateLocalFileIfNotExists(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (StreamReader reader = new StreamReader(file)) 
-            {
-                Bunch<string> fileLines = new Bunch<string>();
+            string path = CreateLocalFileIfNotExists(fileName);
 
-                while (!reader.EndOfStream)
-                {
-                    fileLines.Add(await reader.ReadLineAsync());
-                }
+            var fileLines = await File.ReadAllLinesAsync(path, Encoding.Default);
 
-                return fileLines;
-            };
+            return fileLines.ToBunch();
         }
 
         public FileStream WriteToCSV(IList<CSVColumns> columns, string fileName)
@@ -74,15 +101,14 @@ namespace Prawnbot.FileHandling
             }
         }
 
-        public static async Task FailoverWriteToFileAsync(string valueToWrite, string fileName)
+        public async Task WriteToLogFileAsync(string valueToWrite)
         {
-            FileBL fileBL = new FileBL();
+            GetLogFileIfNotExists();
 
-            using (FileStream fileStream = fileBL.CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
-            using (StreamWriter writer = new StreamWriter(fileStream))
-            {
-                await writer.WriteLineAsync(valueToWrite);
-            }
+            StreamWriter writer = new StreamWriter(LogFile);
+            await writer.WriteLineAsync(valueToWrite);
+
+            writer.Flush();
         }
 
         public Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)

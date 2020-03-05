@@ -12,11 +12,6 @@ namespace Prawnbot.Logging
 {
     public class LogBL : ILogging
     {
-        /// <summary>
-        /// Constant string used for the file name to target for the event logs file
-        /// </summary>
-        private const string LogFileName = "EventLogs.txt";
-
         private readonly IFileService fileService;
         public LogBL(IFileService fileService)
         {
@@ -85,7 +80,7 @@ namespace Prawnbot.Logging
             {
                 await Task.Run(async () =>
                 {
-                    await fileService.WriteToFileAsync(message.ToString(), LogFileName);
+                    await fileService.WriteToLogFileAsync(message.ToString());
 
                     if (updateConsole)
                     {

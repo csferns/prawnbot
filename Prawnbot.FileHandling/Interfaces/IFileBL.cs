@@ -14,11 +14,13 @@ namespace Prawnbot.FileHandling.Interfaces
     public interface IFileBL
     {
         FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
+        string CreateLocalFileIfNotExists(string fileName);
         Task<Bunch<string>> ReadFromFileAsync(string fileName);
         FileStream WriteToCSV(IList<CSVColumns> columns, string fileName);
         Task WriteToFileAsync(string valueToWrite, string fileName);
         Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
         bool CheckIfTranslationExists();
         Bunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
+        Task WriteToLogFileAsync(string valueToWrite);
     }
 }
