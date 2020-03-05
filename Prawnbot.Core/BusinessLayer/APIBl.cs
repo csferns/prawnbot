@@ -66,7 +66,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logging.Log_Exception(e);
                 return default(T);
             }
         }
@@ -93,7 +93,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e, optionalMessage: $"Error in POST request for type {typeof(T).FullName}");
+                logging.Log_Exception(e, optionalMessage: $"Error in POST request for type {typeof(T).FullName}");
                 return default(T);
             }
         }
@@ -215,7 +215,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logging.Log_Exception(e);
                 return new Bunch<Event>();
             }
         }

@@ -75,7 +75,7 @@ namespace Prawnbot.Core.BusinessLayer
 
                 Process currentProcess = Process.GetCurrentProcess();
 
-                await logging.Log_Info($"Process {currentProcess.ProcessName} ({currentProcess.Id}) started on {Environment.MachineName} at {currentProcess.StartTime}");
+                logging.Log_Info($"Process {currentProcess.ProcessName} ({currentProcess.Id}) started on {Environment.MachineName} at {currentProcess.StartTime}");
 
                 Token ??= token;
                 AutofacContainer ??= services.Get();
@@ -127,15 +127,15 @@ namespace Prawnbot.Core.BusinessLayer
 
                 stopwatch.Stop();
 
-                await logging.Log_Debug($"Bot started in {stopwatch.Elapsed}");
+                logging.Log_Debug($"Bot started in {stopwatch.Elapsed}");
 
-                await logging.Log_Debug($"Memory used before collection: {(GC.GetTotalMemory(false) / 1024) / 1024} MB");
+                logging.Log_Debug($"Memory used before collection: {(GC.GetTotalMemory(false) / 1024) / 1024} MB");
                 GC.Collect();
-                await logging.Log_Debug($"Memory used after collection: {(GC.GetTotalMemory(true) / 1024) / 1024} MB");
+                logging.Log_Debug($"Memory used after collection: {(GC.GetTotalMemory(true) / 1024) / 1024} MB");
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logging.Log_Exception(e);
             }
         }
 
@@ -160,7 +160,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logging.Log_Exception(e);
             }
         }
 
@@ -185,7 +185,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logging.Log_Exception(e);
                 return;
             }
         }
@@ -223,11 +223,11 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (SchedulerException sc)
             {
-                await logging.Log_Exception(sc, optionalMessage: "A SchedulerExeption occured while scheduling Quartz jobs");
+                logging.Log_Exception(sc, optionalMessage: "A SchedulerExeption occured while scheduling Quartz jobs");
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logging.Log_Exception(e);
             }
         }
 
@@ -261,7 +261,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (jobExists)
             {
-                await logging.Log_Info($"Job {jobName} scheduled for {trigger.StartTimeUtc.ToString("dd/MM/yyyy HH:mm:ss")} with interval {interval} hours");
+                logging.Log_Info($"Job {jobName} scheduled for {trigger.StartTimeUtc.ToString("dd/MM/yyyy HH:mm:ss")} with interval {interval} hours");
             }
         }
 
@@ -293,13 +293,13 @@ namespace Prawnbot.Core.BusinessLayer
         #region Event Listeners
         private async Task Client_MessageDeleted(Cacheable<IMessage, ulong> arg1, ISocketMessageChannel channel)
         {
-            await logging.Log_Info($"Message deleted {arg1.Id} from {channel.Name}");
+            logging.Log_Info($"Message deleted {arg1.Id} from {channel.Name}");
             await channel.SendMessageAsync("Oooh, he's deletin'", UseTTS);
         }
 
         private async Task Client_JoinedGuild(SocketGuild arg)
         {
-            await logging.Log_Info($"Joined guild {arg.Id} ({arg.Name})");
+            logging.Log_Info($"Joined guild {arg.Id} ({arg.Name})");
 
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.WithAuthor(Client.CurrentUser)
@@ -350,19 +350,19 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e, optionalMessage: "Error handling the command");
+                logging.Log_Exception(e, optionalMessage: "Error handling the command");
                 return;
             }
         }
 
         private async Task Client_Connected()
         {
-            await logging.Log_Info($"Connected as {Client.CurrentUser.Username}");
+            logging.Log_Info($"Connected as {Client.CurrentUser.Username}");
         }
 
         private async Task Client_Disconnected(Exception arg)
         {
-            await logging.Log_Exception(arg, optionalMessage: "Client disconnected");
+            logging.Log_Exception(arg, optionalMessage: "Client disconnected");
 
             await Client.LogoutAsync();
             await Client.StopAsync();
@@ -378,7 +378,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             SocketGuild guild = user.Guild;
 
-            await logging.Log_Info($"User {user.Username} joined {guild.Name}");
+            logging.Log_Info($"User {user.Username} joined {guild.Name}");
 
             EmbedBuilder builder = new EmbedBuilder();
 
@@ -394,7 +394,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             string message = $"{user.Username} was banned from {guild.Name}.";
 
-            await logging.Log_Info(message);
+            logging.Log_Info(message);
 
             EmbedBuilder builder = new EmbedBuilder();
 
@@ -410,7 +410,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             string message = $"{user.Username} was unbanned from {guild.Name}.";
 
-            await logging.Log_Info(message);
+            logging.Log_Info(message);
 
             EmbedBuilder builder = new EmbedBuilder();
             builder.WithTitle("Unbanned.")

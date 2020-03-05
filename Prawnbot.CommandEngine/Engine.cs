@@ -38,7 +38,7 @@ namespace Prawnbot.CommandEngine
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logging.Log_Exception(e);
             }
         }
     }

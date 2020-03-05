@@ -50,7 +50,7 @@ namespace Prawnbot.Core.Quartz
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e, optionalMessage: "An error occured during MOC");
+                logging.Log_Exception(e, optionalMessage: "An error occured during MOC");
             }
         }
     }

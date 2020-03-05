@@ -161,7 +161,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (EventsTriggered > 0)
             {
-                await logging.Log_Info($"Message recieved from {Context.Message.Author.Username} ({Context.Guild.Name}): \"{Context.Message.Content}\"");
+                logging.Log_Info($"Message recieved from {Context.Message.Author.Username} ({Context.Guild.Name}): \"{Context.Message.Content}\"");
             }
 
             EventsTriggered = 0;
@@ -262,7 +262,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e, optionalMessage: "Error setting bot status");
+                logging.Log_Exception(e, optionalMessage: "Error setting bot status");
                 return;
             }
         }
@@ -275,7 +275,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e, optionalMessage: "Error occured while updating rich presence");
+                logging.Log_Exception(e, optionalMessage: "Error occured while updating rich presence");
             }
         }
 
@@ -532,7 +532,7 @@ namespace Prawnbot.Core.BusinessLayer
                 }
                 catch (PingException e)
                 {
-                    await logging.Log_Exception(e, optionalMessage: $"Error occured pinging machine with name or address: {nameOrAddress}");
+                    logging.Log_Exception(e, optionalMessage: $"Error occured pinging machine with name or address: {nameOrAddress}");
 
                     // Discard PingExceptions and return false;
                     return IPStatus.Unknown;

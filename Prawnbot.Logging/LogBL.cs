@@ -21,10 +21,10 @@ namespace Prawnbot.Logging
         public async Task Client_Log(LogMessage message)
         {
             LogEntry logEntry = new LogEntry(message);
-            await Log(logEntry);
+            Log(logEntry);
         }
 
-        public async Task Log_Warning(string message, bool updateConsole = true, [CallerMemberName]string codeArea = "")
+        public void Log_Warning(string message, bool updateConsole = true, [CallerMemberName]string codeArea = "")
         {
             LogEntry logEntry = new LogEntry()
             {
@@ -33,10 +33,10 @@ namespace Prawnbot.Logging
                 LogSeverity = TraceEventType.Warning
             };
 
-            await Log(logEntry, updateConsole);
+            Log(logEntry, updateConsole);
         }
 
-        public async Task Log_Info(string message, bool updateConsole = true, [CallerMemberName]string codeArea = "")
+        public void Log_Info(string message, bool updateConsole = true, [CallerMemberName]string codeArea = "")
         {
             LogEntry logEntry = new LogEntry()
             {
@@ -45,10 +45,10 @@ namespace Prawnbot.Logging
                 LogSeverity = TraceEventType.Information
             };
 
-            await Log(logEntry, updateConsole);
+            Log(logEntry, updateConsole);
         }
 
-        public async Task Log_Exception(Exception e, bool updateConsole = true, string optionalMessage = null, [CallerMemberName]string codeArea = "")
+        public void Log_Exception(Exception e, bool updateConsole = true, string optionalMessage = null, [CallerMemberName]string codeArea = "")
         {
             LogEntry logEntry = new LogEntry()
             {
@@ -59,10 +59,10 @@ namespace Prawnbot.Logging
                 LogSeverity = TraceEventType.Error
             };
 
-            await Log(logEntry, updateConsole);
+            Log(logEntry, updateConsole);
         }
 
-        public async Task Log_Debug(string message, [CallerMemberName]string codeArea = "")
+        public void Log_Debug(string message, [CallerMemberName]string codeArea = "")
         {
             LogEntry logEntry = new LogEntry()
             {
@@ -71,14 +71,14 @@ namespace Prawnbot.Logging
                 LogSeverity = TraceEventType.Information
             };
 
-            await Log(logEntry, false);
+            Log(logEntry, false);
         }
 
-        private async Task Log(LogEntry message, bool updateConsole = true)
+        private void Log(LogEntry message, bool updateConsole = true)
         {
             try
             {
-                await Task.Run(async () =>
+                Task.Run(async () =>
                 {
                     await fileService.WriteToLogFileAsync(message.ToString());
 
@@ -102,7 +102,7 @@ namespace Prawnbot.Logging
                 await fileService.WriteToFileAsync($"{firstTranslation.to} : {firstTranslation.text}", "TranslationLog.txt");
             }
 
-            await Log_Info("Translations logged");
+            Log_Info("Translations logged");
         }
     }
 }

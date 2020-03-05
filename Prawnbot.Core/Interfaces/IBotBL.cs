@@ -13,7 +13,7 @@ namespace Prawnbot.Core.Interfaces
         /// </summary>
         /// <param name="token">The token to connect with</param>
         /// <returns></returns>
-        Task ConnectAsync(string token, IContainer container = null);
+        Task ConnectAsync(string token);
         /// <summary>
         /// Method to disconnect the bot
         /// </summary>
