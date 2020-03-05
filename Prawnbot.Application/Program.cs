@@ -1,15 +1,9 @@
 ﻿using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection;
-using Prawnbot.CommandEngine.Interfaces;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Core;
 using Prawnbot.Core.Interfaces;
-using Prawnbot.Data;
-using Prawnbot.Data.Interfaces;
 using Prawnbot.Logging;
 using System;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,9 +28,11 @@ namespace Prawnbot.Application
 
             try
             {
+                Services services = new Services();
+
                 // Get the Dependency Injection container and use it to make a new instance
                 // of the non static BaseApplication class so work can be done
-                using (IContainer container = Services.DependencyInjectionSetup())
+                using (IContainer container = services.Get())
                 using (ILifetimeScope scope = container.BeginLifetimeScope())
                 {
                     IBotService botService = scope.Resolve<IBotService>();

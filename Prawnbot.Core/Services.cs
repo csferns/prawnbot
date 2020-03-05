@@ -9,13 +9,20 @@ using System.Reflection;
 
 namespace Prawnbot.Core
 {
-    public static class Services
+    public class Services
     {
+        private IContainer Container;
+
+        public Services()
+        {
+
+        }
+
         /// <summary>
         /// Creates a Dependency Injection container with relevant services in
         /// </summary>
         /// <returns>IContainer</returns>
-        public static IContainer DependencyInjectionSetup(IServiceCollection originalCollection = null)
+        private IContainer DependencyInjectionSetup(IServiceCollection originalCollection = null)
         {
             // Microsoft DI
             IServiceCollection serviceCollection = originalCollection ?? new ServiceCollection();
@@ -30,7 +37,7 @@ namespace Prawnbot.Core
             containerBuilder.Populate(serviceCollection);
 
             // Add dependencies based on Assembly and name
-            containerBuilder.RegisterAssemblyTypes(Assembly.Load("Prawnbot.Core"))
+            containerBuilder.RegisterAssemblyTypes(Assembly.Load("Prawnbot.Core"), Assembly.Load("Prawnbot.Core.Database"), Assembly.Load("Prawnbot.FileHandling"))
                 .Where(assembly => assembly.Name.EndsWith("BL", StringComparison.InvariantCultureIgnoreCase) 
                                 || assembly.Name.EndsWith("Service", StringComparison.InvariantCultureIgnoreCase) 
                                 || assembly.Name.EndsWith("Repository", StringComparison.InvariantCultureIgnoreCase)
@@ -38,18 +45,41 @@ namespace Prawnbot.Core
                 .AsImplementedInterfaces()
                 .InstancePerDependency();
 
-            containerBuilder.RegisterAssemblyTypes(Assembly.Load("Prawnbot.CommandEngine"))
+            containerBuilder.RegisterAssemblyTypes(Assembly.Load("Prawnbot.Logging"))//, Assembly.Load("Prawnbot.CommandEngine"))
                 .AsImplementedInterfaces()
                 .InstancePerLifetimeScope();
-
-            // The logging dependency won't be picked up in the above condition so set it here
-            containerBuilder.RegisterType<Logging>().As<ILogging>().InstancePerLifetimeScope();
 
             // TODO: This really shouldn't be InstancePerLifetimeScope, they should be InstancePerRequest so the call to the database gets disposed when it is finished.
             containerBuilder.RegisterType<UnitOfWork>().As<IUnitOfWork>().InstancePerLifetimeScope();
 
+            Container = containerBuilder.Build();
+
             // return a built collection of services
-            return containerBuilder.Build();
+            return Container;
+        }
+
+        public IContainer Get()
+        {
+            if (Container != null)
+            {
+                return Container;
+            }
+            else 
+            {
+                return DependencyInjectionSetup();
+            }
+        }
+
+        public IContainer Get(IServiceCollection originalCollection)
+        {
+            if (Container != null)
+            {
+                return Container;
+            }
+            else
+            {
+                return DependencyInjectionSetup(originalCollection);
+            }
         }
     }
 }

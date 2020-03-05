@@ -19,10 +19,10 @@ namespace Prawnbot.Core.ServiceLayer
             return LoadResponse(await botBL.GetStatusAsync());
         }
 
-        public async Task<ResponseBase> ConnectAsync(string token, IContainer autofacContainer)
+        public async Task<ResponseBase> ConnectAsync(string token)
         {
-            await botBL.ConnectAsync(token, autofacContainer);
-            return new ResponseBase();
+            var response = await LoadResponseBaseAsync(() => botBL.ConnectAsync(token));
+            return response;
         }
 
         public async Task<ResponseBase> DisconnectAsync(bool shutdown = false)

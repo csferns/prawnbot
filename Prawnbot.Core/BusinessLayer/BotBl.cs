@@ -65,19 +65,20 @@ namespace Prawnbot.Core.BusinessLayer
             };
         }
 
-        public async Task ConnectAsync(string token = null, IContainer autofacContainer = null)
+        public async Task ConnectAsync(string token = null)
         {
             try
             {
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
+                Services services = new Services();
 
                 Process currentProcess = Process.GetCurrentProcess();
 
                 await logging.Log_Info($"Process {currentProcess.ProcessName} ({currentProcess.Id}) started on {Environment.MachineName} at {currentProcess.StartTime}");
 
                 Token ??= token;
-                AutofacContainer ??= autofacContainer;
+                AutofacContainer ??= services.Get();
 
                 Client = new DiscordSocketClient(new DiscordSocketConfig
                 {
@@ -90,13 +91,13 @@ namespace Prawnbot.Core.BusinessLayer
                 BotServices = new ServiceCollection()
                     .AddSingleton(Client)
                     .AddSingleton(Commands)
-                    .AddSingleton(autofacContainer.Resolve<IBotService>())
-                    .AddSingleton(autofacContainer.Resolve<ICoreService>())
-                    .AddSingleton(autofacContainer.Resolve<IAPIService>())
-                    .AddSingleton(autofacContainer.Resolve<IFileService>())
-                    .AddSingleton(autofacContainer.Resolve<ILogging>())
-                    .AddSingleton(autofacContainer.Resolve<IAlarmService>())
-                    .AddSingleton(autofacContainer.Resolve<ISpeechRecognitionService>())
+                    .AddSingleton(AutofacContainer.Resolve<IBotService>())
+                    .AddSingleton(AutofacContainer.Resolve<ICoreService>())
+                    .AddSingleton(AutofacContainer.Resolve<IAPIService>())
+                    .AddSingleton(AutofacContainer.Resolve<IFileService>())
+                    .AddSingleton(AutofacContainer.Resolve<ILogging>())
+                    .AddSingleton(AutofacContainer.Resolve<IAlarmService>())
+                    .AddSingleton(AutofacContainer.Resolve<ISpeechRecognitionService>())
                     .BuildServiceProvider();
 
                 Client.MessageReceived += Client_MessageRecieved;
