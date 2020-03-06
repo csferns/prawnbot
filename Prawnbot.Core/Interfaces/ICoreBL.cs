@@ -13,7 +13,7 @@ namespace Prawnbot.Core.Interfaces
         Task SendImageFromBlobStoreAsync(string fileName);
         Task MessageEventListeners(SocketUserMessage message);
         string FlipACoin(string headsValue, string tailsValue);
-        Task<Bunch<string>> YottaPrependAsync();
+        Task<IBunch<string>> YottaPrependAsync();
         /// <summary>
         /// Method to set the status of the bot
         /// </summary>
@@ -38,15 +38,15 @@ namespace Prawnbot.Core.Interfaces
         /// Get all the current users in the servers the bot is connected to
         /// </summary>
         /// <returns></returns>
-        Bunch<SocketGuildUser> GetAllUsers();
+        IBunch<SocketGuildUser> GetAllUsers();
         /// <summary>
         /// Gets all messages from a guild text channel
         /// </summary>
         /// <param name="id">Text channel ID</param>
         /// <returns></returns>
-        Task<Bunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 50000);
-        Task<Bunch<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp);
-        Task<Bunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 50000);
+        Task<IBunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 50000);
+        Task<IBunch<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp);
+        Task<IBunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 50000);
         /// <summary>
         /// Get a guild by name
         /// </summary>
@@ -58,7 +58,7 @@ namespace Prawnbot.Core.Interfaces
         /// Get all the current guilds the bot is connected to
         /// </summary>
         /// <returns>List of IGuilds</returns>
-        Bunch<SocketGuild> GetAllGuilds();
+        IBunch<SocketGuild> GetAllGuilds();
         /// <summary>
         /// Gets the default channel of the given guild
         /// </summary>
@@ -97,7 +97,7 @@ namespace Prawnbot.Core.Interfaces
         /// </summary>
         /// <param name="guild">Server</param>
         /// <returns>IReadOnlyCollection of SocketTextChannels</returns>
-        Bunch<SocketTextChannel> FindGuildTextChannels(SocketGuild guild);
+        IBunch<SocketTextChannel> FindGuildTextChannels(SocketGuild guild);
         /// <summary>
         /// Create an FFMPEG process for the audio commands
         /// </summary>

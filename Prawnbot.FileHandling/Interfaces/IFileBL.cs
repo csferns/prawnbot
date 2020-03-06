@@ -15,12 +15,12 @@ namespace Prawnbot.FileHandling.Interfaces
     {
         FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
         string CreateLocalFileIfNotExists(string fileName);
-        Task<Bunch<string>> ReadFromFileAsync(string fileName);
+        Task<IBunch<string>> ReadFromFileAsync(string fileName);
         FileStream WriteToCSV(IList<CSVColumns> columns, string fileName);
         Task WriteToFileAsync(string valueToWrite, string fileName);
-        Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
+        IBunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
         bool CheckIfTranslationExists();
-        Bunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
+        IBunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
         Task WriteToLogFileAsync(string valueToWrite);
     }
 }

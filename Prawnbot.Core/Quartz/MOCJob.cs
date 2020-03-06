@@ -28,7 +28,7 @@ namespace Prawnbot.Core.Quartz
                     return;
                 }
 
-                Bunch<SocketGuild> guilds = coreService.GetAllGuilds().Entities.ToBunch();
+                IBunch<SocketGuild> guilds = coreService.GetAllGuilds().Entities.ToBunch();
 
                 Random random = new Random();
 

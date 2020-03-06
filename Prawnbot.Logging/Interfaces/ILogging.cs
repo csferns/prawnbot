@@ -17,6 +17,6 @@ namespace Prawnbot.Logging
         void Log_Info(string message, bool updateConsole = true, [CallerMemberName]string codeArea = "");
         void Log_Exception(Exception e, bool updateConsole = true, string optionalMessage = null, [CallerMemberName]string codeArea = "");
         void Log_Debug(string message, [CallerMemberName]string codeArea = "");
-        Task PopulateTranslationLogAsync(Bunch<TranslateData> translation);
+        Task PopulateTranslationLogAsync(IBunch<TranslateData> translation);
     }
 }

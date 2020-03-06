@@ -70,7 +70,7 @@ namespace Prawnbot.FileHandling
             return filePath;
         }
 
-        public async Task<Bunch<string>> ReadFromFileAsync(string fileName)
+        public async Task<IBunch<string>> ReadFromFileAsync(string fileName)
         {
             string path = CreateLocalFileIfNotExists(fileName);
 
@@ -111,9 +111,9 @@ namespace Prawnbot.FileHandling
             writer.Flush();
         }
 
-        public Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)
+        public IBunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)
         {
-            Bunch<CSVColumns> records = new Bunch<CSVColumns>();
+            IBunch<CSVColumns> records = new Bunch<CSVColumns>();
 
             for (int message = 0; message < messagesToAdd.Count(); message++)
             {
@@ -146,7 +146,7 @@ namespace Prawnbot.FileHandling
             return false;
         }
 
-        public Bunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate)
+        public IBunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate)
         {
             return new Bunch<TranslateData>();
         }

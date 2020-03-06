@@ -67,7 +67,7 @@ namespace Prawnbot.Core.Modules
 
                 for (int item = 0; item < splitMessage.Count(); item++)
                 {
-                    Bunch<char> orderedMessage = splitMessage[item].OrderBy(x => x).ToBunch();
+                    IBunch<char> orderedMessage = splitMessage[item].OrderBy(x => x).ToBunch();
 
                     for (int character = 0; character < orderedMessage.Count(); character++)
                     {

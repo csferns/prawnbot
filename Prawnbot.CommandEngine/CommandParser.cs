@@ -31,7 +31,7 @@ namespace Prawnbot.CommandEngine
 
             if (!command.CommandText.StartsWith('/'))
             {
-                await logging.Log_Info("Command needs to start with a '/'");
+                logging.Log_Info("Command needs to start with " + delimiter);
                 return false;
             }
 
@@ -60,7 +60,7 @@ namespace Prawnbot.CommandEngine
             }
             else
             {
-                await logging.Log_Info($"'{firstWord}' is not recognised as a valid command!");
+                logging.Log_Info($"'{firstWord}' is not recognised as a valid command!");
                 return false;
             }
         }
@@ -88,7 +88,7 @@ namespace Prawnbot.CommandEngine
                 CommandText = commandText
             };
 
-            await logging.Log_Info($"Command recieved through console: '{commandText}'", updateConsole: false);
+            logging.Log_Info($"Command recieved through console: '{commandText}'", updateConsole: false);
 
             bool valid = await EnsureValidCommand(command);
 

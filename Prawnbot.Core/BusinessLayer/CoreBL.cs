@@ -76,7 +76,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (ConfigUtility.YottaMode && (StrippedMessage.ContainsSingleLower("sean") || message.IsUserTagged(201371614489608192) || StrippedMessage.ContainsSingleLower("seans")))
             {
-                Bunch<string> yotta = await YottaPrependAsync();
+                IBunch<string> yotta = await YottaPrependAsync();
                 string yottaFull = string.Join(", ", yotta);
 
                 await Context.Channel.SendMessageAsync($"{yottaFull} {(yottaFull.Length > 0 ? 'c' : 'C')}had Sean, stud of the co-op, leader of the Corfe Mullen massive");
@@ -109,7 +109,7 @@ namespace Prawnbot.Core.BusinessLayer
             {
                 if (await apiBL.GetProfanityFilterAsync(StrippedMessage))
                 {
-                    Bunch<GiphyDatum> gifs = await apiBL.GetGifsAsync("swearing", 50);
+                    IBunch<GiphyDatum> gifs = await apiBL.GetGifsAsync("swearing", 50);
                     await Context.Channel.SendMessageAsync(gifs.RandomOrDefault().bitly_gif_url);
                     EventsTriggered++;
                 }
@@ -170,7 +170,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task ReactToTaggedUserWithGifAsync(SocketUserMessage message, ulong userId, string replyMessage, string gifSearchText)
         {
-            Bunch<GiphyDatum> gifs = gifSearchText != null
+            IBunch<GiphyDatum> gifs = gifSearchText != null
             ? await apiBL.GetGifsAsync(gifSearchText)
             : new Bunch<GiphyDatum>();
 
@@ -195,7 +195,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task ReactToSingleWordWithGifAsync(string Content, string lookupValue, string replyMessage, string gifSearchText)
         {
-            Bunch<GiphyDatum> gifs = gifSearchText != null
+            IBunch<GiphyDatum> gifs = gifSearchText != null
                 ? await apiBL.GetGifsAsync(gifSearchText)
                 : new Bunch<GiphyDatum>();
 
@@ -206,7 +206,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task ReactToMultipleWordsWithGifAsync(string Content, string[] lookupValues, string replyMessage, string gifSearchText)
         {
-            Bunch<GiphyDatum> gifs = gifSearchText != null
+            IBunch<GiphyDatum> gifs = gifSearchText != null
                 ? await apiBL.GetGifsAsync(gifSearchText)
                 : new Bunch<GiphyDatum>();
 
@@ -283,7 +283,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             try
             {
-                List<SocketGuildUser> users = GetAllUsers();
+                IBunch<SocketGuildUser> users = GetAllUsers();
                 return users.Where(x => x.Username == username).FirstOrDefault();
             }
             catch (Exception)
@@ -292,7 +292,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        public Bunch<SocketGuildUser> GetAllUsers()
+        public IBunch<SocketGuildUser> GetAllUsers()
         {
             List<SocketGuildUser> users = new List<SocketGuildUser>();
 
@@ -307,7 +307,7 @@ namespace Prawnbot.Core.BusinessLayer
             return users.ToBunch();
         }
 
-        public async Task<Bunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 100000)
+        public async Task<IBunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 100000)
         {
             RequestOptions options = new RequestOptions
             {
@@ -323,14 +323,14 @@ namespace Prawnbot.Core.BusinessLayer
             return messages.Reverse().ToBunch();
         }
 
-        public async Task<Bunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 100000)
+        public async Task<IBunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 100000)
         {
-            Bunch<IMessage> messages = await GetAllMessagesAsync(id, limit);
+            IBunch<IMessage> messages = await GetAllMessagesAsync(id, limit);
 
             return messages.Where(x => x.Type == MessageType.Default && !x.Author.IsBot && !x.Author.IsWebhook).ToBunch();
         }
 
-        public async Task<Bunch<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp)
+        public async Task<IBunch<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp)
         {
             IList<IMessage> allMessages = await GetAllMessagesAsync(guildId);
             return allMessages.Where(x => x.Timestamp == timestamp || x.EditedTimestamp == timestamp).ToBunch();
@@ -354,7 +354,7 @@ namespace Prawnbot.Core.BusinessLayer
             return Client.GetGuild(guildId);
         }
 
-        public Bunch<SocketGuild> GetAllGuilds()
+        public IBunch<SocketGuild> GetAllGuilds()
         {
             return Client.Guilds.ToBunch();
         }
@@ -379,7 +379,7 @@ namespace Prawnbot.Core.BusinessLayer
             return guild.TextChannels.Where(x => x.Name == channelName).FirstOrDefault();
         }
 
-        public Bunch<SocketTextChannel> FindGuildTextChannels(SocketGuild guild)
+        public IBunch<SocketTextChannel> FindGuildTextChannels(SocketGuild guild)
         {
             return Client.Guilds.FirstOrDefault(x => x == guild).TextChannels.ToBunch();
         }
@@ -456,11 +456,11 @@ namespace Prawnbot.Core.BusinessLayer
             }.Random();
         }
 
-        public async Task<Bunch<string>> YottaPrependAsync()
+        public async Task<IBunch<string>> YottaPrependAsync()
         {
             Random random = new Random();
 
-            Bunch<string> fileContents = await fileBL.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
+            IBunch<string> fileContents = await fileBL.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
 
             Dictionary<PrependEnum, int> valueDictionary = new Dictionary<PrependEnum, int>();
 
@@ -480,7 +480,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             while (!validValue)
             {
-                Bunch<PrependEnum> invalidValues = new Bunch<PrependEnum>();
+                IBunch<PrependEnum> invalidValues = new Bunch<PrependEnum>();
 
                 PrependEnum randomEnumValue = (PrependEnum)enumValues.GetValue(random.Next(enumValues.Length)); //.GetValue().ToString();
 
@@ -502,7 +502,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
 
             fileContents.Reverse();
-            return fileContents.ToBunch();
+            return fileContents;
         }
 
         public async Task<IPStatus> PingHostAsync(string nameOrAddress)
@@ -542,14 +542,14 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<string> GetLanguageFullName(string origin)
         {
-            Bunch<LanguageTranslationRoot> languages = await apiBL.GetLanguagesAsync();
+            IBunch<LanguageTranslationRoot> languages = await apiBL.GetLanguagesAsync();
 
             return languages.FirstOrDefault().Languages.SelectMany(x => x.LanguageDetails).Where(y => y.dir == origin).FirstOrDefault().name;
         }
 
         public async Task<IMessage> GetRandomQuoteAsync(ulong id)
         {
-            Bunch<IMessage> quoteRoom = await GetAllMessagesAsync(id);
+            IBunch<IMessage> quoteRoom = await GetAllMessagesAsync(id);
             return quoteRoom.RandomOrDefault();
         }
 
@@ -566,22 +566,21 @@ namespace Prawnbot.Core.BusinessLayer
 
                 await Context.Channel.SendMessageAsync($"Started {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)}{(server ? " (" + Context.Guild.TextChannels.Count() + " channels)" : "")} at {DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
 
-                Bunch<CSVColumns> records = new Bunch<CSVColumns>();
+                IBunch<CSVColumns> records = new Bunch<CSVColumns>();
 
                 if (server)
                 {
-                    records = new Bunch<CSVColumns>();
                     foreach (SocketTextChannel textChannel in Context.Guild.TextChannels)
                     {
-                        Bunch<IMessage> messagesToAdd = await GetAllMessagesAsync(textChannel.Id);
+                        IBunch<IMessage> messagesToAdd = await GetAllMessagesAsync(textChannel.Id);
 
-                        Bunch<CSVColumns> channelMessages = fileBL.CreateCSVList(messagesToAdd);
+                        IBunch<CSVColumns> channelMessages = fileBL.CreateCSVList(messagesToAdd);
                         records.AddRange(channelMessages);
                     }
                 }
                 else
                 {
-                    Bunch<IMessage> messagesToAdd = await GetAllMessagesAsync(id);
+                    IBunch<IMessage> messagesToAdd = await GetAllMessagesAsync(id);
 
                     records = fileBL.CreateCSVList(messagesToAdd);
                 }

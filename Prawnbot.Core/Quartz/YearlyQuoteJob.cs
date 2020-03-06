@@ -27,7 +27,7 @@ namespace Prawnbot.Core.Quartz
             try
             {
                 ListResponse<IMessage> response = await coreService.GetAllMessagesByTimestampAsync(guildId: 453899130486521859, timestamp: DateTime.Now.AddYears(-1));
-                Bunch<IMessage> filteredMessages = response.Entities.ToBunch();
+                IBunch<IMessage> filteredMessages = response.Entities.ToBunch();
 
                 StringBuilder sb = new StringBuilder();
 

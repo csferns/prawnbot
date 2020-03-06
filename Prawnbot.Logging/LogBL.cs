@@ -94,7 +94,7 @@ namespace Prawnbot.Logging
             }
         }
 
-        public async Task PopulateTranslationLogAsync(Bunch<TranslateData> translation)
+        public async Task PopulateTranslationLogAsync(IBunch<TranslateData> translation)
         {
             foreach (TranslateData item in translation)
             {

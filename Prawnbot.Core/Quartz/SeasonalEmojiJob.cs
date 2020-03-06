@@ -23,7 +23,7 @@ namespace Prawnbot.Core.Quartz
 
             if (guildsResponse.HasData)
             {
-                Bunch<SocketGuild> guilds = guildsResponse.Entities.ToBunch();
+                IBunch<SocketGuild> guilds = guildsResponse.Entities.ToBunch();
 
                 Emoji textChannelEmoji = new Emoji("");
                 Emoji categoryEmoji = new Emoji("");

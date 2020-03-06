@@ -98,7 +98,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        public async Task<Bunch<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
+        public async Task<IBunch<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
         {
             IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
@@ -112,7 +112,7 @@ namespace Prawnbot.Core.BusinessLayer
             return response.data.OrderBy(x => x.trending_datetime).ToBunch();
         }
 
-        public async Task<Bunch<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate)
+        public async Task<IBunch<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate)
         {
             if (fileBL.CheckIfTranslationExists())
             {
@@ -134,18 +134,18 @@ namespace Prawnbot.Core.BusinessLayer
                     { "Ocp-Apim-Subscription-Key", ConfigUtility.TranslateAPIKey }
                 };
 
-                return await PostRequestAsync<Bunch<TranslateData>>(url, postData, headers);
+                return await PostRequestAsync<IBunch<TranslateData>>(url, postData, headers);
             }
         }
 
-        public async Task<Bunch<LanguageTranslationRoot>> GetLanguagesAsync()
+        public async Task<IBunch<LanguageTranslationRoot>> GetLanguagesAsync()
         {
             IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "api-version", "3.0" }
             };
 
-            return await GetRequestAsync<Bunch<LanguageTranslationRoot>>(ConfigUtility.MicrosoftTranslateEndpoint + "languages", parameters);
+            return await GetRequestAsync<IBunch<LanguageTranslationRoot>>(ConfigUtility.MicrosoftTranslateEndpoint + "languages", parameters);
         }
 
         public async Task<bool> GetProfanityFilterAsync(string message)
@@ -158,22 +158,22 @@ namespace Prawnbot.Core.BusinessLayer
             return await GetRequestAsync<bool>(ConfigUtility.ProfanityFilterEndpoint, parameters);
         }
 
-        public async Task<Bunch<Rule34Model>> Rule34PostsAsync(string[] tags)
+        public async Task<IBunch<Rule34Model>> Rule34PostsAsync(string[] tags)
         {
             IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "tags", string.Join('+', tags) }
             };
 
-            return await GetRequestAsync<Bunch<Rule34Model>>(ConfigUtility.R34Endpoint + "posts", parameters);
+            return await GetRequestAsync<IBunch<Rule34Model>>(ConfigUtility.R34Endpoint + "posts", parameters);
         }
 
-        public async Task<Bunch<Rule34Types>> Rule34TagsAsync()
+        public async Task<IBunch<Rule34Types>> Rule34TagsAsync()
         {
-            return await GetRequestAsync<Bunch<Rule34Types>>(ConfigUtility.R34Endpoint + "tags");
+            return await GetRequestAsync<IBunch<Rule34Types>>(ConfigUtility.R34Endpoint + "tags");
         }
 
-        public async Task<Bunch<Event>> GetCalendarEntries(string calendarId)
+        public async Task<IBunch<Event>> GetCalendarEntries(string calendarId)
         {
             try
             {

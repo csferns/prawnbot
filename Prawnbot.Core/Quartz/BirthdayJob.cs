@@ -1,13 +1,13 @@
-﻿using System;
+﻿using Discord.WebSocket;
 using Prawnbot.Core.Custom.Collections;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
+using Quartz;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Discord.WebSocket;
-using Quartz;
 
 namespace Prawnbot.Core.Quartz
 {
@@ -26,7 +26,7 @@ namespace Prawnbot.Core.Quartz
 
             if (guildsResponse.HasData)
             {
-                Bunch<SocketGuild> guilds = guildsResponse.Entities.ToBunch();
+                IBunch<SocketGuild> guilds = guildsResponse.Entities.ToBunch();
 
                 foreach (SocketGuild guild in guilds)
                 {

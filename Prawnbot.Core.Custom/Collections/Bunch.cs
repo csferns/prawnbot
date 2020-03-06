@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Prawnbot.Core.Custom.Collections
 {
-    public class Bunch<T> : List<T>, IList<T>
+    public class Bunch<T> : List<T>, IBunch<T>
     {
         public Bunch()
         {
@@ -17,6 +17,11 @@ namespace Prawnbot.Core.Custom.Collections
         }
 
         public Bunch(IEnumerable<T> collection)
+        {
+            this.AddRange(collection);
+        }
+
+        public Bunch(IBunch<T> collection)
         {
             this.AddRange(collection);
         }
@@ -56,6 +61,18 @@ namespace Prawnbot.Core.Custom.Collections
             }
 
             return newList[random.Next(this.Count())];
+        }
+
+        public void AddRange(IBunch<T> collection)
+        {
+            this.AddRange(collection);
+        }
+
+        public new IBunch<T> RemoveAll(Predicate<T> predicate)
+        {
+            this.RemoveAll(predicate);
+
+            return this;
         }
     }
 }
