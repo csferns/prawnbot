@@ -1,8 +1,9 @@
-﻿using Prawnbot.Core.Custom.Collections;
+﻿using Prawnbot.CommandEngine.Interfaces;
+using Prawnbot.Core.Custom.Collections;
 
 namespace Prawnbot.CommandEngine
 {
-    public class Command
+    public class Command : ICommand
     {
         public Command()
         {
@@ -13,7 +14,7 @@ namespace Prawnbot.CommandEngine
         public bool Valid { get; set; }
         public CommandsEnum ParsedCommand { get; set; }
 
-        public Bunch<string> CommandComponents { get; set; }
+        public IBunch<string> CommandComponents { get; set; }
 
         public int RequiredParameterCount { get; set; }
         public int? OptionalParameterCount { get; set; }

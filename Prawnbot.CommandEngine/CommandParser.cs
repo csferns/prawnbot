@@ -21,11 +21,11 @@ namespace Prawnbot.CommandEngine
             this.logging = logging;
         }
 
-        private async Task<bool> EnsureValidCommand(Command command)
+        private bool EnsureValidCommand(ICommand command)
         {
             if (string.IsNullOrEmpty(command.CommandText))
             {
-                await logging.Log_Info("No command entered. Please enter a command.");
+                logging.Log_Info("No command entered. Please enter a command.");
                 return false;
             }
 
@@ -65,7 +65,7 @@ namespace Prawnbot.CommandEngine
             }
         }
 
-        private void GetCommandInformation(Command command)
+        private void GetCommandInformation(ICommand command)
         {
             Type commandsEnum = typeof(CommandsEnum);
 
@@ -81,9 +81,9 @@ namespace Prawnbot.CommandEngine
             }
         }
 
-        public async Task<Command> ParseCommand(string commandText)
+        public ICommand ParseCommand(string commandText)
         {
-            Command command = new Command()
+            ICommand command = new Command()
             {
                 CommandText = commandText
             };

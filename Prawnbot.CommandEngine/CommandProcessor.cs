@@ -27,7 +27,7 @@ namespace Prawnbot.CommandEngine
             this.botBL = botBL;
         }
 
-        public async Task<bool> ProcessCommand(Command command)
+        public async Task<bool> ProcessCommand(ICommand command)
         {
             switch (command.ParsedCommand)
             {
@@ -45,7 +45,7 @@ namespace Prawnbot.CommandEngine
                     await Command_RichPresence(command);
                     break;
                 case CommandsEnum.Help:
-                    await Command_Help();
+                    Command_Help();
                     break;
                 case CommandsEnum.Log:
                     Command_Log();
@@ -66,7 +66,7 @@ namespace Prawnbot.CommandEngine
             return true;
         }
 
-        private async Task Command_SendMessageUser(Command command)
+        private async Task Command_SendMessageUser(ICommand command)
         {
             if (command.HasCorrectParameterCount)
             {
@@ -89,7 +89,7 @@ namespace Prawnbot.CommandEngine
             }
         }
 
-        private async Task Command_SendMessageGuild(Command command)
+        private async Task Command_SendMessageGuild(ICommand command)
         {
             if (command.HasCorrectParameterCount)
             {
@@ -122,7 +122,7 @@ namespace Prawnbot.CommandEngine
             }
         }
 
-        private async Task Command_RichPresence(Command command)
+        private async Task Command_RichPresence(ICommand command)
         {
             if (command.HasCorrectParameterCount)
             {
@@ -157,7 +157,7 @@ namespace Prawnbot.CommandEngine
             Process.Start(startInfo);
         }
 
-        private async Task Command_Nickname(Command command)
+        private async Task Command_Nickname(ICommand command)
         {
             if (command.HasCorrectParameterCount)
             {
@@ -173,7 +173,7 @@ namespace Prawnbot.CommandEngine
             }
         }
 
-        private async Task Command_RemoveIcon(Command command)
+        private async Task Command_RemoveIcon(ICommand command)
         {
             if (command.HasCorrectParameterCount)
             {
@@ -187,7 +187,7 @@ namespace Prawnbot.CommandEngine
             }
         }
 
-        private async Task Command_ChangeIcon(Command command)
+        private async Task Command_ChangeIcon(ICommand command)
         {
             if (command.HasCorrectParameterCount)
             {
@@ -202,7 +202,7 @@ namespace Prawnbot.CommandEngine
             }
         }
 
-        private async Task Command_Help()
+        private void Command_Help()
         {
             Type commandsEnum = typeof(CommandsEnum);
 
