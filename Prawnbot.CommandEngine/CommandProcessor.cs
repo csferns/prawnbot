@@ -59,6 +59,9 @@ namespace Prawnbot.CommandEngine
                 case CommandsEnum.RemoveIcon:
                     await Command_RemoveIcon(command);
                     break;
+                case CommandsEnum.SetStatus:
+                    await Command_SetStatus(command);
+                    break;
                 default:
                     break;
             }
@@ -219,6 +222,24 @@ namespace Prawnbot.CommandEngine
             }
 
             logging.Log_Info(helpText.ToString());
+        }
+
+        private async Task Command_SetStatus(ICommand command)
+        {
+            if (command.HasCorrectParameterCount)
+            {
+                string status = command.CommandComponents[0];
+
+                Enum.TryParse<UserStatus>(status, ignoreCase: true, out UserStatus userStatus);
+
+                await coreBL.SetBotStatusAsync(userStatus);
+
+                logging.Log_Info("Status changed.");
+            }
+            else
+            {
+                logging.Log_Info("Invalid number of arguments!");
+            }
         }
     }
 }

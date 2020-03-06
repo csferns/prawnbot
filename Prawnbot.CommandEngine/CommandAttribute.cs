@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Prawnbot.CommandEngine
 {
-    [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
     public sealed class CommandAttribute : Attribute
     {
         // This is a positional argument

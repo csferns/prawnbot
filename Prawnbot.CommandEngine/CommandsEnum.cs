@@ -19,6 +19,8 @@
         [Command(CommandText = "/changeicon", Description = "Sets the icon of the bot", Parameters = new string[] { "{icon url}" })]
         ChangeIcon = 7,
         [Command(CommandText = "/removeicon", Description = "Removes the icon of the bot")]
-        RemoveIcon = 8
+        RemoveIcon = 8,
+        [Command(CommandText = "/setstatus", Description = "Sets the status of the bot", Parameters = new string[] { "{status}" })]
+        SetStatus = 9
     }
 }
