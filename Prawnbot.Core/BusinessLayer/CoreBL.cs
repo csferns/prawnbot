@@ -34,15 +34,17 @@ namespace Prawnbot.Core.BusinessLayer
         private readonly IFileBL fileBL;
         private readonly IAPIBL apiBL;
         private readonly ILogging logging;
+        private readonly IConfigUtility configUtility;
 
         private int EventsTriggered { get; set; }
         private bool MessageSent { get; set; }
 
-        public CoreBL(IFileBL fileBL, IAPIBL apiBL, ILogging logging)
+        public CoreBL(IFileBL fileBL, IAPIBL apiBL, ILogging logging, IConfigUtility configUtility)
         {
             this.fileBL = fileBL;
             this.apiBL = apiBL;
             this.logging = logging;
+            this.configUtility = configUtility;
         }
 
         private string StrippedMessage { get; set; }
@@ -50,7 +52,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task MessageEventListeners(SocketUserMessage message)
         {
-            if ((message.ContainsEmote() || message.ContainsEmoji()) && ConfigUtility.EmojiRepeat)
+            if ((message.ContainsEmote() || message.ContainsEmoji()) && configUtility.EmojiRepeat)
             {
                 await Context.Channel.SendMessageAsync(FindEmojis(message));
                 EventsTriggered++;
@@ -69,7 +71,7 @@ namespace Prawnbot.Core.BusinessLayer
             await ReactToSingleWordAsync(StrippedMessage, lookupValue: "cameron", replyMessage: "*Father Cammy");
             await ReactToTaggedUserAsync(message, userId: 216177905712103424, replyMessage: "*Father Cammy");
 
-            if (ConfigUtility.YottaMode && (StrippedMessage.ContainsSingleLower("sean") || message.IsUserTagged(201371614489608192) || StrippedMessage.ContainsSingleLower("seans")))
+            if (configUtility.YottaMode && (StrippedMessage.ContainsSingleLower("sean") || message.IsUserTagged(201371614489608192) || StrippedMessage.ContainsSingleLower("seans")))
             {
                 Bunch<string> yotta = await YottaPrependAsync();
                 string yottaFull = string.Join(", ", yotta);
@@ -79,13 +81,13 @@ namespace Prawnbot.Core.BusinessLayer
             }
 
             #region Config
-            if (ConfigUtility.DadMode)
+            if (configUtility.DadMode)
             {
                 await ReactToSingleWordAsync(StrippedMessage, lookupValue: "kys", replyMessage: $"Alright {Context.User.Mention}, that was very rude. Instead, take your own advice.");
                 await ReactToSingleWordAsync(StrippedMessage, lookupValue: "dad", replyMessage: "404 dad not found");
             }
 
-            if (ConfigUtility.DadMode && StrippedMessage.Contains("im"))
+            if (configUtility.DadMode && StrippedMessage.Contains("im"))
             {
                 List<string> splitMessage = message.Content.ToLowerInvariant().Split(' ').ToList();
 
@@ -100,7 +102,7 @@ namespace Prawnbot.Core.BusinessLayer
                 await Context.Channel.SendMessageAsync($"hello {string.Join(' ', splitMessage)}, i'm dad!");
             }
 
-            if (ConfigUtility.ProfanityFilter)
+            if (configUtility.ProfanityFilter)
             {
                 if (await apiBL.GetProfanityFilterAsync(StrippedMessage))
                 {
@@ -634,10 +636,10 @@ namespace Prawnbot.Core.BusinessLayer
                 string commandAttribute = discordAttributes.First(x => x.AttributeType == typeof(CommandAttribute)).ConstructorArguments.First().Value.ToString();
                 string summaryAttribute = discordAttributes.FirstOrDefault(x => x.AttributeType == typeof(SummaryAttribute))?.ConstructorArguments.First().Value.ToString() ?? "No summary available";
 
-                sb.AppendLine($"{ConfigUtility.CommandDelimiter}{commandAttribute}: {summaryAttribute}");
+                sb.AppendLine($"{configUtility.CommandDelimiter}{commandAttribute}: {summaryAttribute}");
             }
 
-            builder.WithTitle($"Commands | All commands follow the structure {ConfigUtility.CommandDelimiter}(command)")
+            builder.WithTitle($"Commands | All commands follow the structure {configUtility.CommandDelimiter}(command)")
                 .WithColor(Color.Blue)
                 .WithDescription(sb.ToString());
 

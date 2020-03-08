@@ -31,11 +31,13 @@ namespace Prawnbot.Core.BusinessLayer
     {
         private readonly IFileBL fileBL;
         private readonly ILogging logging;
+        private readonly IConfigUtility configUtility;
 
-        public APIBL(IFileBL fileBL, ILogging logging)
+        public APIBL(IFileBL fileBL, ILogging logging, IConfigUtility configUtility)
         {
             this.fileBL = fileBL;
             this.logging = logging;
+            this.configUtility = configUtility;
         }
 
         private async Task<T> GetRequestAsync<T>(string url, IDictionary<string, string> parameters = null)
@@ -101,13 +103,13 @@ namespace Prawnbot.Core.BusinessLayer
         {
             IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
-                { "api_key", ConfigUtility.GiphyAPIKey },
+                { "api_key", configUtility.GiphyAPIKey },
                 { "q", HttpUtility.UrlEncode(searchTerm) },
                 { "limit", limit.ToString() },
                 { "lang", "en" }
             };
 
-            GiphyRootobject response = await GetRequestAsync<GiphyRootobject>(ConfigUtility.GiphyEndpoint, parameters);
+            GiphyRootobject response = await GetRequestAsync<GiphyRootobject>(configUtility.GiphyEndpoint, parameters);
             return response.data.OrderBy(x => x.trending_datetime).ToBunch();
         }
 
@@ -121,7 +123,7 @@ namespace Prawnbot.Core.BusinessLayer
             {
                 object[] postData = new object[] { new { Text = textToTranslate.RemoveSpecialCharacters() } };
 
-                string url = ConfigUtility.MicrosoftTranslateEndpoint + "translate?api-version=3.0&to=" + toLanguage;
+                string url = configUtility.MicrosoftTranslateEndpoint + "translate?api-version=3.0&to=" + toLanguage;
 
                 if (fromLanguage != null)
                 {
@@ -130,7 +132,7 @@ namespace Prawnbot.Core.BusinessLayer
 
                 IDictionary<string, string> headers = new Dictionary<string, string>()
                 {
-                    { "Ocp-Apim-Subscription-Key", ConfigUtility.TranslateAPIKey }
+                    { "Ocp-Apim-Subscription-Key", configUtility.TranslateAPIKey }
                 };
 
                 return await PostRequestAsync<Bunch<TranslateData>>(url, postData, headers);
@@ -144,7 +146,7 @@ namespace Prawnbot.Core.BusinessLayer
                 { "api-version", "3.0" }
             };
 
-            return await GetRequestAsync<Bunch<LanguageTranslationRoot>>(ConfigUtility.MicrosoftTranslateEndpoint + "languages", parameters);
+            return await GetRequestAsync<Bunch<LanguageTranslationRoot>>(configUtility.MicrosoftTranslateEndpoint + "languages", parameters);
         }
 
         public async Task<bool> GetProfanityFilterAsync(string message)
@@ -154,7 +156,7 @@ namespace Prawnbot.Core.BusinessLayer
                 { "text", message }
             };
 
-            return await GetRequestAsync<bool>(ConfigUtility.ProfanityFilterEndpoint, parameters);
+            return await GetRequestAsync<bool>(configUtility.ProfanityFilterEndpoint, parameters);
         }
 
         public async Task<Bunch<Rule34Model>> Rule34PostsAsync(string[] tags)
@@ -164,12 +166,12 @@ namespace Prawnbot.Core.BusinessLayer
                 { "tags", string.Join('+', tags) }
             };
 
-            return await GetRequestAsync<Bunch<Rule34Model>>(ConfigUtility.R34Endpoint + "posts", parameters);
+            return await GetRequestAsync<Bunch<Rule34Model>>(configUtility.R34Endpoint + "posts", parameters);
         }
 
         public async Task<Bunch<Rule34Types>> Rule34TagsAsync()
         {
-            return await GetRequestAsync<Bunch<Rule34Types>>(ConfigUtility.R34Endpoint + "tags");
+            return await GetRequestAsync<Bunch<Rule34Types>>(configUtility.R34Endpoint + "tags");
         }
 
         public async Task<Bunch<Event>> GetCalendarEntries(string calendarId)
@@ -177,7 +179,7 @@ namespace Prawnbot.Core.BusinessLayer
             try
             {
                 // Authentication
-                string clientId = ConfigUtility.GoogleAPIKey; //From Google Developer console https://console.developers.google.com
+                string clientId = configUtility.GoogleAPIKey; //From Google Developer console https://console.developers.google.com
                 string clientSecret = ""; //From Google Developer console https://console.developers.google.com
                 string userName = ""; // A string used to identify a user.
                 string[] scopes = new string[] {
@@ -196,7 +198,7 @@ namespace Prawnbot.Core.BusinessLayer
                 using (CalendarService service = new CalendarService(new BaseClientService.Initializer()
                 {
                     HttpClientInitializer = credential,
-                    ApplicationName = ConfigUtility.GoogleApplicationName,
+                    ApplicationName = configUtility.GoogleApplicationName,
                 }))
                 {
                     // Define parameters of request.
@@ -221,7 +223,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<OverwatchStats> OverwatchStatsAsync(string battletag, string region, string platform)
         {
-            return await GetRequestAsync<OverwatchStats>(ConfigUtility.OverwatchStatsEndpoint + "stats/" + platform + "/" + region + "/" + battletag + "/");
+            return await GetRequestAsync<OverwatchStats>(configUtility.OverwatchStatsEndpoint + "stats/" + platform + "/" + region + "/" + battletag + "/");
         }
 
         public async Task<RedditRoot> GetTopPostsBySubreddit(string subredditName, int count)

@@ -10,16 +10,23 @@ namespace Prawnbot.Core.BusinessLayer
 {
     public class SpeechRecognitionBL : BaseBL, ISpeechRecognitionBL
     {
+        private readonly IConfigUtility configUtility;
+
+        public SpeechRecognitionBL(IConfigUtility configUtility)
+        {
+            this.configUtility = configUtility;
+        }
+
         public async Task Setup(AudioInStream discordAudioInStream)
         {
-            SpeechConfig config = SpeechConfig.FromSubscription(ConfigUtility.MicrosoftSpeechServicesKey, ConfigUtility.MicrosoftSpeechServicesRegion);
+            SpeechConfig config = SpeechConfig.FromSubscription(configUtility.MicrosoftSpeechServicesKey, configUtility.MicrosoftSpeechServicesRegion);
 
             using (SpeechRecognizer recogniser = new SpeechRecognizer(config))
             {
                 await recogniser.StartContinuousRecognitionAsync();
             }
 
-            using (SpeechSynthesizer synth = new SpeechSynthesizer(SpeechConfig.FromEndpoint(new Uri(ConfigUtility.MicrosoftSpeechServicesEndpoint), ConfigUtility.MicrosoftSpeechServicesKey)))
+            using (SpeechSynthesizer synth = new SpeechSynthesizer(SpeechConfig.FromEndpoint(new Uri(configUtility.MicrosoftSpeechServicesEndpoint), configUtility.MicrosoftSpeechServicesKey)))
             using (MemoryStream streamAudio = new MemoryStream())
             {
                 await synth.StartSpeakingTextAsync("");

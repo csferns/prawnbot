@@ -17,9 +17,16 @@ namespace Prawnbot.Core.BusinessLayer
 {
     public class FileBL : BaseBL, IFileBL
     {
+        private readonly IConfigUtility configUtility;
+
+        public FileBL(IConfigUtility configUtility)
+        {
+            this.configUtility = configUtility;
+        }
+
         public async Task<CloudBlobContainer> GetBlobContainer(string containerName)
         {
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(ConfigUtility.BlobStoreConnectionString);
+            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(configUtility.BlobStoreConnectionString);
             CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
             CloudBlobContainer container = blobClient.GetContainerReference(containerName);
             await container.CreateIfNotExistsAsync();
@@ -66,7 +73,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare)
         {
-            string TextFileDirectory = ConfigUtility.TextFileDirectory;
+            string TextFileDirectory = configUtility.TextFileDirectory;
 
             if (!Directory.Exists(TextFileDirectory))
             {
@@ -111,7 +118,7 @@ namespace Prawnbot.Core.BusinessLayer
                 csv.WriteRecords(columns);
             }
 
-            return File.OpenRead(ConfigUtility.TextFileDirectory + "\\" + fileName);
+            return File.OpenRead(configUtility.TextFileDirectory + "\\" + fileName);
         }
 
         public async Task WriteToFileAsync(string valueToWrite, string fileName)
@@ -125,7 +132,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         public static async Task FailoverWriteToFileAsync(string valueToWrite, string fileName)
         {
-            FileBL fileBL = new FileBL();
+            FileBL fileBL = new FileBL(null);
 
             using (FileStream fileStream = fileBL.CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
             using (StreamWriter writer = new StreamWriter(fileStream))
