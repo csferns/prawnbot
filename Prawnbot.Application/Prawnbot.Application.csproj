@@ -10,9 +10,4 @@
     <ProjectReference Include="..\Prawnbot.CommandEngine\Prawnbot.CommandEngine.csproj" />
     <ProjectReference Include="..\Prawnbot.Core\Prawnbot.Core.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Update="Settings.job">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
 </Project>
