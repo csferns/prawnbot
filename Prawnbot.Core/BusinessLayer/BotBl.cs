@@ -364,14 +364,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             logging.Log_Exception(arg, optionalMessage: "Client disconnected");
 
-            await Client.LogoutAsync();
-            await Client.StopAsync();
-
-            Client.Dispose();
-
-            ShutdownQuartz();
-
-            await ConnectAsync();
+            await ReconnectAsync();
         }
 
         private async Task Client_UserJoined(SocketGuildUser user)
