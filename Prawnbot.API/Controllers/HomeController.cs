@@ -21,7 +21,7 @@ namespace Prawnbot.API.Controllers
         [Route("status")]
         public async Task<IActionResult> GetStatus()
         {
-            Response<object> status = await botService.GetStatusAsync();
+            Response<object> status = botService.GetStatus();
             return Json(status.Entity);
         }
     }

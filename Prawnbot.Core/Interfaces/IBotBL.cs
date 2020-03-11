@@ -34,7 +34,7 @@ namespace Prawnbot.Core.Interfaces
         /// </summary>
         /// <param name="arg"></param>
         /// <returns>Task.CompletedTask</returns>
-        object GetStatusAsync();
+        object GetStatus();
         Task SetBotRegionAsync(string regionName);
         void ShutdownQuartz();
     }
