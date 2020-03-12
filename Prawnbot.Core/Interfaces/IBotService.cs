@@ -9,7 +9,7 @@ namespace Prawnbot.Core.Interfaces
         Task<ResponseBase> ConnectAsync(string token);
         Task<ResponseBase> DisconnectAsync(bool shutdown = false);
         Task<ResponseBase> ReconnectAsync();
-        Response<object> GetStatusAsync();
+        Response<object> GetStatus();
         Task<ResponseBase> SetBotRegionAsync(string regionName);
     }
 }

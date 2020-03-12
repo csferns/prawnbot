@@ -27,10 +27,13 @@ namespace Prawnbot.Core.BusinessLayer
     {
         private readonly ICoreBL coreBL;
         private readonly ILogging logging;
-        public BotBL(ICoreBL coreBL, ILogging logging)
+        private readonly IConfigUtility configUtility;
+
+        public BotBL(ICoreBL coreBL, ILogging logging, IConfigUtility configUtility)
         {
             this.coreBL = coreBL;
             this.logging = logging;
+            this.configUtility = configUtility;
         }
 
         private static string Token { get; set; }
@@ -48,7 +51,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        public async Task<object> GetStatusAsync() 
+        public object GetStatus() 
         {
             string offlineString = "Offline";
 
@@ -105,13 +108,13 @@ namespace Prawnbot.Core.BusinessLayer
                 Client.Disconnected += Client_Disconnected;
                 Client.Connected += Client_Connected;
 
-                if (ConfigUtility.AllowEventListeners)
+                if (configUtility.AllowEventListeners)
                 {
-                    if (ConfigUtility.UserJoined) { Client.UserJoined += Client_UserJoined; }
-                    if (ConfigUtility.UserBanned) { Client.UserBanned += Client_UserBanned; }
-                    if (ConfigUtility.UserUnbanned) { Client.UserUnbanned += Client_UserUnbanned; }
-                    if (ConfigUtility.JoinedGuild) { Client.JoinedGuild += Client_JoinedGuild; }
-                    if (ConfigUtility.MessageDeleted) { Client.MessageDeleted += Client_MessageDeleted; }
+                    if (configUtility.UserJoined) { Client.UserJoined += Client_UserJoined; }
+                    if (configUtility.UserBanned) { Client.UserBanned += Client_UserBanned; }
+                    if (configUtility.UserUnbanned) { Client.UserUnbanned += Client_UserUnbanned; }
+                    if (configUtility.JoinedGuild) { Client.JoinedGuild += Client_JoinedGuild; }
+                    if (configUtility.MessageDeleted) { Client.MessageDeleted += Client_MessageDeleted; }
                 }
 
                 await Commands.AddModulesAsync(typeof(Modules.Modules).Assembly, BotServices);
@@ -304,7 +307,7 @@ namespace Prawnbot.Core.BusinessLayer
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.WithAuthor(Client.CurrentUser)
                 .WithColor(Color.Green)
-                .WithDescription($"Hello, my name is {arg.CurrentUser.Nickname} To find out commands, please use {ConfigUtility.CommandDelimiter}commands")
+                .WithDescription($"Hello, my name is {arg.CurrentUser.Nickname} To find out commands, please use {configUtility.CommandDelimiter}commands")
                 .WithCurrentTimestamp();
 
             await arg.DefaultChannel.SendMessageAsync(string.Empty, UseTTS, embedBuilder.Build());
@@ -323,7 +326,7 @@ namespace Prawnbot.Core.BusinessLayer
 
                 int argPos = 0;
 
-                if (message.HasStringPrefix(ConfigUtility.CommandDelimiter, ref argPos) || message.HasMentionPrefix(Client.CurrentUser, ref argPos) || Context.IsPrivate)
+                if (message.HasStringPrefix(configUtility.CommandDelimiter, ref argPos) || message.HasMentionPrefix(Client.CurrentUser, ref argPos) || Context.IsPrivate)
                 {
                     IResult result = await Commands.ExecuteAsync(Context, argPos, BotServices);
 
@@ -342,7 +345,7 @@ namespace Prawnbot.Core.BusinessLayer
                 }
                 else
                 {
-                    if (ConfigUtility.AllowEventListeners)
+                    if (configUtility.AllowEventListeners)
                     {
                         await coreBL.MessageEventListeners(message);
                     }

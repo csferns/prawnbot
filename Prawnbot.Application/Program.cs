@@ -42,11 +42,13 @@ namespace Prawnbot.Application
 
                     ICommandEngine commandEngine = scope.Resolve<ICommandEngine>();
 
-                    program.SetupEnvironmentConfig();
+                    IConfigUtility configUtility = scope.Resolve<IConfigUtility>();
 
-                    string token = string.IsNullOrEmpty(ConfigUtility.BotToken)
+                    program.SetupEnvironmentConfig(configUtility);
+
+                    string token = string.IsNullOrEmpty(configUtility.BotToken)
                         ? Console.ReadLine() 
-                        : ConfigUtility.BotToken;
+                        : configUtility.BotToken;
 
                     Console.Clear();
 
@@ -75,12 +77,12 @@ namespace Prawnbot.Application
             await botService.DisconnectAsync(shutdown: true).ConfigureAwait(false);
         }
 
-        private void SetupEnvironmentConfig()
+        private void SetupEnvironmentConfig(IConfigUtility configUtility)
         {
-            Console.Title = ConfigUtility.ConsoleTitle;
-            Console.BackgroundColor = ConfigUtility.ConsoleBackground;
-            Console.ForegroundColor = ConfigUtility.ConsoleForeground;
-            Console.OutputEncoding = ConfigUtility.ConsoleEncoding;
+            Console.Title = configUtility.ConsoleTitle;
+            Console.BackgroundColor = configUtility.ConsoleBackground;
+            Console.ForegroundColor = configUtility.ConsoleForeground;
+            Console.OutputEncoding = configUtility.ConsoleEncoding;
 
             Console.Clear();
 

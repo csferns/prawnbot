@@ -14,9 +14,9 @@ namespace Prawnbot.Core.ServiceLayer
             this.botBL = botBL;
         }
 
-        public async Task<Response<object>> GetStatusAsync()
+        public Response<object> GetStatus() 
         {
-            return LoadResponse(await botBL.GetStatusAsync());
+            return LoadResponse(botBL.GetStatus());
         }
 
         public async Task<ResponseBase> ConnectAsync(string token)

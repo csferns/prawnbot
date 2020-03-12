@@ -45,7 +45,7 @@ namespace Prawnbot.Core
                 .AsImplementedInterfaces()
                 .InstancePerDependency();
 
-            containerBuilder.RegisterAssemblyTypes(Assembly.Load("Prawnbot.Logging"))//, Assembly.Load("Prawnbot.CommandEngine"))
+            containerBuilder.RegisterAssemblyTypes(Assembly.Load("Prawnbot.Logging"), Assembly.Load("Prawnbot.CommandEngine"), Assembly.Load("Prawnbot.Common"))
                 .AsImplementedInterfaces()
                 .InstancePerLifetimeScope();
 

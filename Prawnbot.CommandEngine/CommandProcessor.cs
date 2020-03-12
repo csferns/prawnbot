@@ -19,12 +19,14 @@ namespace Prawnbot.CommandEngine
         private readonly ILogging logging;
         private readonly ICoreBL coreBL;
         private readonly IBotBL botBL;
+        private readonly IConfigUtility configUtility;
 
-        public CommandProcessor(ILogging logging, ICoreBL coreBL, IBotBL botBL)
+        public CommandProcessor(ILogging logging, ICoreBL coreBL, IBotBL botBL, IConfigUtility configUtility)
         {
             this.logging = logging;
             this.coreBL = coreBL;
             this.botBL = botBL;
+            this.configUtility = configUtility;
         }
 
         public async Task<bool> ProcessCommand(ICommand command)
@@ -153,7 +155,7 @@ namespace Prawnbot.CommandEngine
         {
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
-                Arguments = ConfigUtility.TextFileDirectory,
+                Arguments = configUtility.TextFileDirectory,
                 FileName = "explorer.exe"
             };
 
