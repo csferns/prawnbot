@@ -444,15 +444,6 @@ namespace Prawnbot.Core.BusinessLayer
             return sb.ToString();
         }
 
-        public string FlipACoin(string headsValue, string tailsValue)
-        {
-            return new Bunch<string>
-            {
-               headsValue ?? "HEADS",
-               tailsValue ?? "TAILS"
-            }.Random();
-        }
-
         public async Task<Bunch<string>> YottaPrependAsync()
         {
             Random random = new Random();

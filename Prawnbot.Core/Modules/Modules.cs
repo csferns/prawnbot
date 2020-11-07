@@ -99,17 +99,6 @@ namespace Prawnbot.Core.Modules
             await Context.Channel.SendMessageAsync(randomUser.Nickname ?? randomUser.Username);
         }
 
-        [Command("flip-a-coin")]
-        [Summary("Flips a coin")]
-        public async Task FlipACoinAsync(string headsValue = null, string tailsValue = null)
-        {
-            string response = coreService.FlipACoin(headsValue, tailsValue).Entity;
-
-            await Context.Channel.SendMessageAsync("Flipping coin...");
-            await Task.Delay(1000);
-            await Context.Channel.SendMessageAsync(response);
-        }
-
         [Command("bot-ping")]
         [Summary("Returns the connection latency of the bot to the Discord servers")]
         public async Task PingAsync()

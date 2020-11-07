@@ -1,12 +1,9 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using Prawnbot.Core.BusinessLayer;
-using Prawnbot.Core.Exceptions;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 
@@ -64,11 +61,6 @@ namespace Prawnbot.Core.ServiceLayer
         public Response<SocketTextChannel> FindTextChannel(SocketGuild guild, SocketTextChannel channel)
         {
             return LoadResponse(coreBL.FindTextChannel(guild, channel));
-        }
-
-        public Response<string> FlipACoin(string headsValue, string tailsValue)
-        {
-            return LoadResponse(coreBL.FlipACoin(headsValue, tailsValue));
         }
 
         public ListResponse<SocketGuild> GetAllGuilds()

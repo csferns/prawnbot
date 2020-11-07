@@ -14,7 +14,6 @@ namespace Prawnbot.Core.Interfaces
     {
         Task<ResponseBase> SendImageFromBlobStore(string fileName);
         Task<ResponseBase> MessageEventListeners(SocketUserMessage message);
-        Response<string> FlipACoin(string headsValue, string tailsValue);
         Task<ListResponse<string>> YottaPrepend();
         /// <summary>
         /// Method to set the status of the bot
