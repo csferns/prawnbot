@@ -1,17 +1,16 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using Prawnbot.Core.Model.DTOs;
-using Prawnbot.Core.Repository;
-using Prawnbot.Data.Entities;
-using Prawnbot.Data.Interfaces;
 using Prawnbot.Core.Interfaces;
+using Prawnbot.Core.Model.DTOs;
+using Prawnbot.Data;
+using Prawnbot.Data.Entities;
 using System.Collections.Generic;
 
 namespace Prawnbot.Core.BusinessLayer
 {
     public class AlarmBL : BaseEntityBL<Alarm>, IAlarmBL
     {
-        public AlarmBL(IUnitOfWork unitOfWork, IAlarmRepository repository) : base(unitOfWork, repository)
+        public AlarmBL(BotDatabaseContext context) : base(context)
         {
 
         }

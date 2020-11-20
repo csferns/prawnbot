@@ -7,7 +7,6 @@ using Prawnbot.Core;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Log;
 using Prawnbot.Data;
-using Prawnbot.Data.Interfaces;
 using System;
 using System.Reflection;
 using System.Threading;

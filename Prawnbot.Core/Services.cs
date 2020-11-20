@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Log;
 using Prawnbot.Data;
-using Prawnbot.Data.Interfaces;
 using System;
 using System.Reflection;
 
@@ -34,7 +33,6 @@ namespace Prawnbot.Core
             containerBuilder.RegisterAssemblyTypes(Assembly.Load("Prawnbot.Core"))
                 .Where(assembly => assembly.Name.EndsWith("BL", StringComparison.InvariantCultureIgnoreCase) 
                                 || assembly.Name.EndsWith("Service", StringComparison.InvariantCultureIgnoreCase) 
-                                || assembly.Name.EndsWith("Repository", StringComparison.InvariantCultureIgnoreCase)
                                 || assembly.Name.EndsWith("Job", StringComparison.InvariantCultureIgnoreCase))
                 .AsImplementedInterfaces()
                 .InstancePerDependency();
@@ -45,9 +43,6 @@ namespace Prawnbot.Core
 
             // The logging dependency won't be picked up in the above condition so set it here
             containerBuilder.RegisterType<Logging>().As<ILogging>().InstancePerLifetimeScope();
-
-            // TODO: This really shouldn't be InstancePerLifetimeScope, they should be InstancePerRequest so the call to the database gets disposed when it is finished.
-            containerBuilder.RegisterType<UnitOfWork>().As<IUnitOfWork>().InstancePerLifetimeScope();
 
             // return a built collection of services
             return containerBuilder.Build();

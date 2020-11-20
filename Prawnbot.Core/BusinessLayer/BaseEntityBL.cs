@@ -1,42 +1,75 @@
-﻿using Prawnbot.Core.Interfaces;
-using Prawnbot.Data.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using Prawnbot.Core.Interfaces;
+using Prawnbot.Data;
+using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Prawnbot.Core.BusinessLayer
 {
     public class BaseEntityBL<T> : IBaseEntityBL<T> where T : class
     {
-        private readonly IRepository<T> repository;
-        private readonly IUnitOfWork unitOfWork;
-        public BaseEntityBL(IUnitOfWork unitOfWork, IRepository<T> repository)
+        public readonly BotDatabaseContext Context;
+
+        public BaseEntityBL(BotDatabaseContext context)
         {
-            this.unitOfWork = unitOfWork;
-            this.repository = repository;
+            this.Context = context;
         }
 
         public void Add(T entity)
         {
-            repository.Add(entity);
+            if (entity == null)
+            {
+                throw new ArgumentNullException(nameof(entity));
+            }
+
+            Context.Set<T>().Add(entity);
         }
 
         public void Delete(T entity)
         {
-            repository.Delete(entity);
+            if (entity == null)
+            {
+                throw new ArgumentNullException(nameof(entity));
+            }
+
+            Context.Set<T>().Remove(entity);
         }
 
         public IQueryable<T> GetAll()
         {
-            return repository.GetAll();
+            return Context.Set<T>().AsQueryable();
         }
 
         public void Update(T entity)
         {
-            repository.Update(entity);
+            if (entity == null)
+            {
+                throw new ArgumentNullException(nameof(entity));
+            }
+
+            Context.Set<T>().Attach(entity);
+            Context.Entry(entity).State = EntityState.Modified;
         }
 
         public T GetById(int id)
         {
-            return repository.GetById(id);
+            if (id <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(id));
+            }
+
+            return Context.Set<T>().Find(id);
+        }
+
+        public async Task<T> GetByIdAsync(int id)
+        {
+            if (id <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(id));
+            }
+
+            return await Context.Set<T>().FindAsync(id);
         }
     }
 }
