@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using Prawnbot.CommandEngine.Interfaces;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Core.Collections;
@@ -16,14 +17,14 @@ namespace Prawnbot.CommandEngine
 {
     public class CommandProcessor : ICommandProcessor
     {
-        private readonly ILogging logging;
+        private readonly ILogger<CommandProcessor> logger;
         private readonly ICoreBL coreBL;
         private readonly IBotBL botBL;
         private readonly IConfigUtility configUtility;
 
-        public CommandProcessor(ILogging logging, ICoreBL coreBL, IBotBL botBL, IConfigUtility configUtility)
+        public CommandProcessor(ILogger<CommandProcessor> logger, ICoreBL coreBL, IBotBL botBL, IConfigUtility configUtility)
         {
-            this.logging = logging;
+            this.logger = logger;
             this.coreBL = coreBL;
             this.botBL = botBL;
             this.configUtility = configUtility;
@@ -78,7 +79,7 @@ namespace Prawnbot.CommandEngine
 
                 if (user == null)
                 {
-                    await logging.Log_Info($"Could not find user '{userToGet}'");
+                    logger.LogWarning("Could not find user '{0}'", userToGet);
                     return;
                 }
 
@@ -87,7 +88,7 @@ namespace Prawnbot.CommandEngine
             }
             else
             {
-                await logging.Log_Info("Invalid number of arguments!");
+                logger.LogWarning("Invalid number of arguments!");
             }
         }
 
@@ -102,7 +103,7 @@ namespace Prawnbot.CommandEngine
 
                 if (guild == null)
                 {
-                    await logging.Log_Warning($"Could not find guild '{guildName}'");
+                    logger.LogWarning("Could not find guild '{0}'", guildName);
                     return;
                 }
 
@@ -110,7 +111,7 @@ namespace Prawnbot.CommandEngine
 
                 if (textChannel == null)
                 {
-                    await logging.Log_Warning($"Could not find text channel '{channelName}'");
+                    logger.LogWarning("Could not find text channel '{0}'", channelName);
                     return;
                 }
 
@@ -120,7 +121,7 @@ namespace Prawnbot.CommandEngine
             }
             else
             {
-                await logging.Log_Info("Invalid number of arguments!");
+                logger.LogWarning("Invalid number of arguments!");
             }
         }
 
@@ -140,11 +141,11 @@ namespace Prawnbot.CommandEngine
 
                 await coreBL.UpdateRichPresenceAsync(name, activityType, streamUrl);
 
-                await logging.Log_Info("Updated successfully");
+                logger.LogInformation("Updated successfully");
             }
             else
             {
-                await logging.Log_Info("Invalid number of arguments!");
+                logger.LogWarning("Invalid number of arguments!");
             }
         }
 
@@ -167,11 +168,11 @@ namespace Prawnbot.CommandEngine
                 string nickname = command.CommandComponents[1];
 
                 await coreBL.ChangeNicknameAsync(guildName, nickname);
-                await logging.Log_Info($"Nickname changed for {guildName}");
+                logger.LogInformation("Nickname changed for {0}", guildName);
             }
             else
             {
-                await logging.Log_Info("Invalid number of arguments!");
+                logger.LogWarning("Invalid number of arguments!");
             }
         }
 
@@ -181,11 +182,11 @@ namespace Prawnbot.CommandEngine
             {
                 await coreBL.ChangeIconAsync();
 
-                await logging.Log_Info("Icon removed.");
+                logger.LogInformation("Icon removed.");
             }
             else
             {
-                await logging.Log_Info("Invalid number of arguments!");
+                logger.LogWarning("Invalid number of arguments!");
             }
         }
 
@@ -196,11 +197,11 @@ namespace Prawnbot.CommandEngine
                 Uri.TryCreate(command.CommandComponents[0], UriKind.RelativeOrAbsolute, out Uri imageUri);
                 await coreBL.ChangeIconAsync(imageUri);
 
-                await logging.Log_Info("Icon changed.");
+                    logger.LogInformation("Icon changed.");
             }
             else
             {
-                await logging.Log_Info("Invalid number of arguments!");
+                logger.LogWarning("Invalid number of arguments!");
             }
         }
 
@@ -220,7 +221,7 @@ namespace Prawnbot.CommandEngine
                 helpText.AppendLine((item.OptionalParameters?.Any() ?? false) ? $" Optional: ({string.Join(", ", item.OptionalParameters)})" : null);
             }
 
-            await logging.Log_Info(helpText.ToString());
+            logger.LogInformation(helpText.ToString());
         }
     }
 }

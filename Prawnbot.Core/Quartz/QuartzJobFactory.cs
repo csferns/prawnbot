@@ -1,5 +1,4 @@
-﻿using Autofac;
-using Discord;
+﻿using Microsoft.Extensions.Logging;
 using Prawnbot.Core.Interfaces;
 using Quartz;
 using Quartz.Spi;
@@ -9,32 +8,32 @@ namespace Prawnbot.Core.Quartz
 {
     public class QuartzJobFactory : IJobFactory
     {
-        private readonly IContainer container;
+        private readonly IServiceProvider provider;
+        private readonly ILogger logger;
 
         /// <summary>
         /// Creates a new instance of the <see cref="QuartzJobFactory"/> class with a dependency injection container to pass into the jobs
         /// </summary>
         /// <param name="container">Dependency injection container</param>
-        public QuartzJobFactory(IContainer container)
+        public QuartzJobFactory(ILogger logger, IServiceProvider provider)
         {
-            this.container = container;
+            this.logger = logger;
+            this.provider = provider;
         }
 
         public IJob NewJob(TriggerFiredBundle bundle, IScheduler scheduler)
         {
-            ILogging logging = container.Resolve<ILogging>();
-
             try
             {
                 Type jobType = bundle.JobDetail.JobType;
 
-                logging.Log_Info($"{jobType.Name} Triggered. Next trigger time: {bundle.NextFireTimeUtc}");
+                logger.LogInformation("{0} triggered. Next trigger time: {1}", jobType.Name, bundle.NextFireTimeUtc);
 
-                return (IJob)container.Resolve(jobType);
+                return (IJob)provider.GetService(jobType);
             }
             catch (Exception e)
             {
-                logging.Log_Exception(e, optionalMessage: "An error occured while instantiating a new job");
+                logger.LogError(e, "An error occured while instantiating a new job: {0}", e.Message);
             }
 
             return null;

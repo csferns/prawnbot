@@ -28,8 +28,8 @@ namespace Prawnbot.Core.Modules
         private readonly IAPIService apiService;
         private readonly IAlarmService alarmService;
         private readonly ISpeechRecognitionService speechRecognitionService;
-        private readonly ILogging logging;
-        public Modules(IBotService botService, ICoreService coreService, IFileService fileService, IAPIService apiService, ISpeechRecognitionService speechRecognitionService, ILogging logging, IAlarmService alarmService)
+
+        public Modules(IBotService botService, ICoreService coreService, IFileService fileService, IAPIService apiService, ISpeechRecognitionService speechRecognitionService, IAlarmService alarmService)
         {
             this.botService = botService;
             this.coreService = coreService;
@@ -37,7 +37,6 @@ namespace Prawnbot.Core.Modules
             this.apiService = apiService;
             this.alarmService = alarmService;
             this.speechRecognitionService = speechRecognitionService;
-            this.logging = logging;
         }
 
         #if DEBUG

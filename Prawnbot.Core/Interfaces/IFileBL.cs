@@ -21,7 +21,6 @@ namespace Prawnbot.Core.Interfaces
         Task<Stream> DownloadFileFromBlobStoreAsync(string fileName, string containerName);
         Task UploadFileToBlobStoreAsync(string fileName, string containerName);
         FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
-        Task<Bunch<string>> ReadFromFileAsync(string fileName);
         FileStream WriteToCSV(IList<CSVColumns> columns, string fileName);
         Task WriteToFileAsync(string valueToWrite, string fileName);
         Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);

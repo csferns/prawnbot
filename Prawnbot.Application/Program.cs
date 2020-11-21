@@ -1,18 +1,14 @@
-﻿using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Prawnbot.CommandEngine.Interfaces;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Core;
 using Prawnbot.Core.Interfaces;
-using Prawnbot.Core.Log;
-using Prawnbot.Data;
 using System;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Prawnbot.Application 
+namespace Prawnbot.Application
 {
     /// <summary>
     /// Console Application entry point
@@ -20,6 +16,7 @@ namespace Prawnbot.Application
     public class Program
     {
         protected IBotService botService;
+        protected IConfigUtility configUtility;
 
         public Program()
         {
@@ -29,41 +26,37 @@ namespace Prawnbot.Application
         public static async Task Main(string[] args)
         {
             Program program = new Program();
-            ILogging logging = null;
+
+            IServiceProvider provider = Services.DependencyInjectionSetup();
+
+            ILogger<Program> logger = provider.GetService<ILogger<Program>>();
 
             try
             {
-                // Get the Dependency Injection container and use it to make a new instance
-                // of the non static BaseApplication class so work can be done
-                using (IContainer container = Services.DependencyInjectionSetup())
-                using (ILifetimeScope scope = container.BeginLifetimeScope())
-                {
-                    IBotService botService = scope.Resolve<IBotService>();
-                    program.botService = botService;
+                IBotService botService = provider.GetService<IBotService>();
+                program.botService = botService;
 
-                    logging = scope.Resolve<ILogging>();
+                IConfigUtility configUtility = provider.GetService<IConfigUtility>();
+                program.configUtility = configUtility;
 
-                    ICommandEngine commandEngine = scope.Resolve<ICommandEngine>();
+                ICommandEngine commandEngine = provider.GetService<ICommandEngine>();
 
-                    IConfigUtility configUtility = scope.Resolve<IConfigUtility>();
+                program.SetupEnvironmentConfig();
 
-                    program.SetupEnvironmentConfig(configUtility);
+                string token = string.IsNullOrEmpty(configUtility.BotToken)
+                    ? Console.ReadLine() 
+                    : configUtility.BotToken;
 
-                    string token = string.IsNullOrEmpty(configUtility.BotToken)
-                        ? Console.ReadLine() 
-                        : configUtility.BotToken;
+                Console.Clear();
 
-                    Console.Clear();
+                await botService.ConnectAsync(token, provider);
+                await commandEngine.BeginListen(() => Console.ReadLine()); 
 
-                    await botService.ConnectAsync(token, container);
-                    await commandEngine.BeginListen(() => Console.ReadLine()); 
-
-                    Thread.Sleep(Timeout.Infinite);
-                };
+                Thread.Sleep(Timeout.Infinite);
             }
             catch (Exception e)
             {
-                logging?.Log_Exception(e);
+                logger.LogError(e, "An error occured: {0}", e.Message);
 
                 Console.WriteLine("Press any key to continue...");
                 Console.ReadKey();
@@ -80,7 +73,7 @@ namespace Prawnbot.Application
             await botService.DisconnectAsync(shutdown: true).ConfigureAwait(false);
         }
 
-        private void SetupEnvironmentConfig(IConfigUtility configUtility)
+        private void SetupEnvironmentConfig()
         {
             Console.Title = configUtility.ConsoleTitle;
             Console.BackgroundColor = configUtility.ConsoleBackground;

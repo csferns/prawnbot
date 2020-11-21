@@ -1,21 +1,22 @@
-﻿using Prawnbot.CommandEngine.Interfaces;
+﻿using Microsoft.Extensions.Logging;
+using Prawnbot.CommandEngine.Interfaces;
 using Prawnbot.Core.Interfaces;
 using System;
 using System.Threading.Tasks;
 
 namespace Prawnbot.CommandEngine
 {
-    public class Engine : ICommandEngine
+    public class CommandEngine : ICommandEngine
     {
         private readonly ICommandParser commandParser;
         private readonly ICommandProcessor commandProcessor;
-        private readonly ILogging logging;
+        private readonly ILogger<CommandEngine> logger;
 
-        public Engine(ICommandParser commandParser, ICommandProcessor commandProcessor, ILogging logging)
+        public CommandEngine(ICommandParser commandParser, ICommandProcessor commandProcessor, ILogger<CommandEngine> logger)
         {
             this.commandParser = commandParser;
             this.commandProcessor = commandProcessor;
-            this.logging = logging;
+            this.logger = logger;
         }
 
         public async Task BeginListen(Func<string> listenAction)
@@ -38,7 +39,7 @@ namespace Prawnbot.CommandEngine
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logger.LogError(e, "An error occured in the command engine: {0}", e.Message);
             }
         }
     }

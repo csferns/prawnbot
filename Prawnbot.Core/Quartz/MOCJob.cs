@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
 using Quartz;
@@ -11,11 +12,11 @@ namespace Prawnbot.Core.Quartz
 {
     public class MOCJob : IJob
     {
-        private readonly ILogging logging;
+        private readonly ILogger<MOCJob> logger;
         private readonly ICoreService coreService;
-        public MOCJob(ILogging logging, ICoreService coreService)
+        public MOCJob(ILogger<MOCJob> logger, ICoreService coreService)
         {
-            this.logging = logging;
+            this.logger = logger;
             this.coreService = coreService;
         }
 
@@ -50,7 +51,7 @@ namespace Prawnbot.Core.Quartz
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e, optionalMessage: "An error occured during MOC");
+                logger.LogError(e, "An error occured during MOC: {0}", e.Message);
             }
         }
     }

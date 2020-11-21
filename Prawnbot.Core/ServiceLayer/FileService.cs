@@ -39,11 +39,6 @@ namespace Prawnbot.Core.ServiceLayer
             return new ResponseBase();
         }
 
-        public async Task<ListResponse<string>> ReadFromFileAsync(string fileName)
-        {
-            return LoadListResponse(await fileBL.ReadFromFileAsync(fileName));
-        }
-
         public Response<FileStream> WriteToCSV(IList<CSVColumns> columns, string fileName)
         {
             return LoadResponse(fileBL.WriteToCSV(columns, fileName));

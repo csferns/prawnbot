@@ -3,6 +3,7 @@ using Discord.Audio;
 using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using Prawnbot.Common;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Common.Enums;
@@ -33,17 +34,17 @@ namespace Prawnbot.Core.BusinessLayer
     {
         private readonly IFileBL fileBL;
         private readonly IAPIBL apiBL;
-        private readonly ILogging logging;
+        private readonly ILogger<CoreBL> logger;
         private readonly IConfigUtility configUtility;
 
         private int EventsTriggered { get; set; }
         private bool MessageSent { get; set; }
 
-        public CoreBL(IFileBL fileBL, IAPIBL apiBL, ILogging logging, IConfigUtility configUtility)
+        public CoreBL(IFileBL fileBL, IAPIBL apiBL, ILogger<CoreBL> logger, IConfigUtility configUtility)
         {
             this.fileBL = fileBL;
             this.apiBL = apiBL;
-            this.logging = logging;
+            this.logger = logger;
             this.configUtility = configUtility;
         }
 
@@ -158,7 +159,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (EventsTriggered > 0)
             {
-                await logging.Log_Info($"Message recieved from {Context.Message.Author.Username} ({Context.Guild.Name}): \"{Context.Message.Content}\"");
+                logger.LogInformation("Message recieved from {0} ({1}): \"{2}\"", Context.Message.Author.Username, Context.Guild.Name, Context.Message.Content);
             }
 
             EventsTriggered = 0;
@@ -259,8 +260,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e, optionalMessage: "Error setting bot status");
-                return;
+                logger.LogError(e, "Error setting bot status: {0}", e.Message);
             }
         }
 
@@ -272,7 +272,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e, optionalMessage: "Error occured while updating rich presence");
+                logger.LogError(e, "Error occured while updating rich presence: {0}", e.Message);
             }
         }
 
@@ -474,7 +474,6 @@ namespace Prawnbot.Core.BusinessLayer
 
                 if (valueDictionary[randomEnumValue] < 69)
                 {
-                    await fileBL.WriteToFileAsync(randomEnumValue.ToString(), $"{Context.Guild.Name}\\Yotta.txt");
                     fileContents.Append(randomEnumValue.ToString());
                     break;
                 }
@@ -520,7 +519,7 @@ namespace Prawnbot.Core.BusinessLayer
                 }
                 catch (PingException e)
                 {
-                    await logging.Log_Exception(e, optionalMessage: $"Error occured pinging machine with name or address: {nameOrAddress}");
+                    logger.LogError(e, "Error occured pinging machine with name or address \"{0}\": {1}", nameOrAddress, e.Message);
 
                     // Discard PingExceptions and return false;
                     return IPStatus.Unknown;

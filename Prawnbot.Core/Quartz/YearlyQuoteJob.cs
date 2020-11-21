@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
@@ -13,11 +14,11 @@ namespace Prawnbot.Core.Quartz
 {
     public class YearlyQuoteJob : IJob
     {
-        private readonly ILogging logging;
+        private readonly ILogger<YearlyQuoteJob> logger;
         private readonly ICoreService coreService;
-        public YearlyQuoteJob(ILogging logging, ICoreService coreService)
+        public YearlyQuoteJob(ILogger<YearlyQuoteJob> logger, ICoreService coreService)
         {
-            this.logging = logging;
+            this.logger = logger;
             this.coreService = coreService;
         }
 
@@ -55,7 +56,7 @@ namespace Prawnbot.Core.Quartz
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e, optionalMessage: "An error occured during YearlyQuote");
+                logger.LogError(e, "An error occured during YearlyQuote: {0}", e.Message);
             }
         }
     }

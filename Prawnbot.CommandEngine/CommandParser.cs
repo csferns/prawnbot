@@ -1,6 +1,6 @@
-﻿using Prawnbot.CommandEngine.Interfaces;
+﻿using Microsoft.Extensions.Logging;
+using Prawnbot.CommandEngine.Interfaces;
 using Prawnbot.Core.Collections;
-using Prawnbot.Core.Interfaces;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -13,24 +13,24 @@ namespace Prawnbot.CommandEngine
     {
         private readonly static Regex CommandRegex = new Regex(@"(""(.+?)"")|([^\s""]+)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
-        private readonly ILogging logging;
+        private readonly ILogger<CommandParser> logger;
 
-        public CommandParser(ILogging logging)
+        public CommandParser(ILogger<CommandParser> logger)
         {
-            this.logging = logging;
+            this.logger = logger;
         }
 
         private async Task<bool> EnsureValidCommand(Command command)
         {
             if (string.IsNullOrEmpty(command.CommandText))
             {
-                await logging.Log_Info("No command entered. Please enter a command.");
+                logger.LogWarning("No command entered. Please enter a command.");
                 return false;
             }
 
             if (!command.CommandText.StartsWith('/'))
             {
-                await logging.Log_Info("Command needs to start with a '/'");
+                logger.LogWarning("Command needs to start with a '/'");
                 return false;
             }
 
@@ -59,7 +59,7 @@ namespace Prawnbot.CommandEngine
             }
             else
             {
-                await logging.Log_Info($"'{firstWord}' is not recognised as a valid command!");
+                logger.LogWarning("'{0}' is not recognised as a valid command!", firstWord);
                 return false;
             }
         }
@@ -87,7 +87,7 @@ namespace Prawnbot.CommandEngine
                 CommandText = commandText
             };
 
-            await logging.Log_Info($"Command recieved through console: '{commandText}'", updateConsole: false);
+            logger.LogInformation("Command recieved through console: '{0}'", commandText);
 
             bool valid = await EnsureValidCommand(command);
 

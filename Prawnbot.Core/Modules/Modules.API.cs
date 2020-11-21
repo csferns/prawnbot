@@ -1,12 +1,10 @@
 ﻿using Discord;
 using Discord.Commands;
-using Prawnbot.Core.Collections;
 using Prawnbot.Core.Model.API.Overwatch;
 using Prawnbot.Core.Model.API.Reddit;
 using Prawnbot.Core.Model.API.Rule34;
 using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Infrastructure;
-using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,7 +21,6 @@ namespace Prawnbot.Core.Modules
             Translation translation = translatedText.Entities.FirstOrDefault().translations.FirstOrDefault();
 
             await Context.Channel.SendMessageAsync($"{translation.text}");
-            await logging.PopulateTranslationLogAsync(translatedText.Entities.ToBunch());
         }
 
         [Command("r34-tags")]

@@ -1,6 +1,6 @@
-﻿using Autofac;
-using Prawnbot.Core.Interfaces;
+﻿using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
+using System;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.ServiceLayer
@@ -19,9 +19,9 @@ namespace Prawnbot.Core.ServiceLayer
             return LoadResponse(botBL.GetStatus());
         }
 
-        public async Task<ResponseBase> ConnectAsync(string token, IContainer autofacContainer)
+        public async Task<ResponseBase> ConnectAsync(string token, IServiceProvider serviceProvider)
         {
-            await botBL.ConnectAsync(token, autofacContainer);
+            await botBL.ConnectAsync(token, serviceProvider);
             return new ResponseBase();
         }
 

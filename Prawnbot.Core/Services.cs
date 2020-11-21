@@ -1,10 +1,12 @@
-﻿using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Log;
 using Prawnbot.Data;
+using Quartz;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace Prawnbot.Core
@@ -15,37 +17,53 @@ namespace Prawnbot.Core
         /// Creates a Dependency Injection container with relevant services in
         /// </summary>
         /// <returns>IContainer</returns>
-        public static IContainer DependencyInjectionSetup(IServiceCollection originalCollection = null)
+        public static IServiceProvider DependencyInjectionSetup(IServiceCollection originalCollection = null)
         {
             // Microsoft DI
             IServiceCollection serviceCollection = originalCollection ?? new ServiceCollection();
-            serviceCollection.AddLogging();
+            serviceCollection.AddLogging((logging) => 
+            {
+                logging.ClearProviders();
+
+                const string fileName = "..\\EventLogs.txt";
+                logging.AddProvider(new CustomLoggerProvider(new CustomLoggerConfiguration() { FileName = fileName, LogLevel = LogLevel.Information, ConsoleColour = ConsoleColor.Cyan }));
+                logging.AddProvider(new CustomLoggerProvider(new CustomLoggerConfiguration() { FileName = fileName, LogLevel = LogLevel.Warning, ConsoleColour = ConsoleColor.Yellow }));
+                logging.AddProvider(new CustomLoggerProvider(new CustomLoggerConfiguration() { FileName = fileName, LogLevel = LogLevel.Error, ConsoleColour = ConsoleColor.Red }));
+                logging.AddProvider(new CustomLoggerProvider(new CustomLoggerConfiguration() { FileName = fileName, LogLevel = LogLevel.Critical, ConsoleColour = ConsoleColor.DarkRed }));
+                logging.AddProvider(new CustomLoggerProvider(new CustomLoggerConfiguration() { FileName = fileName, LogLevel = LogLevel.Debug, ConsoleColour = ConsoleColor.White }));
+            });
 
             // Set up database connection
             serviceCollection.AddDbContext<BotDatabaseContext>();
 
-            // Autofac DI
-            // Create a new container and populate the Microsoft DI components
-            ContainerBuilder containerBuilder = new ContainerBuilder();
-            containerBuilder.Populate(serviceCollection);
+            Assembly coreAssembly = Assembly.Load("Prawnbot.Core");
+            IEnumerable<Type> relevantServices = coreAssembly.GetTypes()
+                                                             .Where(x => x.Name.EndsWith("BL", StringComparison.InvariantCultureIgnoreCase)
+                                                                      || x.Name.EndsWith("Service", StringComparison.InvariantCultureIgnoreCase));
 
-            // Add dependencies based on Assembly and name
-            containerBuilder.RegisterAssemblyTypes(Assembly.Load("Prawnbot.Core"))
-                .Where(assembly => assembly.Name.EndsWith("BL", StringComparison.InvariantCultureIgnoreCase) 
-                                || assembly.Name.EndsWith("Service", StringComparison.InvariantCultureIgnoreCase) 
-                                || assembly.Name.EndsWith("Job", StringComparison.InvariantCultureIgnoreCase))
-                .AsImplementedInterfaces()
-                .InstancePerDependency();
+            relevantServices = relevantServices.Concat(Assembly.Load("Prawnbot.CommandEngine").GetTypes());
+            relevantServices = relevantServices.Concat(Assembly.Load("Prawnbot.Common").GetTypes());
 
-            containerBuilder.RegisterAssemblyTypes(Assembly.Load("Prawnbot.CommandEngine"), Assembly.Load("Prawnbot.Common"))
-                .AsImplementedInterfaces()
-                .InstancePerLifetimeScope();
+            foreach (Type service in relevantServices.Where(x => !x.IsInterface && x.GetInterfaces().Any() && !x.IsEnum))
+            {
+                Type serviceInterface = service.GetInterface("I" + service.Name);
 
-            // The logging dependency won't be picked up in the above condition so set it here
-            containerBuilder.RegisterType<Logging>().As<ILogging>().InstancePerLifetimeScope();
+                if (serviceInterface != null)
+                {
+                    serviceCollection.AddScoped(serviceInterface, service);
+                }
+            }
+
+            IEnumerable<Type> jobs = coreAssembly.GetTypes().Where(x => x.Name.EndsWith("Job", StringComparison.InvariantCultureIgnoreCase));
+            Type jobType = typeof(IJob);
+
+            foreach (Type job in jobs)
+            {
+                serviceCollection.AddScoped(jobType, job);
+            }
 
             // return a built collection of services
-            return containerBuilder.Build();
+            return serviceCollection.BuildServiceProvider();
         }
     }
 }

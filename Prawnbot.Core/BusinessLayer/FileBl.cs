@@ -92,22 +92,6 @@ namespace Prawnbot.Core.BusinessLayer
             return new FileStream(filePath, fileMode, fileAccess, fileShare);
         }
 
-        public async Task<Bunch<string>> ReadFromFileAsync(string fileName)
-        {
-            using (FileStream file = CreateLocalFileIfNotExists(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (StreamReader reader = new StreamReader(file)) 
-            {
-                Bunch<string> fileLines = new Bunch<string>();
-
-                while (!reader.EndOfStream)
-                {
-                    fileLines.Add(await reader.ReadLineAsync());
-                }
-
-                return fileLines;
-            };
-        }
-
         public FileStream WriteToCSV(IList<CSVColumns> columns, string fileName)
         {
             using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Truncate, FileAccess.Write, FileShare.Write))
@@ -124,17 +108,6 @@ namespace Prawnbot.Core.BusinessLayer
         public async Task WriteToFileAsync(string valueToWrite, string fileName)
         {
             using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
-            using (StreamWriter writer = new StreamWriter(fileStream))
-            {
-                await writer.WriteLineAsync(valueToWrite);
-            }
-        }
-
-        public static async Task FailoverWriteToFileAsync(string valueToWrite, string fileName)
-        {
-            FileBL fileBL = new FileBL(null);
-
-            using (FileStream fileStream = fileBL.CreateLocalFileIfNotExists(fileName, FileMode.Append, FileAccess.Write, FileShare.Write))
             using (StreamWriter writer = new StreamWriter(fileStream))
             {
                 await writer.WriteLineAsync(valueToWrite);

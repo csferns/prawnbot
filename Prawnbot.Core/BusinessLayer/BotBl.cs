@@ -1,14 +1,13 @@
-﻿using Autofac;
-using Discord;
+﻿using Discord;
 using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Prawnbot.Common;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Quartz;
-using Prawnbot.Core.ServiceLayer;
 using Quartz;
 using Quartz.Impl;
 using System;
@@ -23,20 +22,19 @@ namespace Prawnbot.Core.BusinessLayer
     public class BotBL : BaseBL, IBotBL
     {
         private readonly ICoreBL coreBL;
-        private readonly ILogging logging;
+        private readonly ILogger<BotBL> logger;
         private readonly IConfigUtility configUtility;
 
-        public BotBL(ICoreBL coreBL, ILogging logging, IConfigUtility configUtility)
+        public BotBL(ICoreBL coreBL, ILogger<BotBL> logger, IConfigUtility configUtility)
         {
             this.coreBL = coreBL;
-            this.logging = logging;
+            this.logger = logger;
             this.configUtility = configUtility;
         }
 
         private static string Token { get; set; }
-        private static IContainer AutofacContainer { get; set; }
+        private static IServiceProvider ServiceProvider { get; set; }
         private CommandService Commands { get; set; }
-        private IServiceProvider BotServices { get; set; }
 
         private IScheduler Scheduler;
 
@@ -65,7 +63,7 @@ namespace Prawnbot.Core.BusinessLayer
             };
         }
 
-        public async Task ConnectAsync(string token = null, IContainer autofacContainer = null)
+        public async Task ConnectAsync(string token = null, IServiceProvider serviceProvider = null)
         {
             try
             {
@@ -74,10 +72,9 @@ namespace Prawnbot.Core.BusinessLayer
 
                 Process currentProcess = Process.GetCurrentProcess();
 
-                await logging.Log_Info($"Process {currentProcess.ProcessName} ({currentProcess.Id}) started on {Environment.MachineName} at {currentProcess.StartTime}");
+                logger.LogInformation("Process {0} ({1}) started on {2} at {3}", currentProcess.ProcessName, currentProcess.Id, Environment.MachineName, currentProcess.StartTime);
 
                 Token ??= token;
-                AutofacContainer ??= autofacContainer;
 
                 Client = new DiscordSocketClient(new DiscordSocketConfig
                 {
@@ -87,20 +84,23 @@ namespace Prawnbot.Core.BusinessLayer
                 Commands = new Discord.Commands.CommandService();
                 Commands.AddTypeReader(typeof(IVoiceRegion), new VoiceRegionTypeReader());
 
-                BotServices = new ServiceCollection()
+                IServiceCollection botServices = new ServiceCollection()
                     .AddSingleton(Client)
-                    .AddSingleton(Commands)
-                    .AddSingleton(autofacContainer.Resolve<IBotService>())
-                    .AddSingleton(autofacContainer.Resolve<ICoreService>())
-                    .AddSingleton(autofacContainer.Resolve<IAPIService>())
-                    .AddSingleton(autofacContainer.Resolve<IFileService>())
-                    .AddSingleton(autofacContainer.Resolve<ILogging>())
-                    .AddSingleton(autofacContainer.Resolve<IAlarmService>())
-                    .AddSingleton(autofacContainer.Resolve<ISpeechRecognitionService>())
-                    .BuildServiceProvider();
+                    .AddSingleton(Commands);
+
+                if (serviceProvider != null)
+                {
+                    botServices.AddSingleton(serviceProvider.GetService<IBotService>())
+                               .AddSingleton(serviceProvider.GetService<ICoreService>())
+                               .AddSingleton(serviceProvider.GetService<IAPIService>())
+                               .AddSingleton(serviceProvider.GetService<IFileService>())
+                               .AddSingleton(serviceProvider.GetService<ILogger<Modules.Modules>>())
+                               .AddSingleton(serviceProvider.GetService<IAlarmService>())
+                               .AddSingleton(serviceProvider.GetService<ISpeechRecognitionService>());
+                }
 
                 Client.MessageReceived += Client_MessageRecieved;
-                Client.Log += logging.Client_Log; 
+                Client.Log += Client_Log;
                 Client.Disconnected += Client_Disconnected;
                 Client.Connected += Client_Connected;
 
@@ -113,7 +113,11 @@ namespace Prawnbot.Core.BusinessLayer
                     if (configUtility.MessageDeleted) { Client.MessageDeleted += Client_MessageDeleted; }
                 }
 
-                await Commands.AddModulesAsync(typeof(Modules.Modules).Assembly, BotServices);
+                ServiceProvider provider = botServices.BuildServiceProvider();
+
+                await Commands.AddModulesAsync(typeof(Modules.Modules).Assembly, provider);
+
+                ServiceProvider = provider;
 
                 await Client.LoginAsync(TokenType.Bot, Token);
                 await Client.StartAsync();
@@ -126,16 +130,27 @@ namespace Prawnbot.Core.BusinessLayer
 
                 stopwatch.Stop();
 
-                await logging.Log_Debug($"Bot started in {stopwatch.Elapsed}");
-
-                await logging.Log_Debug($"Memory used before collection: {(GC.GetTotalMemory(false) / 1024) / 1024} MB");
+                logger.LogDebug("Bot started in {0}", stopwatch.Elapsed);
+                logger.LogDebug("Memory used before collection: {0} MB", (GC.GetTotalMemory(false) / 1024) / 1024);
                 GC.Collect();
-                await logging.Log_Debug($"Memory used after collection: {(GC.GetTotalMemory(true) / 1024) / 1024} MB");
+                logger.LogDebug("Memory used after collection: {0} MB", (GC.GetTotalMemory(true) / 1024) / 1024);
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logger.LogError(e, "An error occured in connecting the bot: {0}", e.Message);
             }
+        }
+
+        private Task Client_Log(LogMessage arg)
+        {
+            bool success = Enum.TryParse<LogLevel>(arg.Severity.ToString(), out LogLevel logLevel);
+
+            if (success)
+            {
+                logger.Log(logLevel, arg.Exception?.Message ?? arg.Message);
+            }
+
+            return Task.CompletedTask;
         }
 
         public async Task DisconnectAsync(bool shutdown = false)
@@ -151,7 +166,6 @@ namespace Prawnbot.Core.BusinessLayer
                         await Client.StopAsync();
 
                         Client.Dispose();
-                        AutofacContainer.Dispose();
 
                         ShutdownQuartz();
                     }
@@ -159,7 +173,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logger.LogError(e, "An error occured in disconnecting the bot: {0}", e.Message);
             }
         }
 
@@ -184,7 +198,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logger.LogError(e, "An error occured in reconnecting the bot: {0}", e.Message);
                 return;
             }
         }
@@ -209,7 +223,7 @@ namespace Prawnbot.Core.BusinessLayer
                 await Scheduler.Start();
 
                 // Custom job factory to allow for injecting dependencies into Quartz jobs
-                Scheduler.JobFactory = new QuartzJobFactory(AutofacContainer);
+                Scheduler.JobFactory = new QuartzJobFactory(logger, ServiceProvider);
 
                 // TODO: Add a job in here to change the channel names to include seasonal emojis
                 // Create / Schedule Quartz jobs
@@ -222,11 +236,11 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (SchedulerException sc)
             {
-                await logging.Log_Exception(sc, optionalMessage: "A SchedulerExeption occured while scheduling Quartz jobs");
+                logger.LogError(sc, "A SchedulerExeption occured while scheduling Quartz jobs: {0}", sc.Message);
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logger.LogError(e, "An error occured in setting up Quartz: {0}", e.Message);
             }
         }
 
@@ -260,7 +274,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (jobExists)
             {
-                await logging.Log_Info($"Job {jobName} scheduled for {trigger.StartTimeUtc.ToString("dd/MM/yyyy HH:mm:ss")} with interval {interval} hours");
+                logger.LogInformation("Job {0} scheduled for {1:dd/MM/yyyy HH:mm:ss} with interval {2} hours", jobName, trigger.StartTimeUtc, interval);
             }
         }
 
@@ -292,13 +306,13 @@ namespace Prawnbot.Core.BusinessLayer
         #region Event Listeners
         private async Task Client_MessageDeleted(Cacheable<IMessage, ulong> arg1, ISocketMessageChannel channel)
         {
-            await logging.Log_Info($"Message deleted {arg1.Id} from {channel.Name}");
+            logger.LogInformation("Message deleted {0} from {1}", arg1.Id, channel.Name);
             await channel.SendMessageAsync("Oooh, he's deletin'", UseTTS);
         }
 
         private async Task Client_JoinedGuild(SocketGuild arg)
         {
-            await logging.Log_Info($"Joined guild {arg.Id} ({arg.Name})");
+            logger.LogInformation("Joined guild {0} ({1})", arg.Id, arg.Name);
 
             EmbedBuilder embedBuilder = new EmbedBuilder();
             embedBuilder.WithAuthor(Client.CurrentUser)
@@ -324,20 +338,20 @@ namespace Prawnbot.Core.BusinessLayer
 
                 if (message.HasStringPrefix(configUtility.CommandDelimiter, ref argPos) || message.HasMentionPrefix(Client.CurrentUser, ref argPos) || Context.IsPrivate)
                 {
-                    IResult result = await Commands.ExecuteAsync(Context, argPos, BotServices);
+                    IResult result = await Commands.ExecuteAsync(Context, argPos, ServiceProvider);
 
-                    if (message.Channel.GetType() == typeof(SocketDMChannel))
+                    if (message.Channel is SocketDMChannel)
                     {
-                        await logging.Log_Info($"{message.Author.Username}: {message.Content}");
+                        logger.LogInformation("{0}: {1}", message.Author.Username, message.Content);
                     }
 
-                    if (!result.IsSuccess && result.ErrorReason != null)
+                    if (!result.IsSuccess && !string.IsNullOrEmpty(result.ErrorReason))
                     {
-                        await logging.Log_Warning(result.ErrorReason);
+                        logger.LogError(result.ErrorReason);
                         await Context.Channel.SendMessageAsync(result.ErrorReason);
                     }
 
-                    await logging.Log_Info($"Message recieved from {Context.Message.Author.Username} ({Context.Guild.Name}): \"{Context.Message.Content}\"");
+                    logger.LogInformation("Message recieved from {0} ({1}): \"{2}\"", Context.Message.Author.Username, Context.Guild?.Name, Context.Message.Content);
                 }
                 else
                 {
@@ -349,19 +363,19 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e, optionalMessage: "Error handling the command");
-                return;
+                logger.LogError(e, "Error handling the command: {0}", e.Message);
             }
         }
 
-        private async Task Client_Connected()
+        private Task Client_Connected()
         {
-            await logging.Log_Info($"Connected as {Client.CurrentUser.Username}");
+            logger.LogInformation("Connected as {0}", Client.CurrentUser.Username);
+            return Task.CompletedTask;
         }
 
         private async Task Client_Disconnected(Exception arg)
         {
-            await logging.Log_Exception(arg, optionalMessage: "Client disconnected");
+            logger.LogError(arg, "Client disconnected: {0}", arg.Message);
 
             await Client.LogoutAsync();
             await Client.StopAsync();
@@ -377,7 +391,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             SocketGuild guild = user.Guild;
 
-            await logging.Log_Info($"User {user.Username} joined {guild.Name}");
+            logger.LogInformation("User {0} joined {1}", user.Username, guild.Name);
 
             EmbedBuilder builder = new EmbedBuilder();
 
@@ -393,7 +407,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             string message = $"{user.Username} was banned from {guild.Name}.";
 
-            await logging.Log_Info(message);
+            logger.LogInformation(message);
 
             EmbedBuilder builder = new EmbedBuilder();
 
@@ -409,7 +423,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             string message = $"{user.Username} was unbanned from {guild.Name}.";
 
-            await logging.Log_Info(message);
+            logger.LogInformation(message);
 
             EmbedBuilder builder = new EmbedBuilder();
             builder.WithTitle("Unbanned.")

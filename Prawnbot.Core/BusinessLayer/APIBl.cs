@@ -1,9 +1,9 @@
-﻿using Discord;
-using Google.Apis.Auth.OAuth2;
+﻿using Google.Apis.Auth.OAuth2;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Prawnbot.Common;
 using Prawnbot.Common.Configuration;
@@ -14,7 +14,6 @@ using Prawnbot.Core.Model.API.Overwatch;
 using Prawnbot.Core.Model.API.Reddit;
 using Prawnbot.Core.Model.API.Rule34;
 using Prawnbot.Core.Model.API.Translation;
-using Prawnbot.Core.Model.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -30,13 +29,13 @@ namespace Prawnbot.Core.BusinessLayer
     public class APIBL : BaseBL, IAPIBL
     {
         private readonly IFileBL fileBL;
-        private readonly ILogging logging;
+        private readonly ILogger<APIBL> logger;
         private readonly IConfigUtility configUtility;
 
-        public APIBL(IFileBL fileBL, ILogging logging, IConfigUtility configUtility)
+        public APIBL(IFileBL fileBL, ILogger<APIBL> logger, IConfigUtility configUtility)
         {
             this.fileBL = fileBL;
-            this.logging = logging;
+            this.logger = logger;
             this.configUtility = configUtility;
         }
 
@@ -67,7 +66,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logger.LogError(e, "An error occured sending a GET request to \"{0}\": {1}", url, e.Message);
                 return default(T);
             }
         }
@@ -94,7 +93,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e, optionalMessage: $"Error in POST request for type {typeof(T).FullName}");
+                logger.LogError(e, "An error occured sending a POST request to \"{0}\" for type {1}: {2}", url, typeof(T).FullName, e.Message);
                 return default(T);
             }
         }
@@ -216,7 +215,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
             catch (Exception e)
             {
-                await logging.Log_Exception(e);
+                logger.LogError(e, "An error occured getting calendar entries: {0}", e.Message);
                 return new Bunch<Event>();
             }
         }
