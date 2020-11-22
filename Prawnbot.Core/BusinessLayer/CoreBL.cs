@@ -8,6 +8,7 @@ using Prawnbot.Common;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Attributes;
+using Prawnbot.Core.BlobStorage;
 using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.API.Giphy;
@@ -36,16 +37,18 @@ namespace Prawnbot.Core.BusinessLayer
         private readonly IAPIBL apiBL;
         private readonly ILogger<CoreBL> logger;
         private readonly IConfigUtility configUtility;
+        private readonly IBlobStorage blobStorage;
 
         private int EventsTriggered { get; set; }
         private bool MessageSent { get; set; }
 
-        public CoreBL(IFileBL fileBL, IAPIBL apiBL, ILogger<CoreBL> logger, IConfigUtility configUtility)
+        public CoreBL(IFileBL fileBL, IAPIBL apiBL, ILogger<CoreBL> logger, IConfigUtility configUtility, IBlobStorage blobStorage)
         {
             this.fileBL = fileBL;
             this.apiBL = apiBL;
             this.logger = logger;
             this.configUtility = configUtility;
+            this.blobStorage = blobStorage;
         }
 
         private string StrippedMessage { get; set; }
@@ -243,13 +246,15 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task SendImageFromBlobStoreAsync(string fileName)
         {
-            await Context.Message.AddReactionAsync(new Emoji("👍"));
+            if (await blobStorage.ExistsAsync(BlobContainerEnum.BotImages, fileName))
+            {
+                await Context.Message.AddReactionAsync(new Emoji("👍"));
 
-            Uri uri = await fileBL.GetUriFromBlobStoreAsync(fileName, "botimages");
-
-            WebRequest req = WebRequest.Create(uri);
-            using Stream stream = req.GetResponse().GetResponseStream();
-            await Context.Channel.SendFileAsync(stream, fileName);
+                using (MemoryStream stream = await blobStorage.DownloadAsync(BlobContainerEnum.BotImages, fileName))
+                {
+                    await Context.Channel.SendFileAsync(stream, fileName);
+                }
+            }
         }
 
         public async Task SetBotStatusAsync(UserStatus status = UserStatus.Online)

@@ -18,27 +18,6 @@ namespace Prawnbot.Core.ServiceLayer
             this.fileBL = fileBL;
         }
 
-        public async Task<Response<Uri>> GetUriFromBlobStoreAsync(string fileName, string containerName)
-        {
-            return LoadResponse(await fileBL.GetUriFromBlobStoreAsync(fileName, containerName));
-        }
-
-        public async Task<Response<Stream>> GetStreamFromBlobStoreAsync(string fileName, string containerName)
-        {
-            return LoadResponse(await fileBL.GetStreamFromBlobStoreAsync(fileName, containerName));
-        }
-
-        public async Task<Response<Stream>> DownloadFileFromBlobStoreAsync(string fileName, string containerName)
-        {
-            return LoadResponse(await fileBL.DownloadFileFromBlobStoreAsync(fileName, containerName));
-        }
-
-        public async Task<ResponseBase> UploadFileToBlobStoreAsync(string fileName, string containerName)
-        {
-            await fileBL.UploadFileToBlobStoreAsync(fileName, containerName);
-            return new ResponseBase();
-        }
-
         public Response<FileStream> WriteToCSV(IList<CSVColumns> columns, string fileName)
         {
             return LoadResponse(fileBL.WriteToCSV(columns, fileName));

@@ -24,53 +24,6 @@ namespace Prawnbot.Core.BusinessLayer
             this.configUtility = configUtility;
         }
 
-        public async Task<CloudBlobContainer> GetBlobContainer(string containerName)
-        {
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(configUtility.BlobStoreConnectionString);
-            CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-            CloudBlobContainer container = blobClient.GetContainerReference(containerName);
-            await container.CreateIfNotExistsAsync();
-
-            return container;
-        }
-
-        public async Task<Uri> GetUriFromBlobStoreAsync(string fileName, string containerName)
-        {
-            CloudBlobContainer container = await GetBlobContainer(containerName);
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
-
-            return blockBlob.Uri;
-        }
-
-        public async Task<Stream> GetStreamFromBlobStoreAsync(string fileName, string containerName)
-        {
-            using MemoryStream stream = new MemoryStream();
-            CloudBlobContainer container = await GetBlobContainer(containerName);
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
-
-            await blockBlob.DownloadToStreamAsync(stream);
-
-            return stream;
-        }
-
-        public async Task<Stream> DownloadFileFromBlobStoreAsync(string fileName, string containerName)
-        {
-            CloudBlobContainer container = await GetBlobContainer(containerName);
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
-
-            MemoryStream stream = new MemoryStream();
-            await blockBlob.DownloadToStreamAsync(stream);
-
-            return stream;
-        }
-
-        public async Task UploadFileToBlobStoreAsync(string fileName, string containerName)
-        {
-            CloudBlobContainer container = await GetBlobContainer(containerName);
-            CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
-            await blockBlob.UploadFromFileAsync(fileName);
-        }
-
         public FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare)
         {
             string TextFileDirectory = configUtility.TextFileDirectory;
