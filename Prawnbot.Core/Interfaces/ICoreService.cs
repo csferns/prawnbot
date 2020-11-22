@@ -143,5 +143,7 @@ namespace Prawnbot.Core.Interfaces
         Task<ResponseBase> CommandsAsync(bool includeNotImplemented);
         Task<ResponseBase> GetBotInfoAsync();
         Task<ResponseBase> StatusAsync();
+        Task<ResponseBase> ChangeIconAsync(string imageUri);
+        Task<ResponseBase> ChangeIconAsync(Uri imageUri = null);
     }
 }

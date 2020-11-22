@@ -671,6 +671,11 @@ namespace Prawnbot.Core.BusinessLayer
             await guild.CurrentUser.ModifyAsync(x => x.Nickname = nickname);
         }
 
+        public async Task ChangeIconAsync(string imageUri)
+        {
+            await ChangeIconAsync(new Uri(imageUri));
+        }
+
         public async Task ChangeIconAsync(Uri imageUri = null)
         {
             if (imageUri != null)

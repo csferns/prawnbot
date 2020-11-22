@@ -190,5 +190,17 @@ namespace Prawnbot.Core.ServiceLayer
 
             return LoadListResponse(guild.Entity.Users);
         }
+
+        public async Task<ResponseBase> ChangeIconAsync(string imageUri)
+        {
+            await coreBL.ChangeIconAsync(imageUri);
+            return new ResponseBase();
+        }
+
+        public async Task<ResponseBase> ChangeIconAsync(Uri imageUri = null)
+        {
+            await coreBL.ChangeIconAsync(imageUri);
+            return new ResponseBase();
+        }
     }
 }

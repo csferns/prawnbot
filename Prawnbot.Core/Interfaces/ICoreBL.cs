@@ -135,6 +135,7 @@ namespace Prawnbot.Core.Interfaces
         Task GetBotInfoAsync();
         Task StatusAsync();
         Task ChangeNicknameAsync(string guildName, string nickname);
+        Task ChangeIconAsync(string imageUri);
         Task ChangeIconAsync(Uri imageUri = null);
     }
 }

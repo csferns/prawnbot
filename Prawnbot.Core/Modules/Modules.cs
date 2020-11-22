@@ -380,16 +380,14 @@ namespace Prawnbot.Core.Modules
         }
 
         [Command("change-boticon")]
-        [NotImplemented]
-        public async Task ChangeIconAsync()
+        [Summary("Changes the icon of the bot")]
+        public async Task ChangeIconAsync(string imageUri)
         {
-            await Task.Delay(2);
-            throw new NotImplementedException();
+            await coreService.ChangeIconAsync(imageUri);
         }
 
         [Command("ping-server")]
         [Summary("Pings a server with a given name or address")]
-        [NotImplemented]
         public async Task PingServer(string ipAddress)
         {
             Response<IPStatus> status = await coreService.PingHostAsync(ipAddress);
