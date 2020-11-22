@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Newtonsoft.Json;
 using Prawnbot.Common;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Attributes;
@@ -12,6 +13,7 @@ using Prawnbot.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Text;
@@ -63,11 +65,11 @@ namespace Prawnbot.Core.Modules
 
                 for (int item = 0; item < splitMessage.Count(); item++)
                 {
-                    Bunch<char> orderedMessage = splitMessage[item].OrderBy(x => x).ToBunch();
+                    HashSet<char> orderedMessage = splitMessage[item].OrderBy(x => x).ToHashSet();
 
                     for (int character = 0; character < orderedMessage.Count(); character++)
                     {
-                        sb.Append(orderedMessage[character]);
+                        sb.Append(orderedMessage.ElementAt(character));
                     }
 
                     if (item != splitMessage.Count())
@@ -93,7 +95,7 @@ namespace Prawnbot.Core.Modules
         [Summary("Gets a random user from the guild and posts them")]
         public async Task RandomUserAsync()
         {
-            SocketGuildUser randomUser = coreService.GetAllUsers().Entities.ToBunch().RandomOrDefault();
+            SocketGuildUser randomUser = coreService.GetAllUsers().Entities.RandomOrDefault();
 
             await Context.Channel.SendMessageAsync(randomUser.Nickname ?? randomUser.Username);
         }
@@ -130,22 +132,22 @@ namespace Prawnbot.Core.Modules
         [Summary("Gives a copypasta back to the user")]
         public async Task CopypastaAsync([Remainder]string copypastaName)
         {
-            if (copypastaName != "")
+            string toMessage = "I didn't recognise that";
+            string fileName = "..\\copypastas.json";
+
+            if (!string.IsNullOrEmpty(copypastaName) && File.Exists(fileName))
             {
-                // TODO: Put this in the database or a text file
-                string copypasta = copypastaName.ToLower() switch
+                string file = File.ReadAllText(fileName);
+
+                Dictionary<string, string> copypastas = JsonConvert.DeserializeObject<Dictionary<string, string>>(file);
+
+                if (copypastas.ContainsKey(copypastaName))
                 {
-                    "owo" => "Rawr x3 nuzzlez how tha fuck is yo dirty ass pounces on you you so warm o3o notices you gotz a funky-ass bulge o: one of mah thugss aiiight :wink: nuzzlez yo' necky wecky~ murr~ hehehe rubbies yo' bulgy wolgy you so big-ass :oooo rubbies mo' on yo' bulgy wolgy it don't stop growin .///. kisses you n' lickies yo' necky daddy likies (; nuzzlez wuzzlez I hope daddy straight-up likes $: wigglez booty n' squirms I wanna peep yo' big-ass daddy meat~ wigglez booty I gots a lil itch o3o wags tail can you please git mah itch~ puts paws on yo' chest nyea~ its a seven inch itch rubs yo' chest can you help me pwease squirms pwetty pwease fucked up grill I need ta be punished runs paws down yo' chest n' bites lip like I need ta be punished straight-up good~ paws on yo' bulge as I lick mah lips I be gettin thirsty. I can go fo' some gin n juice unbuttons yo' baggy-ass pants as mah eyes glow you smell so musky :v licks shaft mmmm~ so musky drools all over yo' ding-a-ling yo' daddy meat I wanna bust a nut on fondlez Mista Muthafuckin Fuzzy Balls hehe puts snout on balls n' inhalez deeply oh god im so hard~ licks balls punish me daddy~ nyea~ squirms mo' n' wigglez booty I gots a straight-up boner fo' yo' musky goodnizz bites lip please punish me licks lips nyea~ sucklez on yo' tip so phat licks pre of yo' ding-a-ling salty goodness~ eyes role back n' goes balls deep mmmm~ moans n' suckles",
-                    "navy seals" => "What the fuck did you just fucking say about me, you little bitch? I'll have you know I graduated top of my class in the Navy Seals, and I've been involved in numerous secret raids on Al-Quaeda, and I have over 300 confirmed kills. I am trained in gorilla warfare and I'm the top sniper in the entire US armed forces. You are nothing to me but just another target. I will wipe you the fuck out with precision the likes of which has never been seen before on this Earth, mark my fucking words. You think you can get away with saying that shit to me over the Internet? Think again, fucker. As we speak I am contacting my secret network of spies across the USA and your IP is being traced right now so you better prepare for the storm, maggot. The storm that wipes out the pathetic little thing you call your life. You're fucking dead, kid. I can be anywhere, anytime, and I can kill you in over seven hundred ways, and that's just with my bare hands. Not only am I extensively trained in unarmed combat, but I have access to the entire arsenal of the United States Marine Corps and I will use it to its full extent to wipe your miserable ass off the face of the continent, you little shit. If only you could have known what unholy retribution your little \"clever\" comment was about to bring down upon you, maybe you would have held your fucking tongue. But you couldn't, you didn't, and now you're paying the price, you goddamn idiot. I will shit fury all over you and you will drown in it. You're fucking dead, kiddo.",
-                    "hit or miss" => "To hit, or not to hit. Dost thou ever miss? I suppose it not. You have a male love interest, yet I would wager he does not kiss thee (Ye olde mwah). Furthermore; he will find another lass like he won't miss thee. And at the end of it all. He is going to skrrt, and he will hit that dab, as if he were the man known by the name of Wiz Khalifa",
-                    _ => "I didn't recognise that.",
-                };
-                await Context.Channel.SendMessageAsync($"{Context.User.Mention} {copypasta}");
+                    toMessage = copypastas[copypastaName];
+                }         
             }
-            else
-            {
-                await Context.Channel.SendMessageAsync($"{Context.User.Mention} no argument passed in");
-            }
+
+            await Context.Channel.SendMessageAsync($"{Context.User.Mention} {toMessage}");
         }
 
         [Command("user-joined")]
@@ -181,7 +183,24 @@ namespace Prawnbot.Core.Modules
             sb.AppendLine(Format.Underline("Active regions:"));
             foreach (IVoiceRegion region in allRegions)
             {
-                sb.AppendLine($"{(region.IsOptimal || region.Id == currentRegion ? Format.Bold(region.Name) : region.Name)} {(region.IsOptimal ? "(Optimal)" : "")} {(region.Id == currentRegion ? "(Current)" : "")}");
+                bool bold = false;
+                string s = string.Empty;
+
+                s += region.Name;
+
+                if (region.IsOptimal)
+                {
+                    s += " (Optimal)";
+                    bold = true;
+                }
+
+                if (region.Id == currentRegion)
+                {
+                    s += " (Current)";
+                    bold = true;
+                }
+
+                sb.AppendLine(bold ? Format.Bold(s) : s);
             }
 
             sb.AppendLine(Format.Underline("Deprecated regions:"));
@@ -216,7 +235,7 @@ namespace Prawnbot.Core.Modules
             ListResponse<AlarmDTO> response = alarmService.GetAll();
             if (response.HasData)
             {
-                Bunch<AlarmDTO> alarms = response.Entities.ToBunch();
+                HashSet<AlarmDTO> alarms = response.Entities.ToHashSet();
                 IEnumerable<string> alarmDataToReturn = alarms.Select(x => $"{x.User}'s alarm {x.AlarmName}: {x.AlarmName}");
                 await Context.Channel.SendMessageAsync(string.Join(',', alarmDataToReturn));
             }
@@ -249,8 +268,20 @@ namespace Prawnbot.Core.Modules
 
         [Command("add-quote")]
         [Summary("Add a quote in the correct format to the default channel")]
-        public async Task AddQuoteAsync(string author = "", [Remainder]string quote = "")
+        public async Task AddQuoteAsync(string author = null, [Remainder]string quote = null)
         {
+            if (string.IsNullOrEmpty(author))
+            {
+                await Context.Channel.SendMessageAsync("Missing author");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(quote))
+            {
+                await Context.Channel.SendMessageAsync("Missing quote");
+                return;
+            }
+
             ulong id = Context.Guild.DefaultChannel.Id;
             quote = Regex.Unescape(quote);
 
@@ -258,7 +289,7 @@ namespace Prawnbot.Core.Modules
 
             string fileName = $"{Context.Guild.Name}-{Context.Guild.GetChannel(id).Name}-backup.csv";
 
-            Bunch<CSVColumns> columns = new Bunch<CSVColumns>()
+            HashSet<CSVColumns> columns = new HashSet<CSVColumns>()
             {
                 new CSVColumns
                 {
@@ -305,23 +336,15 @@ namespace Prawnbot.Core.Modules
         [Summary("Gets a count of the items in the Yotta file")]
         public async Task YottaCountAsync()
         {
-            ListResponse<string> response = await fileService.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
-            Bunch<string> yotta = response.Entities.ToBunch();
-
-            Array enumValues = Enum.GetValues(typeof(PrependEnum));
-            Bunch<YottaDTO> valueCount = new Bunch<YottaDTO>(yotta.Count());
-
-            foreach (object item in enumValues)
-            {
-                int prependCount = yotta.Where(x => x.ToString() == item.ToString()).Count();
-
-                valueCount.Add(new YottaDTO { PrependValue = (PrependEnum)item, Count = prependCount });
-            }
+            HashSet<string> yotta = File.ReadAllLines($"{Context.Guild.Name}\\Yotta.txt").ToHashSet();
+            List<PrependEnum> enumValues = Enum.GetValues(typeof(PrependEnum)).Cast<PrependEnum>().ToList();
 
             StringBuilder sb = new StringBuilder();
-            foreach (YottaDTO item in valueCount)
+
+            foreach (PrependEnum item in enumValues)
             {
-                sb.Append($"{item.PrependValue}: {item.Count}\n");
+                int prependCount = yotta.Where(x => x == item.ToString()).Count();
+                sb.AppendFormat("{0}: {1}\n", item, prependCount);
             }
 
             await Context.Channel.SendMessageAsync(sb.ToString());
@@ -331,19 +354,19 @@ namespace Prawnbot.Core.Modules
         [Summary("Reads the Yotta count and gives an ordered representation of it")]
         public async Task YottaOrderedAsync()
         {
-            ListResponse<string> response = await fileService.ReadFromFileAsync("Yotta.txt");
-            Bunch<string> yotta = response.Entities.ToBunch();
+            HashSet<string> yotta = File.ReadAllLines("Yotta.txt").OrderBy(x => x).ToHashSet();
 
-            IOrderedEnumerable<string> orderedYotta = yotta.OrderBy(x => x);
-            await Context.Channel.SendMessageAsync(string.Join(", ", orderedYotta));
+            await Context.Channel.SendMessageAsync(string.Join(", ", yotta));
         }
 
         [Command("emoji-usage")]
         [Summary("Gets the usage of a given emoji in the guild")]
         public async Task EmojiUsageAsync(string emoteName)
         {
-            Emote.TryParse($":{emoteName}:", out Emote emote);
-            await EmoteUsage(emote);
+            if (Emote.TryParse($":{emoteName}:", out Emote emote))
+            {
+                await EmoteUsage(emote);
+            }
         }
 
         [Command("emoji-usage")]
@@ -351,19 +374,32 @@ namespace Prawnbot.Core.Modules
         public async Task EmojiUsageAsync(ulong emojiId)
         {
             Response<GuildEmote> emote = await coreService.GetEmoteFromGuild(emojiId, Context.Guild);
-            await EmoteUsage(emote.Entity);
+
+            if (emote.HasData)
+            {
+                await EmoteUsage(emote.Entity);
+            }
         }
 
         private async Task EmoteUsage(Emote emote)
         {
             if (emote != null)
             {
-                ListResponse<IMessage> messages = await coreService.GetAllMessagesAsync(Context.Channel.Id);
-                Regex emoteRegex = new Regex(@"\<(\:.*?(\b" + emote.Name.ToLowerInvariant() + @"\b)\:)(.*?\d)\>", RegexOptions.IgnoreCase);
+                ISocketMessageChannel channel = Context.Channel;
 
-                Bunch<IMessage> filteredMessages = messages.Entities.Where(m => emoteRegex.Match(m.Content).Success).ToBunch();
+                ListResponse<IMessage> messagesResponse = await coreService.GetAllMessagesAsync(channel.Id);
 
-                await Context.Channel.SendMessageAsync($":{emote.Name}: has been used {filteredMessages.Count()} times in {messages.Entities.Count()} messages ({Context.Channel.Name})");
+                if (messagesResponse.HasData)
+                {
+                    IEnumerable<IMessage> messages = messagesResponse.Entities;
+
+                    Regex emoteRegex = new Regex(@"\<(\:.*?(\b" + emote.Name.ToLowerInvariant() + @"\b)\:)(.*?\d)\>", RegexOptions.IgnoreCase);
+
+                    HashSet<IMessage> filteredMessages = messages.Where(m => emoteRegex.IsMatch(m.Content)).ToHashSet();
+
+                    string message = string.Format(":{0}: has been used {1} times in {2} messages ({3})", emote.Name, filteredMessages.Count, messages.Count(), channel.Name);
+                    await channel.SendMessageAsync(message);
+                }
             }
         }
 

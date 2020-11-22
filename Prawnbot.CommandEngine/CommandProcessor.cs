@@ -3,7 +3,6 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using Prawnbot.CommandEngine.Interfaces;
 using Prawnbot.Common.Configuration;
-using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -73,7 +72,7 @@ namespace Prawnbot.CommandEngine
         {
             if (command.HasCorrectParameterCount)
             {
-                string userToGet = command.CommandComponents[0];
+                string userToGet = command.CommandComponents.ElementAt(0);
 
                 SocketGuildUser user = coreBL.GetUser(userToGet);
 
@@ -83,7 +82,7 @@ namespace Prawnbot.CommandEngine
                     return;
                 }
 
-                string message = command.CommandComponents[1];
+                string message = command.CommandComponents.ElementAt(1);
                 await coreBL.SendDMAsync(user, message);
             }
             else
@@ -96,8 +95,8 @@ namespace Prawnbot.CommandEngine
         {
             if (command.HasCorrectParameterCount)
             {
-                string guildName = command.CommandComponents[0];
-                string channelName = command.CommandComponents[1];
+                string guildName = command.CommandComponents.ElementAt(0);
+                string channelName = command.CommandComponents.ElementAt(1);
 
                 SocketGuild guild = coreBL.GetGuild(guildName);
 
@@ -115,7 +114,7 @@ namespace Prawnbot.CommandEngine
                     return;
                 }
 
-                string message = command.CommandComponents[2];
+                string message = command.CommandComponents.ElementAt(2);
 
                 await textChannel.SendMessageAsync(message);
             }
@@ -129,12 +128,12 @@ namespace Prawnbot.CommandEngine
         {
             if (command.HasCorrectParameterCount)
             {
-                string activity = command.CommandComponents[0];
+                string activity = command.CommandComponents.ElementAt(0);
 
-                string name = command.CommandComponents[1];
+                string name = command.CommandComponents.ElementAt(1);
 
                 string streamUrl = command.TotalParameterCount == 3
-                    ? command.CommandComponents[2]
+                    ? command.CommandComponents.ElementAt(2)
                     : null;
 
                 Enum.TryParse<ActivityType>(activity, ignoreCase: true, out ActivityType activityType);
@@ -164,8 +163,8 @@ namespace Prawnbot.CommandEngine
         {
             if (command.HasCorrectParameterCount)
             {
-                string guildName = command.CommandComponents[0];
-                string nickname = command.CommandComponents[1];
+                string guildName = command.CommandComponents.ElementAt(0);
+                string nickname = command.CommandComponents.ElementAt(1);
 
                 await coreBL.ChangeNicknameAsync(guildName, nickname);
                 logger.LogInformation("Nickname changed for {0}", guildName);
@@ -194,10 +193,12 @@ namespace Prawnbot.CommandEngine
         {
             if (command.HasCorrectParameterCount)
             {
-                Uri.TryCreate(command.CommandComponents[0], UriKind.RelativeOrAbsolute, out Uri imageUri);
-                await coreBL.ChangeIconAsync(imageUri);
+                if (Uri.TryCreate(command.CommandComponents.ElementAt(0), UriKind.RelativeOrAbsolute, out Uri imageUri))
+                {
+                    await coreBL.ChangeIconAsync(imageUri);
 
                     logger.LogInformation("Icon changed.");
+                }
             }
             else
             {

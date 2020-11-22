@@ -1,12 +1,22 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Prawnbot.Core.Collections
 {
     public static class CollectionExtensions
     {        
-        public static Bunch<T> ToBunch<T>(this IEnumerable<T> collection)
+        public static T RandomOrDefault<T>(this IEnumerable<T> collection)
         {
-            return new Bunch<T>(collection);
+            if (collection == null)
+            {
+                return default(T);
+            }
+
+            Random random = new Random();
+            int index = random.Next(0, collection.Count());
+
+            return collection.ElementAtOrDefault(index);
         }
     }
 }

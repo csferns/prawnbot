@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Prawnbot.Common;
 using Prawnbot.Common.Configuration;
-using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.API.Giphy;
 using Prawnbot.Core.Model.API.Overwatch;
@@ -98,7 +97,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        public async Task<Bunch<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
+        public async Task<HashSet<GiphyDatum>> GetGifsAsync(string searchTerm, int limit = 25)
         {
             IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
@@ -109,10 +108,10 @@ namespace Prawnbot.Core.BusinessLayer
             };
 
             GiphyRootobject response = await GetRequestAsync<GiphyRootobject>(configUtility.GiphyEndpoint, parameters);
-            return response.data.OrderBy(x => x.trending_datetime).ToBunch();
+            return response.data.OrderBy(x => x.trending_datetime).ToHashSet();
         }
 
-        public async Task<Bunch<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate)
+        public async Task<HashSet<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate)
         {
             if (fileBL.CheckIfTranslationExists())
             {
@@ -134,18 +133,18 @@ namespace Prawnbot.Core.BusinessLayer
                     { "Ocp-Apim-Subscription-Key", configUtility.TranslateAPIKey }
                 };
 
-                return await PostRequestAsync<Bunch<TranslateData>>(url, postData, headers);
+                return await PostRequestAsync<HashSet<TranslateData>>(url, postData, headers);
             }
         }
 
-        public async Task<Bunch<LanguageTranslationRoot>> GetLanguagesAsync()
+        public async Task<HashSet<LanguageTranslationRoot>> GetLanguagesAsync()
         {
             IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "api-version", "3.0" }
             };
 
-            return await GetRequestAsync<Bunch<LanguageTranslationRoot>>(configUtility.MicrosoftTranslateEndpoint + "languages", parameters);
+            return await GetRequestAsync<HashSet<LanguageTranslationRoot>>(configUtility.MicrosoftTranslateEndpoint + "languages", parameters);
         }
 
         public async Task<bool> GetProfanityFilterAsync(string message)
@@ -158,22 +157,22 @@ namespace Prawnbot.Core.BusinessLayer
             return await GetRequestAsync<bool>(configUtility.ProfanityFilterEndpoint, parameters);
         }
 
-        public async Task<Bunch<Rule34Model>> Rule34PostsAsync(string[] tags)
+        public async Task<HashSet<Rule34Model>> Rule34PostsAsync(string[] tags)
         {
             IDictionary<string, string> parameters = new Dictionary<string, string>()
             {
                 { "tags", string.Join('+', tags) }
             };
 
-            return await GetRequestAsync<Bunch<Rule34Model>>(configUtility.R34Endpoint + "posts", parameters);
+            return await GetRequestAsync<HashSet<Rule34Model>>(configUtility.R34Endpoint + "posts", parameters);
         }
 
-        public async Task<Bunch<Rule34Types>> Rule34TagsAsync()
+        public async Task<HashSet<Rule34Types>> Rule34TagsAsync()
         {
-            return await GetRequestAsync<Bunch<Rule34Types>>(configUtility.R34Endpoint + "tags");
+            return await GetRequestAsync<HashSet<Rule34Types>>(configUtility.R34Endpoint + "tags");
         }
 
-        public async Task<Bunch<Event>> GetCalendarEntries(string calendarId)
+        public async Task<HashSet<Event>> GetCalendarEntries(string calendarId)
         {
             try
             {
@@ -210,13 +209,13 @@ namespace Prawnbot.Core.BusinessLayer
 
                     // List events.
                     Events events = await request.ExecuteAsync();
-                    return events.Items.ToBunch();
+                    return events.Items.ToHashSet();
                 }
             }
             catch (Exception e)
             {
                 logger.LogError(e, "An error occured getting calendar entries: {0}", e.Message);
-                return new Bunch<Event>();
+                return new HashSet<Event>();
             }
         }
 

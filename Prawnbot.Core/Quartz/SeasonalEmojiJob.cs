@@ -1,9 +1,10 @@
 ﻿using Discord;
 using Discord.WebSocket;
-using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
 using Quartz;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Prawnbot.Core.Quartz
@@ -23,7 +24,7 @@ namespace Prawnbot.Core.Quartz
 
             if (guildsResponse.HasData)
             {
-                Bunch<SocketGuild> guilds = guildsResponse.Entities.ToBunch();
+                HashSet<SocketGuild> guilds = guildsResponse.Entities.ToHashSet();
 
                 Emoji textChannelEmoji = new Emoji("");
                 Emoji categoryEmoji = new Emoji("");

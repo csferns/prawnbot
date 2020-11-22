@@ -1,13 +1,9 @@
 ﻿using CsvHelper;
 using Discord;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Prawnbot.Common.Configuration;
-using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Core.Model.DTOs;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -45,7 +41,7 @@ namespace Prawnbot.Core.BusinessLayer
             return new FileStream(filePath, fileMode, fileAccess, fileShare);
         }
 
-        public FileStream WriteToCSV(IList<CSVColumns> columns, string fileName)
+        public FileStream WriteToCSV(HashSet<CSVColumns> columns, string fileName)
         {
             using (FileStream fileStream = CreateLocalFileIfNotExists(fileName, FileMode.Truncate, FileAccess.Write, FileShare.Write))
             using (StreamWriter writer = new StreamWriter(fileStream))
@@ -67,28 +63,28 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        public Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)
+        public HashSet<CSVColumns> CreateCSVList(HashSet<IMessage> messagesToAdd)
         {
-            Bunch<CSVColumns> records = new Bunch<CSVColumns>();
+            HashSet<CSVColumns> records = new HashSet<CSVColumns>(messagesToAdd.Count);
 
-            for (int message = 0; message < messagesToAdd.Count(); message++)
+            foreach (IMessage message in messagesToAdd)
             {
                 CSVColumns recordToAdd = new CSVColumns
                 {
-                    MessageID = messagesToAdd[message].Id,
-                    MessageSource = messagesToAdd[message].Source.ToString(),
-                    Author = messagesToAdd[message].Author.Username,
-                    WasSentByBot = messagesToAdd[message].Author.IsBot,
-                    IsPinned = messagesToAdd[message].IsPinned,
-                    MessageContent = messagesToAdd[message].Content,
-                    Timestamp = messagesToAdd[message].Timestamp
+                    MessageID = message.Id,
+                    MessageSource = message.Source.ToString(),
+                    Author = message.Author.Username,
+                    WasSentByBot = message.Author.IsBot,
+                    IsPinned = message.IsPinned,
+                    MessageContent = message.Content,
+                    Timestamp = message.Timestamp
                 };
 
-                recordToAdd.AttachmentCount = messagesToAdd[message].Attachments.Count();
+                recordToAdd.AttachmentCount = message.Attachments.Count();
 
-                if (messagesToAdd[message].Attachments.Any())
+                if (message.Attachments.Any())
                 {
-                    recordToAdd.Attachments = messagesToAdd[message].Attachments.FirstOrDefault().Url;
+                    recordToAdd.Attachments = message.Attachments.FirstOrDefault().Url;
                 }
 
                 records.Add(recordToAdd);
@@ -102,9 +98,9 @@ namespace Prawnbot.Core.BusinessLayer
             return false;
         }
 
-        public Bunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate)
+        public HashSet<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate)
         {
-            return new Bunch<TranslateData>();
+            return new HashSet<TranslateData>();
         }
     }
 }

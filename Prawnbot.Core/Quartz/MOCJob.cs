@@ -1,10 +1,11 @@
-﻿using Discord;
-using Discord.WebSocket;
+﻿using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
-using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
+using Prawnbot.Infrastructure;
 using Quartz;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,34 +21,47 @@ namespace Prawnbot.Core.Quartz
             this.coreService = coreService;
         }
 
+        protected ParallelOptions ParallelOptions { get; } = new ParallelOptions()
+        {
+            MaxDegreeOfParallelism = 10
+        };
+
+        protected Random Random { get; } = new Random();
+
         public async Task Execute(IJobExecutionContext context)
         {
             try
             {
-                if (DateTime.Now.Date.ToString("dd/MM/yyyy") == $"11/09/{DateTime.Now.Year}")
+                if (context.FireTimeUtc.ToString("dd/MM") == "11/09")
                 {
                     return;
                 }
 
-                Bunch<SocketGuild> guilds = coreService.GetAllGuilds().Entities.ToBunch();
+                ListResponse<SocketGuild> guildsResponse = coreService.GetAllGuilds();
 
-                Random random = new Random();
-
-                foreach (SocketGuild guild in guilds)
+                if (guildsResponse.HasData)
                 {
-                    int mocCount = random.Next(1, 10);
+                    HashSet<SocketGuild> guilds = guildsResponse.Entities.ToHashSet();
 
-                    StringBuilder sb = new StringBuilder();
+                    DateTime now = DateTime.Now;
 
-                    sb.AppendLine($"{DateTime.Now.ToString("dd/MM/yyyy hh:mm")}: {mocCount}");
-
-                    for (int i = 0; i < mocCount; i++)
+                    Parallel.ForEach(guilds, ParallelOptions, async (guild) =>
                     {
-                        sb.AppendLine("Happy meme o'clock!");
-                    }
+                        int mocCount = Random.Next(1, 10);
 
-                    await guild.DefaultChannel.SendMessageAsync(sb.ToString());
+                        StringBuilder sb = new StringBuilder();
+
+                        sb.AppendFormat("{0:dd/MM/yyyy hh:mm}: {1}", now, mocCount);
+
+                        for (int i = 0; i < mocCount; i++)
+                        {
+                            sb.Append("\nHappy meme o'clock!");
+                        }
+
+                        await guild.DefaultChannel.SendMessageAsync(sb.ToString());
+                    });
                 }
+
             }
             catch (Exception e)
             {

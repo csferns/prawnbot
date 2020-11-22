@@ -13,8 +13,8 @@ namespace Prawnbot.Core.Interfaces
     /// </summary>
     public interface IFileService
     {
-        Response<FileStream> WriteToCSV(IList<CSVColumns> columns, string fileName);
+        Response<FileStream> WriteToCSV(HashSet<CSVColumns> columns, string fileName);
         Task<ResponseBase> WriteToFileAsync(string valueToWrite, string fileName);
-        ListResponse<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
+        ListResponse<CSVColumns> CreateCSVList(HashSet<IMessage> messagesToAdd);
     }
 }

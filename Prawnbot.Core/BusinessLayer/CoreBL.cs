@@ -4,6 +4,7 @@ using Discord.Commands;
 using Discord.Rest;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Prawnbot.Common;
 using Prawnbot.Common.Configuration;
 using Prawnbot.Common.Enums;
@@ -18,7 +19,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -77,7 +77,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (configUtility.YottaMode && (StrippedMessage.ContainsSingleLower("sean") || message.IsUserTagged(201371614489608192) || StrippedMessage.ContainsSingleLower("seans")))
             {
-                Bunch<string> yotta = await YottaPrependAsync();
+                HashSet<string> yotta = await YottaPrependAsync();
                 string yottaFull = string.Join(", ", yotta);
 
                 await Context.Channel.SendMessageAsync($"{yottaFull} {(yottaFull.Length > 0 ? 'c' : 'C')}had Sean, stud of the co-op, leader of the Corfe Mullen massive");
@@ -110,7 +110,7 @@ namespace Prawnbot.Core.BusinessLayer
             {
                 if (await apiBL.GetProfanityFilterAsync(StrippedMessage))
                 {
-                    Bunch<GiphyDatum> gifs = await apiBL.GetGifsAsync("swearing", 50);
+                    HashSet<GiphyDatum> gifs = await apiBL.GetGifsAsync("swearing", 50);
                     await Context.Channel.SendMessageAsync(gifs.RandomOrDefault().bitly_gif_url);
                     EventsTriggered++;
                 }
@@ -141,7 +141,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             if (StrippedMessage.ContainsSingleLower("wheel") || StrippedMessage.ContainsSingleLower("bus"))
             {
-                await Context.Channel.SendMessageAsync(new Bunch<string>() { "The wheels on the bus go round and round", "Excuse me sir, you can't have wheels in this area" }.RandomOrDefault());
+                await Context.Channel.SendMessageAsync(new HashSet<string>() { "The wheels on the bus go round and round", "Excuse me sir, you can't have wheels in this area" }.RandomOrDefault());
                 EventsTriggered++;
             }
 
@@ -171,9 +171,9 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task ReactToTaggedUserWithGifAsync(SocketUserMessage message, ulong userId, string replyMessage, string gifSearchText)
         {
-            Bunch<GiphyDatum> gifs = gifSearchText != null
+            HashSet<GiphyDatum> gifs = gifSearchText != null
             ? await apiBL.GetGifsAsync(gifSearchText)
-            : new Bunch<GiphyDatum>();
+            : new HashSet<GiphyDatum>();
 
             replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
 
@@ -196,9 +196,9 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task ReactToSingleWordWithGifAsync(string Content, string lookupValue, string replyMessage, string gifSearchText)
         {
-            Bunch<GiphyDatum> gifs = gifSearchText != null
+            HashSet<GiphyDatum> gifs = gifSearchText != null
                 ? await apiBL.GetGifsAsync(gifSearchText)
-                : new Bunch<GiphyDatum>();
+                : new HashSet<GiphyDatum>();
 
             replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
 
@@ -207,9 +207,9 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task ReactToMultipleWordsWithGifAsync(string Content, string[] lookupValues, string replyMessage, string gifSearchText)
         {
-            Bunch<GiphyDatum> gifs = gifSearchText != null
+            HashSet<GiphyDatum> gifs = gifSearchText != null
                 ? await apiBL.GetGifsAsync(gifSearchText)
-                : new Bunch<GiphyDatum>();
+                : new HashSet<GiphyDatum>();
 
             replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
 
@@ -285,7 +285,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             try
             {
-                List<SocketGuildUser> users = GetAllUsers();
+                HashSet<SocketGuildUser> users = GetAllUsers();
                 return users.Where(x => x.Username == username).FirstOrDefault();
             }
             catch (Exception)
@@ -294,7 +294,7 @@ namespace Prawnbot.Core.BusinessLayer
             }
         }
 
-        public Bunch<SocketGuildUser> GetAllUsers()
+        public HashSet<SocketGuildUser> GetAllUsers()
         {
             List<SocketGuildUser> users = new List<SocketGuildUser>();
 
@@ -306,10 +306,10 @@ namespace Prawnbot.Core.BusinessLayer
                 }
             }
 
-            return users.ToBunch();
+            return users.ToHashSet();
         }
 
-        public async Task<Bunch<IMessage>> GetAllMessagesAsync(ulong id, int limit = 100000)
+        public async Task<HashSet<IMessage>> GetAllMessagesAsync(ulong id, int limit = 100000)
         {
             RequestOptions options = new RequestOptions
             {
@@ -322,20 +322,20 @@ namespace Prawnbot.Core.BusinessLayer
 
             IEnumerable<IMessage> messages = await channel.GetMessagesAsync(limit: limit, options: options).FlattenAsync();
 
-            return messages.Reverse().ToBunch();
+            return messages.Reverse().ToHashSet();
         }
 
-        public async Task<Bunch<IMessage>> GetUserMessagesAsync(ulong id, int limit = 100000)
+        public async Task<HashSet<IMessage>> GetUserMessagesAsync(ulong id, int limit = 100000)
         {
-            Bunch<IMessage> messages = await GetAllMessagesAsync(id, limit);
+            HashSet<IMessage> messages = await GetAllMessagesAsync(id, limit);
 
-            return messages.Where(x => x.Type == MessageType.Default && !x.Author.IsBot && !x.Author.IsWebhook).ToBunch();
+            return messages.Where(x => x.Type == MessageType.Default && !x.Author.IsBot && !x.Author.IsWebhook).ToHashSet();
         }
 
-        public async Task<Bunch<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp)
+        public async Task<HashSet<IMessage>> GetAllMessagesByTimestampAsync(ulong guildId, DateTime timestamp)
         {
-            IList<IMessage> allMessages = await GetAllMessagesAsync(guildId);
-            return allMessages.Where(x => x.Timestamp == timestamp || x.EditedTimestamp == timestamp).ToBunch();
+            HashSet<IMessage> allMessages = await GetAllMessagesAsync(guildId);
+            return allMessages.Where(x => x.Timestamp == timestamp || x.EditedTimestamp == timestamp).ToHashSet();
         }
 
         public SocketGuild GetGuild(string guildName)
@@ -356,9 +356,9 @@ namespace Prawnbot.Core.BusinessLayer
             return Client.GetGuild(guildId);
         }
 
-        public Bunch<SocketGuild> GetAllGuilds()
+        public HashSet<SocketGuild> GetAllGuilds()
         {
-            return Client.Guilds.ToBunch();
+            return Client.Guilds.ToHashSet();
         }
 
         public SocketTextChannel FindDefaultChannel(SocketGuild guild)
@@ -381,9 +381,9 @@ namespace Prawnbot.Core.BusinessLayer
             return guild.TextChannels.Where(x => x.Name == channelName).FirstOrDefault();
         }
 
-        public Bunch<SocketTextChannel> FindGuildTextChannels(SocketGuild guild)
+        public HashSet<SocketTextChannel> FindGuildTextChannels(SocketGuild guild)
         {
-            return Client.Guilds.FirstOrDefault(x => x == guild).TextChannels.ToBunch();
+            return Client.Guilds.FirstOrDefault(x => x == guild).TextChannels.ToHashSet();
         }
 
         public SocketTextChannel FindTextChannel(SocketGuild guild, SocketTextChannel channel)
@@ -449,52 +449,44 @@ namespace Prawnbot.Core.BusinessLayer
             return sb.ToString();
         }
 
-        public async Task<Bunch<string>> YottaPrependAsync()
+        public async Task<HashSet<string>> YottaPrependAsync()
         {
             Random random = new Random();
+            string fileName = string.Format("{0}\\Yotta.json", Context.Guild.Name);
 
-            Bunch<string> fileContents = await fileBL.ReadFromFileAsync($"{Context.Guild.Name}\\Yotta.txt");
-
-            Dictionary<PrependEnum, int> valueDictionary = new Dictionary<PrependEnum, int>();
-
-            PrependEnum[] enumValues = (PrependEnum[])Enum.GetValues(typeof(PrependEnum));
-
-            foreach (PrependEnum enumValue in enumValues)
+            using (FileStream fs = File.Open(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            using (StreamReader reader = new StreamReader(fs))
+            using (StreamWriter writer = new StreamWriter(fs))
             {
-                valueDictionary.Add(enumValue, 0);
-            }
+                string contents = await reader.ReadToEndAsync();
+                Dictionary<PrependEnum, int> fileContents = JsonConvert.DeserializeObject<Dictionary<PrependEnum, int>>(contents);
 
-            foreach (string line in fileContents)
-            {
-                valueDictionary[(PrependEnum)Enum.Parse(typeof(PrependEnum), line)]++;
-            }
+                List<PrependEnum> enumValues = Enum.GetValues(typeof(PrependEnum)).Cast<PrependEnum>().ToList();
 
-            bool validValue = false;
-
-            while (!validValue)
-            {
-                Bunch<PrependEnum> invalidValues = new Bunch<PrependEnum>();
-
-                PrependEnum randomEnumValue = (PrependEnum)enumValues.GetValue(random.Next(enumValues.Length)); //.GetValue().ToString();
-
-                if (valueDictionary[randomEnumValue] < 69)
+                if (!fileContents.Any())
                 {
-                    fileContents.Append(randomEnumValue.ToString());
-                    break;
-                }
-                else
-                {
-                    invalidValues.Add(randomEnumValue);
-
-                    if (invalidValues.Count == enumValues.Length)
+                    foreach (PrependEnum item in enumValues)
                     {
-                        break;
+                        fileContents.Add(item, 0);
                     }
                 }
-            }
 
-            fileContents.Reverse();
-            return fileContents.ToBunch();
+                PrependEnum enumValue = enumValues[random.Next(0, enumValues.Count() - 1)];
+
+                if (!fileContents.ContainsKey(enumValue))
+                {
+                    fileContents.Add(enumValue, 0);
+                }
+
+                fileContents[enumValue]++;
+
+                contents = JsonConvert.SerializeObject(fileContents);
+                await writer.WriteAsync(contents);
+
+                return fileContents.Select(x => x.Key.ToString())
+                                   .OrderBy(x => x)
+                                   .ToHashSet();
+            }
         }
 
         public async Task<IPStatus> PingHostAsync(string nameOrAddress)
@@ -534,14 +526,18 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task<string> GetLanguageFullName(string origin)
         {
-            Bunch<LanguageTranslationRoot> languages = await apiBL.GetLanguagesAsync();
+            HashSet<LanguageTranslationRoot> languages = await apiBL.GetLanguagesAsync();
 
-            return languages.FirstOrDefault().Languages.SelectMany(x => x.LanguageDetails).Where(y => y.dir == origin).FirstOrDefault().name;
+            return languages.FirstOrDefault()
+                            .Languages
+                            .SelectMany(x => x.LanguageDetails)
+                            .Where(y => y.dir == origin)
+                            .FirstOrDefault()?.name;
         }
 
         public async Task<IMessage> GetRandomQuoteAsync(ulong id)
         {
-            Bunch<IMessage> quoteRoom = await GetAllMessagesAsync(id);
+            HashSet<IMessage> quoteRoom = await GetAllMessagesAsync(id);
             return quoteRoom.RandomOrDefault();
         }
 
@@ -549,43 +545,70 @@ namespace Prawnbot.Core.BusinessLayer
         {
             await Task.Run(async () =>
             {
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
+                Stopwatch stopwatch = Stopwatch.StartNew();
 
-                string fileName = server
-                    ? $"{Context.Guild.Name}-backup.csv"
-                    : $"{FindTextChannel(id).Name}-backup.csv";
+                SocketGuild guild = Context.Guild;
 
-                await Context.Channel.SendMessageAsync($"Started {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)}{(server ? " (" + Context.Guild.TextChannels.Count() + " channels)" : "")} at {DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture)}");
+                string startMessage = string.Format("Started server backup of {0} ({1} channels) at {2:dd/MM/yyyy HH:mm:ss}", guild.Name, guild.TextChannels.Count(), DateTime.Now);
 
-                Bunch<CSVColumns> records = new Bunch<CSVColumns>();
+                await Context.Channel.SendMessageAsync(startMessage);
 
-                if (server)
+                ConcurrentBag<CSVColumns> records = new ConcurrentBag<CSVColumns>();
+
+                ParallelOptions options = new ParallelOptions()
                 {
-                    records = new Bunch<CSVColumns>();
-                    foreach (SocketTextChannel textChannel in Context.Guild.TextChannels)
-                    {
-                        Bunch<IMessage> messagesToAdd = await GetAllMessagesAsync(textChannel.Id);
+                    MaxDegreeOfParallelism = 3
+                };
 
-                        Bunch<CSVColumns> channelMessages = fileBL.CreateCSVList(messagesToAdd);
-                        records.AddRange(channelMessages);
-                    }
-                }
-                else
+                Parallel.ForEach(guild.TextChannels, options, async (textChannel) =>
                 {
-                    Bunch<IMessage> messagesToAdd = await GetAllMessagesAsync(id);
-
-                    records = fileBL.CreateCSVList(messagesToAdd);
-                }
-
-                FileStream fileStream = fileBL.WriteToCSV(records, fileName);
+                    HashSet<IMessage> messagesToAdd = await GetAllMessagesAsync(textChannel.Id);
+                    HashSet<CSVColumns> channelMessages = fileBL.CreateCSVList(messagesToAdd);
+                   // records.AddRange(channelMessages);
+                });
 
                 stopwatch.Stop();
 
-                await Context.Channel.SendFileAsync(fileStream, fileName, $"Finished {(server ? "server" : "channel")} backup of {(server ? Context.Guild.Name : Context.Guild.GetTextChannel(id).Name)}. \nThe operation took {stopwatch.Elapsed.Hours}h:{stopwatch.Elapsed.Minutes}m:{stopwatch.Elapsed.Seconds}s:{stopwatch.Elapsed.Milliseconds}ms");
+                if (records.Any())
+                {
+                    string fileName = string.Format("{0}-backup.csv", guild.Name);
 
-                fileStream.Close();
-                fileStream.Dispose();
+                    using (FileStream fileStream = fileBL.WriteToCSV(records.ToHashSet(), fileName))
+                    {
+                        string endMessage = string.Format("Finished server backup of {0} in {1:c}", guild.Name, stopwatch.Elapsed);
+
+                        await Context.Channel.SendFileAsync(fileStream, fileName, endMessage);
+                    }
+                }
+            });
+        }
+
+        public async Task BackupChannelAsync(ulong id)
+        {
+            await Task.Run(async () =>
+            {
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                SocketTextChannel channel = FindTextChannel(id);
+
+                string startMessage = string.Format("Started channel backup of {0} at {1:dd/MM/yyyy HH:mm:ss}", channel.Name, DateTime.Now);
+
+                await Context.Channel.SendMessageAsync(startMessage);
+
+                HashSet<IMessage> messagesToAdd = await GetAllMessagesAsync(id);
+                HashSet<CSVColumns> records = fileBL.CreateCSVList(messagesToAdd);
+
+                stopwatch.Stop();
+
+                if (records.Any())
+                {
+                    string fileName = string.Format("{0}-backup.csv", channel.Name);
+
+                    using (FileStream fileStream = fileBL.WriteToCSV(records, fileName))
+                    {
+                        string endMessage = string.Format("Finished channel backup of {0} ({1} messages) in {2:c}", channel.Name, records.Count, stopwatch.Elapsed);
+                        await Context.Channel.SendFileAsync(fileStream, fileName, endMessage);
+                    }
+                }
             });
         }
 
@@ -602,63 +625,111 @@ namespace Prawnbot.Core.BusinessLayer
 
             EmbedBuilder builder = new EmbedBuilder();
 
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat("Bot owner: {0}\n", botInfo.Owner.Username);
+            sb.AppendFormat("Created at: {0:dd/MM/yyyy}\n", botInfo.CreatedAt);
+            sb.AppendFormat("Description: {0}", botInfo.Description);
+
             builder.WithTitle(botInfo.Name)
                 .WithColor(Color.Blue)
-                .WithDescription(
-                $"Bot owner: {botInfo.Owner.Username} \n" +
-                $"Created at: {botInfo.CreatedAt}\n" +
-                $"Description: {botInfo.Description}"
-                );
+                .WithDescription(sb.ToString());
 
-            await Context.Channel.SendMessageAsync("", UseTTS, builder.Build());
+            await Context.Channel.SendMessageAsync(string.Empty, UseTTS, builder.Build());
         }
 
         public async Task CommandsAsync(bool includeNotImplemented)
         {
-            EmbedBuilder builder = new EmbedBuilder();
+
 
             List<MethodInfo> methods = typeof(Modules.Modules).Assembly.GetTypes()
                       .SelectMany(t => t.GetMethods())
-                      .Where(m => (m.GetCustomAttributes(typeof(CommandAttribute), false).Length > 0) && (!m.CustomAttributes.Any(y => y.AttributeType == typeof(NotImplementedAttribute)) && !includeNotImplemented))
+                      .Where(m => m.GetCustomAttributes<CommandAttribute>(inherit: false).Any() 
+                               && (!m.GetCustomAttributes<NotImplementedAttribute>(inherit: false).Any() || includeNotImplemented))
                       .OrderBy(x => x.Name)
                       .ToList();
 
-            StringBuilder sb = new StringBuilder();
+
+            HashSet<string> lines = new HashSet<string>();
+
+            string delimiter = configUtility.CommandDelimiter;
 
             foreach (MethodInfo method in methods)
             {
-                IEnumerable<CustomAttributeData> discordAttributes = method.CustomAttributes.Where(x => x.AttributeType == typeof(SummaryAttribute) || x.AttributeType == typeof(CommandAttribute));
-                string commandAttribute = discordAttributes.First(x => x.AttributeType == typeof(CommandAttribute)).ConstructorArguments.First().Value.ToString();
-                string summaryAttribute = discordAttributes.FirstOrDefault(x => x.AttributeType == typeof(SummaryAttribute))?.ConstructorArguments.First().Value.ToString() ?? "No summary available";
+                string command = method.GetCustomAttribute<CommandAttribute>(inherit: false).Text;
+                string summary = method.GetCustomAttribute<SummaryAttribute>(inherit: false)?.Text ?? "No summary available";
+                bool implemented = method.GetCustomAttribute<NotImplementedAttribute>(inherit: false) == null;
 
-                sb.AppendLine($"{configUtility.CommandDelimiter}{commandAttribute}: {summaryAttribute}");
+                List<System.Reflection.ParameterInfo> methodParams = method.GetParameters().ToList();
+                string parameters = string.Join("\n\t", methodParams.Select(x => string.Format("[{0}]: {1}{2} {3}", methodParams.IndexOf(x) + 1, 
+                                                                                                                implemented ? string.Empty : "(Not Implemented) ", 
+                                                                                                                x.Name,
+                                                                                                                x.IsOptional ? $"(default {x.DefaultValue ?? "NULL"})" : string.Empty)));
+
+                if (!string.IsNullOrEmpty(parameters))
+                {
+                    parameters = "\n\t" + parameters;
+                }
+
+                lines.Add(string.Format("**{0}{1}**: {2}{3}\n", delimiter, command, summary, parameters));
             }
 
-            builder.WithTitle($"Commands | All commands follow the structure {configUtility.CommandDelimiter}(command)")
-                .WithColor(Color.Blue)
-                .WithDescription(sb.ToString());
+            await Context.User.SendMessageAsync($"Commands | All commands follow the structure {delimiter}(command)");
 
-            if (Context.Channel.GetType() != typeof(SocketDMChannel))
+            StringBuilder sb = new StringBuilder();
+
+            int messageLength = lines.Select(x => x.Length).Sum();
+
+            if (messageLength > 2000)
+            {
+                foreach (string line in lines)
+                {
+                    if ((sb.Length + line.Length) > 2000)
+                    {
+                        await Context.User.SendMessageAsync(sb.ToString());
+                        sb = new StringBuilder();
+                    }
+
+                    sb.Append(line);
+                }
+
+                if (sb.Length > 0)
+                {
+                    await Context.User.SendMessageAsync(sb.ToString());
+                }
+            }
+            else if (messageLength < 2000 && messageLength > 0)
+            {
+                foreach (string line in lines)
+                {
+                    sb.Append(line);
+                }
+
+                await Context.User.SendMessageAsync(sb.ToString());
+            }
+
+            if (Context.Channel is not SocketDMChannel)
             {
                 await Context.Channel.SendMessageAsync($"{Context.User.Mention}: pm'd with command details!");
             }
-                
-            await Context.User.SendMessageAsync(string.Empty, UseTTS, builder.Build());
         }
 
         public async Task StatusAsync()
         {
+            SocketGuild guild = Context.Guild;
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat("The default channel is: {0}\n", guild.DefaultChannel);
+            sb.AppendFormat("The server was created on {0:dd/MM/yyyy}\n", guild.CreatedAt);
+            sb.AppendFormat("The server currently has {0} members and {1} bots ({2} total)\n", guild.Users.Where(x => !x.IsBot).Count(), guild.Users.Where(x => x.IsBot).Count(), guild.MemberCount);
+            sb.AppendFormat("The current AFK channel is {0}\n", guild.AFKChannel.Name);
+            sb.AppendFormat("There are currently {0} text channels and {1} voice channels\n", guild.TextChannels.Count, guild.VoiceChannels.Count);
+            sb.AppendFormat("The server owner is {0}", guild.Owner.Nickname);
+
             EmbedBuilder builder = new EmbedBuilder();
 
-            builder.WithTitle($"Status: {Context.Guild.Name}")
+            builder.WithTitle($"Status: {guild.Name}")
                 .WithColor(Color.Blue)
-                .WithDescription(
-                $"The default channel is: \"{Context.Guild.DefaultChannel}\" \n" +
-                $"The server was created on {Context.Guild.CreatedAt.LocalDateTime.ToString("dd/MM/yyyy")} \n" +
-                $"The server currently has {Context.Guild.Users.Where(x => !x.IsBot).Count()} users and {Context.Guild.Users.Where(x => x.IsBot).Count()} bots ({Context.Guild.MemberCount} total) \n" +
-                $"The current AFK Channel is \"{Context.Guild.AFKChannel.Name}\"\n " +
-                $"There are currently {Context.Guild.TextChannels.Count} text channels and {Context.Guild.VoiceChannels.Count} voice channels in the server\n " +
-                $"The server owner is {Context.Guild.Owner}")
+                .WithDescription(sb.ToString())
                 .WithCurrentTimestamp();
 
             await Context.Channel.SendMessageAsync(string.Empty, UseTTS, builder.Build());

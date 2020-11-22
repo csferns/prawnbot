@@ -1,4 +1,4 @@
-﻿using Prawnbot.Core.Collections;
+﻿using System.Collections.Generic;
 
 namespace Prawnbot.CommandEngine
 {
@@ -6,14 +6,14 @@ namespace Prawnbot.CommandEngine
     {
         public Command()
         {
-            CommandComponents = new Bunch<string>();
+            CommandComponents = new HashSet<string>();
         }
 
         public string CommandText { get; set; }
         public bool Valid { get; set; }
         public CommandsEnum ParsedCommand { get; set; }
 
-        public Bunch<string> CommandComponents { get; set; }
+        public ICollection<string> CommandComponents { get; set; }
 
         public int RequiredParameterCount { get; set; }
         public int? OptionalParameterCount { get; set; }

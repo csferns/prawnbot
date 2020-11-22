@@ -1,6 +1,4 @@
 ﻿using Discord;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Prawnbot.Core.Collections;
 using Prawnbot.Core.Model.API.Translation;
 using Prawnbot.Core.Model.DTOs;
 using System.Collections.Generic;
@@ -15,10 +13,10 @@ namespace Prawnbot.Core.Interfaces
     public interface IFileBL
     {
         FileStream CreateLocalFileIfNotExists(string fileName, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
-        FileStream WriteToCSV(IList<CSVColumns> columns, string fileName);
+        FileStream WriteToCSV(HashSet<CSVColumns> columns, string fileName);
         Task WriteToFileAsync(string valueToWrite, string fileName);
-        Bunch<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd);
+        HashSet<CSVColumns> CreateCSVList(HashSet<IMessage> messagesToAdd);
         bool CheckIfTranslationExists();
-        Bunch<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
+        HashSet<TranslateData> GetTranslationFromFile(string toLanguage, string fromLanguage, string textToTranslate);
     }
 }

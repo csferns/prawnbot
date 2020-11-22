@@ -38,13 +38,7 @@ namespace Prawnbot.Core.BusinessLayer
 
         private IScheduler Scheduler;
 
-        private bool IsQuartzInitialized 
-        { 
-            get
-            {
-                return Scheduler != null && !(Scheduler?.IsShutdown ?? true) && (Scheduler?.IsStarted ?? false) && !(Scheduler?.InStandbyMode ?? true);
-            }
-        }
+        private bool IsQuartzInitialized => Scheduler != null && (!Scheduler.IsShutdown || Scheduler.IsStarted || !Scheduler.InStandbyMode);
 
         public object GetStatus() 
         {
@@ -67,8 +61,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             try
             {
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
+                Stopwatch stopwatch = Stopwatch.StartNew();
 
                 Process currentProcess = Process.GetCurrentProcess();
 
@@ -81,7 +74,7 @@ namespace Prawnbot.Core.BusinessLayer
                     LogLevel = LogSeverity.Verbose
                 });
 
-                Commands = new Discord.Commands.CommandService();
+                Commands = new CommandService();
                 Commands.AddTypeReader(typeof(IVoiceRegion), new VoiceRegionTypeReader());
 
                 IServiceCollection botServices = new ServiceCollection()
@@ -231,7 +224,7 @@ namespace Prawnbot.Core.BusinessLayer
                 int TWENTYFOUR_HOUR = 24;
 
                 await ScheduleQuartzJob<MOCJob>(DateBuilder.DateOf(9, 11, 0), interval: TWELVE_HOUR);
-                await ScheduleQuartzJob<YearlyQuoteJob>(DateBuilder.DateOf(8, 0, 0), interval: TWENTYFOUR_HOUR);
+                //await ScheduleQuartzJob<YearlyQuoteJob>(DateBuilder.DateOf(8, 0, 0), interval: TWENTYFOUR_HOUR);
                 await ScheduleQuartzJob<BirthdayJob>(DateBuilder.DateOf(8, 0, 0), interval: TWENTYFOUR_HOUR);
             }
             catch (SchedulerException sc)
@@ -327,7 +320,7 @@ namespace Prawnbot.Core.BusinessLayer
         {
             try
             {
-                if (!(arg is SocketUserMessage message) || message.Author.IsBot || string.IsNullOrWhiteSpace(message.Content))
+                if (arg is not SocketUserMessage message || message.Author.IsBot || string.IsNullOrWhiteSpace(message.Content))
                 {
                     return;
                 }

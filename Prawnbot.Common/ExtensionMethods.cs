@@ -17,7 +17,7 @@ namespace Prawnbot.Common
         {
             string[] splitMessage = message.ToLowerInvariant().Split(' ');
 
-            return splitMessage.Any(x => x.Equals(textToFind.ToLowerInvariant()));
+            return splitMessage.Where(x => x.ToLowerInvariant() == textToFind.ToLowerInvariant()).Any();
         }
 
         public static bool ContainsManyLower(this string message, string[] lookupValues)
@@ -47,30 +47,28 @@ namespace Prawnbot.Common
             return sb.ToString().ToLowerInvariant();
         }
 
+        private static readonly Regex EmoteRegex = new Regex(@"(\<(\:.*?\:)(.*?\d)\>)", RegexOptions.IgnoreCase);
+
         public static bool ContainsEmote(this SocketUserMessage message)
         {
-            try
-            {
-                Regex emoteRegex = new Regex(@"(\<(\:.*?\:)(.*?\d)\>)", RegexOptions.IgnoreCase);
-                return emoteRegex.Match(message.Content).Success;
-            }
-            catch (Exception)
+            if (string.IsNullOrEmpty(message.Content))
             {
                 return false;
             }
+
+            return EmoteRegex.IsMatch(message.Content);
         }
+
+        private static readonly Regex EmojiRegex = new Regex(@"\p{L}", RegexOptions.IgnoreCase);
 
         public static bool ContainsEmoji(this SocketUserMessage message)
         {
-            try
-            {
-                Regex emojiRegex = new Regex(@"\<(\:.*?\:)(.*\d)\>", RegexOptions.IgnoreCase);
-                return emojiRegex.Match(message.Content).Success;
-            }
-            catch (Exception)
+            if (string.IsNullOrEmpty(message.Content))
             {
                 return false;
             }
+
+            return EmojiRegex.IsMatch(message.Content);
         }
     }
 }

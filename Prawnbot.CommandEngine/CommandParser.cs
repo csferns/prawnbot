@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Prawnbot.CommandEngine.Interfaces;
-using Prawnbot.Core.Collections;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -34,7 +34,7 @@ namespace Prawnbot.CommandEngine
                 return false;
             }
 
-            Bunch<string> split = CommandRegex.Split(command.CommandText).ToBunch();
+            List<string> split = CommandRegex.Split(command.CommandText).ToList();
             split.RemoveAll(x => string.IsNullOrEmpty(x) || string.IsNullOrWhiteSpace(x));
 
             if (!split.Any())

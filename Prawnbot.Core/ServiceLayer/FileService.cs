@@ -18,7 +18,7 @@ namespace Prawnbot.Core.ServiceLayer
             this.fileBL = fileBL;
         }
 
-        public Response<FileStream> WriteToCSV(IList<CSVColumns> columns, string fileName)
+        public Response<FileStream> WriteToCSV(HashSet<CSVColumns> columns, string fileName)
         {
             return LoadResponse(fileBL.WriteToCSV(columns, fileName));
         }
@@ -29,7 +29,7 @@ namespace Prawnbot.Core.ServiceLayer
             return new ResponseBase();
         }
 
-        public ListResponse<CSVColumns> CreateCSVList(IList<IMessage> messagesToAdd)
+        public ListResponse<CSVColumns> CreateCSVList(HashSet<IMessage> messagesToAdd)
         {
             return LoadListResponse(fileBL.CreateCSVList(messagesToAdd));
         }

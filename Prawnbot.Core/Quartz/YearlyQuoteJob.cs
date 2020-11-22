@@ -1,11 +1,11 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
-using Prawnbot.Core.Collections;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Infrastructure;
 using Quartz;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,32 +27,36 @@ namespace Prawnbot.Core.Quartz
             try
             {
                 ListResponse<IMessage> response = await coreService.GetAllMessagesByTimestampAsync(guildId: 453899130486521859, timestamp: DateTime.Now.AddYears(-1));
-                Bunch<IMessage> filteredMessages = response.Entities.ToBunch();
 
-                StringBuilder sb = new StringBuilder();
-
-                if (filteredMessages != null || filteredMessages.Any())
+                if (response.HasData)
                 {
-                    foreach (IMessage message in filteredMessages)
+                    HashSet<IMessage> filteredMessages = response.Entities.ToHashSet();
+
+                    StringBuilder sb = new StringBuilder();
+
+                    if (filteredMessages != null || filteredMessages.Any())
                     {
-                        string content = message.Content;
-
-                        if (content.Length > 250)
+                        foreach (IMessage message in filteredMessages)
                         {
-                            content = content.Substring(0, 247);
-                            content += "...";
-                        }
-                        
-                        sb.AppendLine(content);
-                    }
-                }
-                else
-                {
-                    sb.AppendLine("No quotes on this day last year");
-                }
+                            string content = message.Content;
 
-                SocketTextChannel defaultChannel = coreService.GetGuildById(guildId: 453899130486521859).Entity.DefaultChannel;
-                await defaultChannel.SendMessageAsync(sb.ToString());
+                            if (content.Length > 250)
+                            {
+                                content = content.Substring(0, 247);
+                                content += "...";
+                            }
+                        
+                            sb.AppendLine(content);
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine("No quotes on this day last year");
+                    }
+
+                    SocketTextChannel defaultChannel = coreService.GetGuildById(guildId: 453899130486521859).Entity.DefaultChannel;
+                    await defaultChannel.SendMessageAsync(sb.ToString());
+                }
             }
             catch (Exception e)
             {
