@@ -6,7 +6,6 @@ using Prawnbot.Common;
 using Prawnbot.Common.Enums;
 using Prawnbot.Core.Attributes;
 using Prawnbot.Core.Collections;
-using Prawnbot.Core.Exceptions;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Model.DTOs;
 using Prawnbot.Infrastructure;
@@ -41,54 +40,51 @@ namespace Prawnbot.Core.Modules
             this.speechRecognitionService = speechRecognitionService;
         }
 
-        #if DEBUG
-        [Command("exception-test")]
-        [NotImplemented]
-        public async Task ExceptionTester()
-        {
-            await Task.Delay(100);
-            throw new UnexpectedBananaException();
-        }
-        #endif
-
         [Command("order-message")]
         public async Task OrderMessageAsync(bool includeSpaces = true)
         {
-            ListResponse<IMessage> messages = await coreService.GetAllMessagesAsync(Context.Channel.Id, 100);
-            IMessage message = messages.Entities.ToList()[messages.Entities.Count() - 2];
+            ListResponse<IMessage> messages = await coreService.GetAllMessagesAsync(Context.Channel.Id, 5);
 
-            StringBuilder sb = new StringBuilder();
-
-            if (includeSpaces)
+            if (messages.HasData)
             {
-                string[] splitMessage = message.Content.Split(' ');
+                IMessage message = messages.Entities.ElementAtOrDefault(messages.Entities.Count() - 2);
 
-                for (int item = 0; item < splitMessage.Count(); item++)
+                if (message != null)
                 {
-                    HashSet<char> orderedMessage = splitMessage[item].OrderBy(x => x).ToHashSet();
+                    StringBuilder sb = new StringBuilder();
 
-                    for (int character = 0; character < orderedMessage.Count(); character++)
+                    if (includeSpaces)
                     {
-                        sb.Append(orderedMessage.ElementAt(character));
+                        string[] splitMessage = message.Content.Split(' ');
+
+                        for (int item = 0; item < splitMessage.Count(); item++)
+                        {
+                            HashSet<char> orderedMessage = splitMessage[item].OrderBy(x => x).ToHashSet();
+
+                            for (int character = 0; character < orderedMessage.Count(); character++)
+                            {
+                                sb.Append(orderedMessage.ElementAt(character));
+                            }
+
+                            if (item != splitMessage.Count())
+                            {
+                                sb.Append(' ');
+                            }
+                        }
+                    }
+                    else
+                    {
+                        IEnumerable<char> orderedMessage = message.Content.RemoveSpecialCharacters().ToLowerInvariant().Where(x => x != ' ').OrderBy(x => x);
+
+                        foreach (char character in orderedMessage)
+                        {
+                            sb.Append(character);
+                        }
                     }
 
-                    if (item != splitMessage.Count())
-                    {
-                        sb.Append(' ');
-                    }
+                    await Context.Channel.SendMessageAsync(sb.ToString());
                 }
             }
-            else
-            {
-                IEnumerable<char> orderedMessage = message.Content.RemoveSpecialCharacters().ToLowerInvariant().Where(x => x != ' ').OrderBy(x => x);
-
-                foreach (char character in orderedMessage)
-                {
-                    sb.Append(character);
-                }
-            }
-
-            await Context.Channel.SendMessageAsync(sb.ToString());
         }
 
         [Command("random-user")]

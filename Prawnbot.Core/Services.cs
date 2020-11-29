@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Prawnbot.Core.BlobStorage;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Log;
 using Prawnbot.Data;
@@ -61,6 +62,8 @@ namespace Prawnbot.Core
             {
                 serviceCollection.AddScoped(jobType, job);
             }
+
+            serviceCollection.AddSingleton<IBlobStorage, AzureBlobStorage>();
 
             // return a built collection of services
             return serviceCollection.BuildServiceProvider();

@@ -108,7 +108,10 @@ namespace Prawnbot.Core.BusinessLayer
             };
 
             GiphyRootobject response = await GetRequestAsync<GiphyRootobject>(configUtility.GiphyEndpoint, parameters);
-            return response.data.OrderBy(x => x.trending_datetime).ToHashSet();
+
+            return response.data != null && response.data.Any()
+                ? response.data.OrderBy(x => x.trending_datetime).ToHashSet()
+                : new HashSet<GiphyDatum>();
         }
 
         public async Task<HashSet<TranslateData>> TranslateAsync(string toLanguage, string fromLanguage, string textToTranslate)

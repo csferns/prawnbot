@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Prawnbot.Common;
 using Prawnbot.Common.Configuration;
+using Prawnbot.Core.BlobStorage;
 using Prawnbot.Core.Interfaces;
 using Prawnbot.Core.Quartz;
 using Quartz;
@@ -46,7 +47,7 @@ namespace Prawnbot.Core.BusinessLayer
 
             return new
             {
-                Online = Client != null && Client?.ConnectionState == ConnectionState.Connected,
+                Online = Client != null && Client.ConnectionState == ConnectionState.Connected,
                 ConnectionState = Client?.ConnectionState ?? ConnectionState.Disconnected,
                 Status = Client?.Status ?? UserStatus.Offline,
                 Activity = Client?.Activity.Name ?? offlineString,
@@ -65,7 +66,7 @@ namespace Prawnbot.Core.BusinessLayer
 
                 Process currentProcess = Process.GetCurrentProcess();
 
-                logger.LogInformation("Process {0} ({1}) started on {2} at {3}", currentProcess.ProcessName, currentProcess.Id, Environment.MachineName, currentProcess.StartTime);
+                logger.LogDebug("Process {0} ({1}) started on {2} at {3}", currentProcess.ProcessName, currentProcess.Id, Environment.MachineName, currentProcess.StartTime);
 
                 Token ??= token;
 
@@ -138,9 +139,16 @@ namespace Prawnbot.Core.BusinessLayer
         {
             bool success = Enum.TryParse<LogLevel>(arg.Severity.ToString(), out LogLevel logLevel);
 
-            if (success)
+            if (success && !string.IsNullOrEmpty(arg.Message))
             {
-                logger.Log(logLevel, arg.Exception?.Message ?? arg.Message);
+                if (arg.Exception != null)
+                {
+                    logger.Log(logLevel, arg.Exception, arg.Message);
+                }
+                else
+                {
+                    logger.Log(logLevel, arg.Message);
+                }
             }
 
             return Task.CompletedTask;

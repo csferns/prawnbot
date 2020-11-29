@@ -6,6 +6,6 @@ namespace Prawnbot.Infrastructure
     public class ListResponse<T> : ResponseBase
     {
         public IEnumerable<T> Entities { get; set; }
-        public bool HasData => Entities.Any() && Entities != null;
+        public bool HasData => Entities != null && Entities.Any();
     }
 }

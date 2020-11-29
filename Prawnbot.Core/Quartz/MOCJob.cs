@@ -21,12 +21,12 @@ namespace Prawnbot.Core.Quartz
             this.coreService = coreService;
         }
 
-        protected ParallelOptions ParallelOptions { get; } = new ParallelOptions()
+        protected static ParallelOptions ParallelOptions { get; } = new ParallelOptions()
         {
-            MaxDegreeOfParallelism = 10
+            MaxDegreeOfParallelism = Environment.ProcessorCount
         };
 
-        protected Random Random { get; } = new Random();
+        protected static Random Random { get; } = new Random();
 
         public async Task Execute(IJobExecutionContext context)
         {
@@ -34,6 +34,7 @@ namespace Prawnbot.Core.Quartz
             {
                 if (context.FireTimeUtc.ToString("dd/MM") == "11/09")
                 {
+                    logger.LogInformation("Returning because of the current date");
                     return;
                 }
 
@@ -59,9 +60,13 @@ namespace Prawnbot.Core.Quartz
                         }
 
                         await guild.DefaultChannel.SendMessageAsync(sb.ToString());
+                        logger.LogInformation("Sent MOC message to {0}", guild.Name);
                     });
                 }
-
+                else
+                {
+                    logger.LogWarning("No guilds available to send MOC message to");
+                }
             }
             catch (Exception e)
             {

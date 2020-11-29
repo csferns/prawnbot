@@ -58,8 +58,13 @@ namespace Prawnbot.Core.BusinessLayer
         {
             if ((message.ContainsEmote() || message.ContainsEmoji()) && configUtility.EmojiRepeat)
             {
-                await Context.Channel.SendMessageAsync(FindEmojis(message));
-                EventsTriggered++;
+                string emoji = FindEmojis(message);
+
+                if (!string.IsNullOrEmpty(emoji))
+                {
+                    await Context.Channel.SendMessageAsync(emoji);
+                    EventsTriggered++;
+                }
             }
 
             StrippedMessage = message.Content.RemoveSpecialCharacters();
@@ -111,8 +116,12 @@ namespace Prawnbot.Core.BusinessLayer
                 if (await apiBL.GetProfanityFilterAsync(StrippedMessage))
                 {
                     HashSet<GiphyDatum> gifs = await apiBL.GetGifsAsync("swearing", 50);
-                    await Context.Channel.SendMessageAsync(gifs.RandomOrDefault().bitly_gif_url);
-                    EventsTriggered++;
+
+                    if (gifs.Any())
+                    {
+                        await Context.Channel.SendMessageAsync(gifs.RandomOrDefault().bitly_gif_url);
+                        EventsTriggered++;
+                    }
                 }
             }
             #endregion
@@ -171,13 +180,15 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task ReactToTaggedUserWithGifAsync(SocketUserMessage message, ulong userId, string replyMessage, string gifSearchText)
         {
-            HashSet<GiphyDatum> gifs = gifSearchText != null
+            HashSet<GiphyDatum> gifs = !string.IsNullOrEmpty(gifSearchText)
             ? await apiBL.GetGifsAsync(gifSearchText)
             : new HashSet<GiphyDatum>();
 
-            replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
-
-            await ReactToTaggedUserAsync(message, userId, replyMessage);
+            if (gifs.Any())
+            {
+                replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
+                await ReactToTaggedUserAsync(message, userId, replyMessage);
+            }
         }
 
         public async Task ReactToTaggedUserAsync(SocketUserMessage message, ulong userId, string replyMessage)
@@ -196,24 +207,28 @@ namespace Prawnbot.Core.BusinessLayer
 
         public async Task ReactToSingleWordWithGifAsync(string Content, string lookupValue, string replyMessage, string gifSearchText)
         {
-            HashSet<GiphyDatum> gifs = gifSearchText != null
+            HashSet<GiphyDatum> gifs = !string.IsNullOrEmpty(gifSearchText)
                 ? await apiBL.GetGifsAsync(gifSearchText)
                 : new HashSet<GiphyDatum>();
 
-            replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
-
-            await ReactToSingleWordAsync(Content, lookupValue, replyMessage);
+            if (gifs.Any())
+            {
+                replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
+                await ReactToSingleWordAsync(Content, lookupValue, replyMessage);
+            }
         }
 
         public async Task ReactToMultipleWordsWithGifAsync(string Content, string[] lookupValues, string replyMessage, string gifSearchText)
         {
-            HashSet<GiphyDatum> gifs = gifSearchText != null
+            HashSet<GiphyDatum> gifs = !string.IsNullOrEmpty(gifSearchText)
                 ? await apiBL.GetGifsAsync(gifSearchText)
                 : new HashSet<GiphyDatum>();
 
-            replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
-
-            await ReactToMultipleWordsAsync(Content, lookupValues, replyMessage);
+            if (gifs.Any())
+            {
+                replyMessage += $"\n{gifs.RandomOrDefault().bitly_gif_url}";
+                await ReactToMultipleWordsAsync(Content, lookupValues, replyMessage);
+            }
         }
 
         public async Task ReactToSingleWordAsync(string Content, string lookupValue, string replyMessage)
@@ -420,24 +435,43 @@ namespace Prawnbot.Core.BusinessLayer
             await UserExtensions.SendMessageAsync(user, messageText);
         }
 
+        protected static Regex EmoteRegex = new Regex(@"\:.*?\:(.*[0-9+])", RegexOptions.IgnoreCase);
+
         public string FindEmojis(SocketUserMessage message)
         {
-            StringBuilder sb = new StringBuilder();
+            string[] inMessage = message.Content.Split("<", StringSplitOptions.RemoveEmptyEntries);
 
-            Regex regex = new Regex(@"(\<(\:.*?\:)(.*?\d)\>)", RegexOptions.IgnoreCase);
-            MatchCollection matches = regex.Matches(message.Content);
-
-            foreach (Match match in matches)
+            if (inMessage.Any())
             {
-                sb.Append(GetEmojiFromGuild(ulong.Parse(match.Groups[3].Value))).ToString();
+                StringBuilder sb = new StringBuilder();
+
+                foreach (string found in inMessage)
+                {
+                    Match match = EmoteRegex.Match(found);
+
+                    if (match.Success && match.Groups.Count >= 2)
+                    {
+                        if (ulong.TryParse(match.Groups[1].Value, out ulong emoteId))
+                        {
+                            GuildEmote emote = GetEmote(emoteId);
+
+                            if (emote != null)
+                            {
+                                sb.Append(emote.ToString());
+                            }
+                        }
+                    }
+                }
+
+                return sb.ToString();
             }
 
-            return sb.ToString();
+            return null;
         }
 
-        public GuildEmote GetEmojiFromGuild(ulong emojiId)
+        public GuildEmote GetEmote(ulong emoteId)
         {
-            return Client.Guilds.SelectMany(x => x.Emotes).FirstOrDefault(x => x.Id == emojiId);
+            return Client.Guilds.SelectMany(x => x.Emotes).Where(x => x.Id == emoteId).FirstOrDefault();
         }
 
         public string TagUser(ulong id)

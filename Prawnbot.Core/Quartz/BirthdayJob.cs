@@ -33,7 +33,7 @@ namespace Prawnbot.Core.Quartz
 
                     if (usersResponse.HasData)
                     {
-                        IEnumerable<SocketGuildUser> birthdayUsers = usersResponse.Entities.Where(x => !x.IsBot && x.JoinedAt.Value.Date == DateTime.Today);
+                        IEnumerable<SocketGuildUser> birthdayUsers = usersResponse.Entities.Where(x => !x.IsBot && x.JoinedAt.Value.ToString("ddMM") == DateTime.Today.ToString("ddMM"));
 
                         if (birthdayUsers.Any())
                         {
